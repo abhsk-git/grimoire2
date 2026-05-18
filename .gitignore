@@ -1,0 +1,16 @@
+# Python
+api/venv/
+api/__pycache__/
+api/blueprints/__pycache__/
+api/*.pyc
+
+# Secrets
+api/config/.env
+
+# Next.js
+frontend/.next/
+frontend/node_modules/
+
+# Uploads (symlinked, not tracked)
+static/
+api/static/uploads/

@@ -1,0 +1,60 @@
+"use client";
+
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { ThemeProvider } from "@/lib/theme";
+import { Header } from "@/components/header";
+import { HeroLoggedOut } from "@/components/hero-logged-out";
+import { HeroLoggedIn } from "@/components/hero-logged-in";
+import {
+  HowItWorks,
+  Features,
+  Discover,
+  CTAStrip,
+  Footer,
+} from "@/components/sections";
+
+function LandingContent() {
+  const { user, loading } = useAuth();
+
+  async function handleSignOut() {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    window.location.reload();
+  }
+
+  return (
+    <div className="app">
+      <Header
+        loggedIn={!loading && !!user}
+        username={user?.username}
+        onSignIn={() => (window.location.href = "/login")}
+        onSignOut={handleSignOut}
+      />
+
+      {loading ? (
+        <div style={{ height: "60vh", display: "grid", placeItems: "center" }}>
+          <span style={{ color: "var(--fg-soft)", fontSize: 14 }}>Loading…</span>
+        </div>
+      ) : user ? (
+        <HeroLoggedIn username={user.username} displayName={user.display_name} />
+      ) : (
+        <HeroLoggedOut onSignIn={() => (window.location.href = "/login")} />
+      )}
+
+      <HowItWorks />
+      <Features />
+      <Discover />
+      <CTAStrip onSignIn={() => (window.location.href = "/login")} />
+      <Footer />
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <LandingContent />
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
