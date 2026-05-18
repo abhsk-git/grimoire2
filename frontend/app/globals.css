@@ -1945,3 +1945,39 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .post-article, .post-footer-bar, .comments-wrap { padding-left: 16px; padding-right: 16px; }
   .post-topbar { padding: 10px 16px; }
 }
+
+/* ── Explore real-data additions ─────────────────────────────── */
+.explore-search {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 16px;
+  max-width: 520px; margin: 20px auto 0; width: 100%;
+}
+.explore-search input {
+  flex: 1; background: none; border: none; outline: none;
+  font-size: 14px; color: var(--fg);
+}
+.explore-search input::placeholder { color: var(--fg-muted); }
+.explore-search-clear {
+  background: none; border: none; cursor: pointer;
+  color: var(--fg-muted); font-size: 13px; padding: 0 2px;
+  transition: color .15s;
+}
+.explore-search-clear:hover { color: var(--fg); }
+
+.explore-loading {
+  text-align: center; padding: 80px 24px;
+  color: var(--fg-soft); font-size: 14px;
+}
+.explore-empty {
+  text-align: center; padding: 80px 24px;
+  color: var(--fg-soft); display: flex; flex-direction: column;
+  align-items: center; gap: 12px;
+}
+.explore-empty p { font-size: 15px; margin: 0; }
+
+.tag.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent);
+}

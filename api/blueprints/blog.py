@@ -582,3 +582,29 @@ def rss_feed():
   </channel>
 </rss>'''
     return Response(xml, mimetype='application/rss+xml')
+
+
+@bp.route('/api/blog/writers', methods=['GET'])
+def blog_writers():
+    db = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('''
+            SELECT u.id, u.name, u.avatar,
+                   COUNT(p.id)   AS post_count,
+                   SUM(p.views)  AS total_views,
+                   SUM(p.likes)  AS total_likes
+            FROM blog_posts p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.status = 'published'
+            GROUP BY u.id
+            ORDER BY total_views DESC
+            LIMIT 20
+        ''')
+        writers = cur.fetchall()
+    finally:
+        db.close()
+    for w in writers:
+        w['total_views'] = int(w['total_views'] or 0)
+        w['total_likes'] = int(w['total_likes'] or 0)
+    return jsonify(writers)
