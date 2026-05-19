@@ -56,7 +56,7 @@ function DashContent() {
           onMenu={() => setDrawerOpen(true)}
         />
         <div className="main-body">
-          {view === "posts" && <MyPostsView />}
+          {view === "posts" && <MyPostsView viewMode={viewMode} />}
           {(view === "all" || view === "public" || view === "private" || view === "starred") && (
             <AllLinksView
               viewMode={viewMode}

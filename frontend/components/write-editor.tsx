@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  DragEvent,
+  KeyboardEvent,
+} from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { Icon } from "./icons";
@@ -73,7 +80,7 @@ interface PostData {
   status: string;
 }
 
-interface Tag {
+interface TagSuggestion {
   name: string;
   count: number;
 }
@@ -81,6 +88,258 @@ interface Tag {
 interface WriteEditorProps {
   postId?: number;
 }
+
+// ── Cover Image Zone ──────────────────────────────────────────────────────────
+
+function CoverZone({
+  coverUrl,
+  onUploadFile,
+  onUrlChange,
+  onRemove,
+  uploading,
+}: {
+  coverUrl: string;
+  onUploadFile: (file: File) => void;
+  onUrlChange: (url: string) => void;
+  onRemove: () => void;
+  uploading: boolean;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const [urlMode, setUrlMode] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) onUploadFile(file);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) onUploadFile(file);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function handleUrlSubmit() {
+    const url = urlInput.trim();
+    if (url) {
+      onUrlChange(url);
+      setUrlInput("");
+      setUrlMode(false);
+    }
+  }
+
+  if (coverUrl) {
+    return (
+      <div className="we-cover-has">
+        <img src={coverUrl} alt="Cover" className="we-cover-img" />
+        <div className="we-cover-actions">
+          <button
+            className="we-cover-btn"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            <Icon name="upload" size={13} />
+            {uploading ? "Uploading…" : "Change"}
+          </button>
+          <button className="we-cover-btn danger" onClick={onRemove}>
+            <Icon name="x" size={13} /> Remove
+          </button>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`we-cover-empty${dragging ? " drag" : ""}`}
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
+      onClick={() => !urlMode && fileRef.current?.click()}
+    >
+      {uploading ? (
+        <div className="we-cover-placeholder">
+          <div className="we-cover-spinner" />
+          <span>Uploading…</span>
+        </div>
+      ) : urlMode ? (
+        <div
+          className="we-cover-url-form"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            autoFocus
+            className="we-cover-url-input"
+            placeholder="Paste image URL…"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleUrlSubmit();
+              if (e.key === "Escape") setUrlMode(false);
+            }}
+          />
+          <button className="we-cover-btn" onClick={handleUrlSubmit}>
+            Add
+          </button>
+          <button
+            className="we-cover-btn"
+            onClick={() => setUrlMode(false)}
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <div className="we-cover-placeholder">
+          <div className="we-cover-icon">
+            <Icon name="image" size={22} />
+          </div>
+          <span className="we-cover-label">Add a cover image</span>
+          <span className="we-cover-hint">
+            Drop an image, click to upload,{" "}
+            <button
+              className="we-cover-link"
+              onClick={(e) => {
+                e.stopPropagation();
+                setUrlMode(true);
+              }}
+            >
+              or paste a URL
+            </button>
+          </span>
+        </div>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+    </div>
+  );
+}
+
+// ── Tag chips ────────────────────────────────────────────────────────────────
+
+function TagChips({
+  tags,
+  suggestions,
+  onChange,
+}: {
+  tags: string[];
+  suggestions: TagSuggestion[];
+  onChange: (tags: string[]) => void;
+}) {
+  const [inputVal, setInputVal] = useState("");
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function addTag(raw: string) {
+    const t = raw
+      .trim()
+      .toLowerCase()
+      .replace(/[^\w-]/g, "");
+    if (t && !tags.includes(t) && tags.length < 10) {
+      onChange([...tags, t]);
+    }
+    setInputVal("");
+  }
+
+  function removeTag(tag: string) {
+    onChange(tags.filter((t) => t !== tag));
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === "," || e.key === "Tab") {
+      e.preventDefault();
+      addTag(inputVal);
+    } else if (e.key === "Backspace" && !inputVal && tags.length > 0) {
+      removeTag(tags[tags.length - 1]);
+    }
+  }
+
+  const filteredSuggestions = suggestions
+    .map((s) => s.name)
+    .filter(
+      (n) =>
+        !tags.includes(n) &&
+        (inputVal === "" || n.startsWith(inputVal.toLowerCase()))
+    )
+    .slice(0, 8);
+
+  return (
+    <div className="we-tags-wrap">
+      <div
+        className="we-tags"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {tags.length === 0 && !focused && (
+          <span className="we-tags-placeholder">Add up to 10 tags…</span>
+        )}
+        {tags.map((tag) => (
+          <span key={tag} className="we-tag-chip">
+            <span className="we-tag-hash">#</span>
+            {tag}
+            <button
+              className="we-tag-remove"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTag(tag);
+              }}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          className="we-tag-input"
+          value={inputVal}
+          onChange={(e) => setInputVal(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setTimeout(() => setFocused(false), 150);
+            if (inputVal) addTag(inputVal);
+          }}
+          placeholder={tags.length === 0 ? "" : ""}
+          style={{ width: Math.max(80, inputVal.length * 9 + 16) }}
+        />
+      </div>
+
+      {focused && filteredSuggestions.length > 0 && (
+        <div className="we-tag-suggestions">
+          {filteredSuggestions.map((s) => (
+            <button
+              key={s}
+              className="we-tag-suggest-item"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                addTag(s);
+                inputRef.current?.focus();
+              }}
+            >
+              <span className="we-tag-hash">#</span>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main editor ──────────────────────────────────────────────────────────────
 
 export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const { user, loading: authLoading } = useAuth();
@@ -91,34 +350,31 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     "" | "saving" | "saved" | "unsaved" | "error"
   >("");
   const [editorReady, setEditorReady] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
-  const [tags, setTags] = useState("");
+  const [tagList, setTagList] = useState<string[]>([]);
   const [excerpt, setExcerpt] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [tagSuggestions, setTagSuggestions] = useState<Tag[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [coverUploading, setCoverUploading] = useState(false);
 
   const editorRef = useRef<any>(null);
   const postIdRef = useRef<number | null>(initialPostId ?? null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
-  const coverFileRef = useRef<HTMLInputElement>(null);
+  const excerptRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      window.location.href = "/login";
-    }
+    if (!authLoading && !user) window.location.href = "/login";
   }, [user, authLoading]);
 
-  // Load available tags for autocomplete
   useEffect(() => {
     fetch("/api/blog/tags")
       .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setTagSuggestions(Array.isArray(data) ? data : []));
+      .then((d) => setTagSuggestions(Array.isArray(d) ? d : []));
   }, []);
 
   useEffect(() => {
@@ -136,28 +392,24 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
             const post: PostData = await r.json();
             setTitle(post.title || "");
             setSlug(post.slug || "");
-            setTags(post.tags || "");
+            setTagList(
+              (post.tags || "")
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean)
+            );
             setExcerpt(post.excerpt || "");
             setCoverUrl(post.cover_image || "");
             setStatus(post.status === "published" ? "published" : "draft");
             if (post.content) {
-              try {
-                initialData = JSON.parse(post.content);
-              } catch {
-                initialData = undefined;
-              }
+              try { initialData = JSON.parse(post.content); } catch {}
             }
           }
-        } catch {
-          // proceed with blank editor
-        }
+        } catch {}
       }
 
       await loadScripts();
-
-      if (editorRef.current) {
-        editorRef.current.destroy?.();
-      }
+      editorRef.current?.destroy?.();
 
       editorRef.current = new window.EditorJS({
         holder: "editorjs",
@@ -204,7 +456,6 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           checklist: { class: window.Checklist, inlineToolbar: true },
           linkTool: {
             class: window.LinkTool,
-            // Use /api/link-meta which is now properly implemented
             config: { endpoint: "/api/link-meta" },
           },
         },
@@ -219,7 +470,6 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     }
 
     init();
-
     return () => {
       autoSaveTimer.current && clearTimeout(autoSaveTimer.current);
       editorRef.current?.destroy?.();
@@ -245,15 +495,8 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         })
         .join(" ")
         .replace(/<[^>]+>/g, "");
-      setWordCount(
-        text
-          .trim()
-          .split(/\s+/)
-          .filter(Boolean).length
-      );
-    } catch {
-      // ignore
-    }
+      setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
+    } catch {}
   }
 
   async function buildPayload() {
@@ -261,9 +504,9 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     return {
       title: titleRef.current?.value || title,
       content: JSON.stringify(editorData),
-      excerpt,
+      excerpt: excerptRef.current?.value || excerpt,
       cover_image: coverUrl,
-      tags,
+      tags: tagList.join(","),
       slug,
     };
   }
@@ -272,22 +515,18 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     async (silent = false) => {
       if (!editorRef.current || !editorReady) return;
       if (!silent) setSaveStatus("saving");
-
       try {
         const payload = await buildPayload();
         const isNew = !postIdRef.current;
         const url = isNew
           ? "/api/blog/posts"
           : `/api/blog/posts/${postIdRef.current}`;
-        const method = isNew ? "POST" : "PUT";
-
         const r = await fetch(url, {
-          method,
+          method: isNew ? "POST" : "PUT",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-
         if (r.ok) {
           const data = await r.json();
           if (isNew && data.id) {
@@ -306,13 +545,12 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editorReady, excerpt, coverUrl, tags, slug]
+    [editorReady, excerpt, coverUrl, tagList, slug]
   );
 
   async function handlePublish() {
     await saveDraft(true);
     if (!postIdRef.current) return;
-
     const r = await fetch(`/api/blog/posts/${postIdRef.current}/publish`, {
       method: "POST",
       credentials: "include",
@@ -324,24 +562,15 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   }
 
   async function handleDelete() {
-    if (!postIdRef.current) {
-      window.location.href = "/dashboard";
-      return;
-    }
+    if (!postIdRef.current) { window.location.href = "/dashboard"; return; }
     const r = await fetch(`/api/blog/posts/${postIdRef.current}`, {
       method: "DELETE",
       credentials: "include",
     });
-    if (r.ok) {
-      window.location.href = "/dashboard";
-    }
+    if (r.ok) window.location.href = "/dashboard";
   }
 
-  async function handleCoverFileUpload(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function handleCoverFile(file: File) {
     setCoverUploading(true);
     try {
       const fd = new FormData();
@@ -352,116 +581,81 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         body: fd,
       });
       if (r.ok) {
-        const data = await r.json();
-        if (data.success && data.file?.url) {
-          setCoverUrl(data.file.url);
-        }
+        const d = await r.json();
+        if (d.success && d.file?.url) setCoverUrl(d.file.url);
       }
     } finally {
       setCoverUploading(false);
-      if (coverFileRef.current) coverFileRef.current.value = "";
     }
   }
-
-  function addTagSuggestion(tagName: string) {
-    const existing = tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    if (!existing.includes(tagName)) {
-      setTags(existing.length > 0 ? `${tags}, ${tagName}` : tagName);
-    }
-  }
-
-  // Tags not yet added from the suggestions list
-  const unusedSuggestions = tagSuggestions
-    .map((t) => t.name)
-    .filter((n) => {
-      const current = tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-      return !current.includes(n);
-    })
-    .slice(0, 10);
 
   useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
+    function onKey(e: globalThis.KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
         saveDraft();
       }
     }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [saveDraft]);
 
   if (authLoading || !user) {
     return (
-      <div
-        style={{ height: "100vh", display: "grid", placeItems: "center" }}
-      >
-        <span style={{ color: "var(--fg-soft)", fontSize: 14 }}>
-          Loading…
-        </span>
+      <div style={{ height: "100vh", display: "grid", placeItems: "center" }}>
+        <span style={{ color: "var(--fg-soft)", fontSize: 14 }}>Loading…</span>
       </div>
     );
   }
 
-  const saveStatusLabel =
-    saveStatus === "saving"
-      ? "Saving…"
-      : saveStatus === "saved"
-      ? "Saved"
-      : saveStatus === "error"
-      ? "Save failed"
-      : saveStatus === "unsaved"
-      ? "Unsaved"
-      : "";
+  const saveLabel =
+    saveStatus === "saving" ? "Saving…"
+    : saveStatus === "saved" ? "Saved ✓"
+    : saveStatus === "error" ? "Save failed"
+    : saveStatus === "unsaved" ? "Unsaved"
+    : "";
 
   return (
     <div className="write-page">
-      {/* Topbar */}
+
+      {/* ── Topbar ── */}
       <div className="write-topbar">
         <Link href="/dashboard" className="write-back">
-          <Icon name="arrow-left" size={15} />
-          <span>Dashboard</span>
+          <Icon name="arrow-left" size={14} />
+          Dashboard
         </Link>
-        <div className="write-sep" />
-        <span className="write-label">
-          {status === "published" ? "Published" : "Draft"}
-        </span>
 
-        {saveStatusLabel && (
-          <span
-            className={`write-save-status${
-              saveStatus === "saving"
-                ? " saving"
-                : saveStatus === "error"
-                ? " error"
-                : saveStatus === "unsaved"
-                ? " unsaved"
-                : ""
-            }`}
-          >
-            {saveStatusLabel}
+        <div className="write-topbar-pills">
+          <span className={`write-status-pill${status === "published" ? " published" : ""}`}>
+            {status === "published" ? "Live" : "Draft"}
           </span>
-        )}
+          {saveLabel && (
+            <span className={`write-save-status${saveStatus === "error" ? " error" : saveStatus === "unsaved" ? " unsaved" : saveStatus === "saving" ? " saving" : ""}`}>
+              {saveLabel}
+            </span>
+          )}
+          {wordCount > 0 && (
+            <span className="write-word-count">
+              {wordCount} {wordCount === 1 ? "word" : "words"}
+            </span>
+          )}
+        </div>
 
         <div className="write-topbar-right">
           <button
-            className="icon-btn"
-            title="Post settings"
-            onClick={() => setSettingsOpen(true)}
+            className="write-details-btn"
+            onClick={() => setDetailsOpen((v) => !v)}
+            title="Post details (slug, excerpt, SEO)"
           >
-            <Icon name="settings" size={15} />
+            <Icon name="settings" size={14} />
+            Details
           </button>
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => saveDraft()}
             disabled={!editorReady}
           >
-            Save draft
+            Save
           </button>
           <button
             className="btn btn-primary btn-sm"
@@ -473,177 +667,109 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         </div>
       </div>
 
-      {/* Main editor area */}
-      <div className="write-main">
-        <div className="write-meta-row">
-          <span style={{ color: "var(--fg-soft)", fontSize: 13 }}>
-            {wordCount} {wordCount === 1 ? "word" : "words"}
-          </span>
-          {postId && (
-            <span style={{ color: "var(--fg-muted)", fontSize: 12 }}>
-              #{postId}
-            </span>
-          )}
-        </div>
+      {/* ── Canvas ── */}
+      <div className="write-canvas">
 
-        <textarea
-          ref={titleRef}
-          className="write-title"
-          placeholder="Post title…"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            setSaveStatus("unsaved");
-            scheduleAutoSave();
-            e.target.style.height = "auto";
-            e.target.style.height = e.target.scrollHeight + "px";
-          }}
-          rows={1}
+        {/* Cover zone */}
+        <CoverZone
+          coverUrl={coverUrl}
+          onUploadFile={handleCoverFile}
+          onUrlChange={setCoverUrl}
+          onRemove={() => setCoverUrl("")}
+          uploading={coverUploading}
         />
 
-        <div className="write-body">
-          <div id="editorjs" />
+        {/* Title */}
+        <div className="write-canvas-inner">
+          <textarea
+            ref={titleRef}
+            className="write-title"
+            placeholder="Post title…"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setSaveStatus("unsaved");
+              scheduleAutoSave();
+              e.target.style.height = "auto";
+              e.target.style.height = e.target.scrollHeight + "px";
+            }}
+            rows={1}
+          />
+
+          {/* Tags */}
+          <TagChips
+            tags={tagList}
+            suggestions={tagSuggestions}
+            onChange={(t) => { setTagList(t); setSaveStatus("unsaved"); scheduleAutoSave(); }}
+          />
+
+          {/* Excerpt */}
+          <textarea
+            ref={excerptRef}
+            className="write-excerpt"
+            placeholder="Write a short excerpt (optional — shown in previews)…"
+            value={excerpt}
+            onChange={(e) => {
+              setExcerpt(e.target.value);
+              setSaveStatus("unsaved");
+              scheduleAutoSave();
+              e.target.style.height = "auto";
+              e.target.style.height = e.target.scrollHeight + "px";
+            }}
+            rows={1}
+          />
+
+          <div className="write-divider">
+            <span />
+          </div>
+
+          {/* Editor body */}
+          <div className="write-body">
+            <div id="editorjs" />
+          </div>
         </div>
       </div>
 
-      {/* Settings overlay + panel */}
-      {settingsOpen && (
+      {/* ── Details slide-over (slug + SEO only) ── */}
+      {detailsOpen && (
         <div
-          className="settings-overlay"
-          onClick={() => setSettingsOpen(false)}
+          className="settings-overlay open"
+          onClick={() => setDetailsOpen(false)}
         />
       )}
-      <div className={`write-settings${settingsOpen ? " open" : ""}`}>
+      <div className={`write-settings${detailsOpen ? " open" : ""}`}>
         <div className="write-settings-head">
-          <span>Post settings</span>
+          <span>Post details</span>
           <button
             className="icon-btn"
             style={{ width: 28, height: 28 }}
-            onClick={() => setSettingsOpen(false)}
+            onClick={() => setDetailsOpen(false)}
           >
             <Icon name="x" size={14} />
           </button>
         </div>
         <div className="write-settings-body">
           <div className="field">
-            <label>Slug</label>
+            <label>URL slug</label>
             <input
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="auto-generated-from-title"
             />
+            <p className="field-hint">
+              grimoire.sysnode.in/blog/<strong>{slug || "your-slug"}</strong>
+            </p>
           </div>
-
-          <div className="field">
-            <label>Tags</label>
-            <input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="comma, separated, tags"
-            />
-            {unusedSuggestions.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 4,
-                  marginTop: 6,
-                }}
-              >
-                {unusedSuggestions.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => addTagSuggestion(t)}
-                    style={{
-                      fontSize: 11,
-                      padding: "2px 7px",
-                      borderRadius: 99,
-                      border: "1px solid var(--border)",
-                      background: "var(--surface)",
-                      color: "var(--fg-soft)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    + {t}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="field">
-            <label>Excerpt</label>
-            <textarea
-              rows={3}
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              placeholder="Short description for previews…"
-            />
-          </div>
-
-          <div className="field">
-            <label>Cover image</label>
-            <input
-              value={coverUrl}
-              onChange={(e) => setCoverUrl(e.target.value)}
-              placeholder="https://… or upload below"
-            />
-            <div style={{ marginTop: 6, display: "flex", gap: 8 }}>
-              <input
-                ref={coverFileRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={handleCoverFileUpload}
-              />
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                style={{ flex: 1, fontSize: 12 }}
-                onClick={() => coverFileRef.current?.click()}
-                disabled={coverUploading}
-              >
-                <Icon name="upload" size={12} />
-                {coverUploading ? "Uploading…" : "Upload image"}
-              </button>
-              {coverUrl && (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  style={{ fontSize: 12 }}
-                  onClick={() => setCoverUrl("")}
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          </div>
-
-          {coverUrl && (
-            <img
-              src={coverUrl}
-              alt="Cover preview"
-              style={{
-                width: "100%",
-                borderRadius: 8,
-                objectFit: "cover",
-                maxHeight: 160,
-                marginTop: 4,
-              }}
-            />
-          )}
 
           {postId && (
-            <div
-              style={{
-                marginTop: 24,
-                paddingTop: 16,
-                borderTop: "1px solid var(--border)",
-              }}
-            >
+            <>
+              <div className="field" style={{ marginTop: 24 }}>
+                <label style={{ color: "var(--fg-soft)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Danger zone
+                </label>
+              </div>
               {deleteConfirm ? (
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                   <button
                     className="btn btn-danger-subtle btn-sm"
                     style={{ flex: 1 }}
@@ -661,13 +787,13 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
               ) : (
                 <button
                   className="btn btn-danger-subtle btn-sm"
-                  style={{ width: "100%" }}
+                  style={{ width: "100%", marginTop: 8 }}
                   onClick={() => setDeleteConfirm(true)}
                 >
                   <Icon name="trash" size={13} /> Delete post
                 </button>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>

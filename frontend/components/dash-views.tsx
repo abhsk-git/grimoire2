@@ -689,11 +689,67 @@ export function AllLinksView({
   );
 }
 
+// ─── post card (grid) ────────────────────────────────────────────────────────
+
+const POST_GRADIENTS = [
+  "linear-gradient(135deg,#5563d0,#8e8df0)",
+  "linear-gradient(135deg,#14613a,#2f7d4d)",
+  "linear-gradient(135deg,#b46a2a,#f4b860)",
+  "linear-gradient(135deg,#d04f63,#f08090)",
+  "linear-gradient(135deg,#1f6fd9,#5b9cf6)",
+  "linear-gradient(135deg,#7c3aed,#a78bfa)",
+];
+
+function postGradient(id: number) {
+  return POST_GRADIENTS[id % POST_GRADIENTS.length];
+}
+
+function PostCard({ post }: { post: ApiPost }) {
+  const glyph = post.title ? post.title.charAt(0).toUpperCase() : "·";
+  const pillClass = post.status === "published" ? "live" : "draft";
+  const pillLabel = post.status === "published" ? "PUBLISHED" : "DRAFT";
+
+  return (
+    <div
+      className="post-card"
+      onClick={() => { window.location.href = `/write/${post.id}`; }}
+    >
+      <div
+        className="post-cover"
+        style={
+          post.cover_image
+            ? { backgroundImage: `url(${post.cover_image})`, backgroundSize: "cover", backgroundPosition: "center" }
+            : { background: postGradient(post.id), display: "flex", alignItems: "center", justifyContent: "center" }
+        }
+      >
+        {!post.cover_image && (
+          <span style={{ fontSize: 40, fontWeight: 800, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-display)", letterSpacing: "-0.03em" }}>
+            {glyph}
+          </span>
+        )}
+      </div>
+      <div className="post-body">
+        <span className={`pill ${pillClass}`} style={{ alignSelf: "flex-start" }}>{pillLabel}</span>
+        <div className="post-title">{post.title || "Untitled"}</div>
+        {post.excerpt && (
+          <div className="post-excerpt">{post.excerpt}</div>
+        )}
+        <div className="post-meta">
+          <span><Icon name="feather" size={11} />{formatDate(post.updated_at)}</span>
+          {post.reading_time > 0 && <span>{formatReadTime(post.reading_time)}</span>}
+          {post.views > 0 && <span><Icon name="users" size={11} />{post.views.toLocaleString()}</span>}
+          {post.likes > 0 && <span><Icon name="star" size={11} />{post.likes}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── my posts view ────────────────────────────────────────────────────────────
 
 type PostFilter = "all" | "published" | "draft";
 
-export function MyPostsView() {
+export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<PostFilter>("all");
@@ -824,11 +880,17 @@ export function MyPostsView() {
             <Icon name="pen" size={13} /> Start writing
           </a>
         </div>
+      ) : viewMode === "grid" ? (
+        <div className="cards">
+          {filtered.map((p) => (
+            <PostCard key={p.id} post={p} />
+          ))}
+        </div>
       ) : (
         <div>
           {filtered.map((p) => (
             <div key={p.id} className="post-row">
-              <div className="thumb">{glyph(p.title)}</div>
+              <div className="thumb">{p.title ? p.title.charAt(0).toUpperCase() : "·"}</div>
               <div className="body">
                 <div className="t">{p.title || "Untitled"}</div>
                 <div className="m">
@@ -843,24 +905,20 @@ export function MyPostsView() {
                   {p.likes > 0 && <span>{p.likes} likes</span>}
                 </div>
               </div>
-              <span className={`pill ${pillClass(p.status)}`}>
-                {pillLabel(p.status)}
+              <span className={`pill ${p.status === "published" ? "live" : "draft"}`}>
+                {p.status === "published" ? "PUBLISHED" : "DRAFT"}
               </span>
               <div className="icons">
                 <button
                   title="Edit"
-                  onClick={() => {
-                    window.location.href = `/write/${p.id}`;
-                  }}
+                  onClick={() => { window.location.href = `/write/${p.id}`; }}
                 >
                   <Icon name="pen" size={14} />
                 </button>
                 {p.status === "published" && (
                   <button
                     title="View"
-                    onClick={() =>
-                      window.open(`/blog/${p.slug}`, "_blank")
-                    }
+                    onClick={() => window.open(`/blog/${p.slug}`, "_blank")}
                   >
                     <Icon name="globe" size={14} />
                   </button>

@@ -156,8 +156,6 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps)
     setTheme(next);
   }
 
-  const showViewToggle = view === "all" || view === "public" || view === "private" || view === "starred";
-
   return (
     <>
       {/* Mobile topbar */}
@@ -196,8 +194,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps)
           <Icon name={theme === "dark" || theme === "midnight" ? "sun" : "moon"} size={16} />
         </button>
 
-        {showViewToggle && (
-          <div className="view-toggle">
+        <div className="view-toggle">
             <button
               className={viewMode === "grid" ? "active" : ""}
               onClick={() => setViewMode("grid")}
@@ -221,8 +218,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps)
                 <rect x="1" y="12" width="14" height="2" rx="1" />
               </svg>
             </button>
-          </div>
-        )}
+        </div>
 
         <button className="icon-btn" title="Save a reference (⌘S)">
           <Icon name="bookmark" size={15} />

@@ -235,7 +235,6 @@ export function ExploreView() {
                         <article className="feature-post">
                           <div className="cover" style={coverStyle(p, i)}>
                             {p.featured ? <span className="pill" style={{ background: "rgba(255,255,255,0.18)" }}>Featured</span> : null}
-                            <h3>{p.title}</h3>
                           </div>
                           <div className="info">
                             <div className="by">
@@ -248,8 +247,9 @@ export function ExploreView() {
                               />
                               <div className="name">{p.author_name}</div>
                             </div>
+                            <div className="feature-title">{p.title}</div>
                             {p.excerpt && (
-                              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "var(--fg-soft)", marginTop: 8 }}>
+                              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "var(--fg-soft)", margin: 0 }}>
                                 {p.excerpt.slice(0, 140)}{p.excerpt.length > 140 ? "…" : ""}
                               </p>
                             )}
