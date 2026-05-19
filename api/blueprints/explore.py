@@ -56,22 +56,28 @@ def explore_links():
     return jsonify({'links': links, 'total': total, 'page': page, 'per_page': per_page})
 
 
-@bp.route('/api/user/<int:user_id>', methods=['GET'])
-def user_profile(user_id):
+@bp.route('/api/user/<handle>', methods=['GET'])
+def user_profile(handle):
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        cur.execute('SELECT id, name, avatar, bio FROM users WHERE id = %s', (user_id,))
+        # Lookup by name slug (spaces → hyphens) or fall back to numeric ID
+        name_from_handle = handle.replace('-', ' ')
+        cur.execute('SELECT id, name, avatar, bio FROM users WHERE LOWER(name) = LOWER(%s)', (name_from_handle,))
         user = cur.fetchone()
+        if not user and handle.isdigit():
+            cur.execute('SELECT id, name, avatar, bio FROM users WHERE id = %s', (int(handle),))
+            user = cur.fetchone()
         if not user:
             return jsonify({'error': 'Not found'}), 404
 
+        uid = user['id']
         cur.execute('''
             SELECT l.id, l.url, l.title, l.description, l.favicon, l.tags, l.created_at
             FROM links l
             WHERE l.user_id = %s AND l.is_public = 1
             ORDER BY l.created_at DESC LIMIT 50
-        ''', (user_id,))
+        ''', (uid,))
         links = cur.fetchall()
 
         cur.execute('''
@@ -79,7 +85,7 @@ def user_profile(user_id):
             FROM blog_posts
             WHERE user_id = %s AND status = "published"
             ORDER BY published_at DESC LIMIT 20
-        ''', (user_id,))
+        ''', (uid,))
         posts = cur.fetchall()
     finally:
         db.close()

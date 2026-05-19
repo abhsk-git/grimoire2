@@ -7,12 +7,12 @@ import { PublicHeader } from "@/components/explore-shell";
 import { UserProfile } from "@/components/user-profile";
 import { BrandMark } from "@/components/icons";
 
-function ProfileContent({ userId }: { userId: number }) {
+function ProfileContent({ handle }: { handle: string }) {
   const { user } = useAuth();
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <PublicHeader loggedIn={!!user} username={user?.username} />
-      <UserProfile userId={userId} />
+      <UserProfile handle={handle} />
       <footer className="public-foot">
         <div
           className="container-wide"
@@ -45,14 +45,13 @@ function ProfileContent({ userId }: { userId: number }) {
   );
 }
 
-export default function UserPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const userId = parseInt(id, 10);
+export default function UserPage({ params }: { params: Promise<{ handle: string }> }) {
+  const { handle } = use(params);
 
   return (
     <ThemeProvider>
       <AuthProvider>
-        <ProfileContent userId={userId} />
+        <ProfileContent handle={handle} />
       </AuthProvider>
     </ThemeProvider>
   );

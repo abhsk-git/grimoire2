@@ -64,7 +64,7 @@ function avatarColor(id: number) {
   return colors[id % colors.length];
 }
 
-export function UserProfile({ userId }: { userId: number }) {
+export function UserProfile({ handle }: { handle: string }) {
   const [user, setUser] = useState<UserData | null>(null);
   const [links, setLinks] = useState<UserLink[]>([]);
   const [posts, setPosts] = useState<UserPost[]>([]);
@@ -74,7 +74,7 @@ export function UserProfile({ userId }: { userId: number }) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/user/${userId}`)
+    fetch(`/api/user/${encodeURIComponent(handle)}`)
       .then((r) => {
         if (!r.ok) throw new Error("User not found");
         return r.json();
@@ -86,7 +86,7 @@ export function UserProfile({ userId }: { userId: number }) {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [handle]);
 
   if (loading) {
     return (

@@ -70,6 +70,8 @@ function avatarFallback(name: string) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=44&background=6366f1&color=fff`;
 }
 
+const toHandle = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
+
 function fmtViews(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
@@ -240,16 +242,18 @@ export function ExploreView() {
                             {p.featured ? <span className="pill" style={{ background: "rgba(255,255,255,0.18)" }}>Featured</span> : null}
                           </div>
                           <div className="info">
-                            <div className="by">
-                              <img
-                                className="avatar"
-                                src={p.author_avatar || avatarFallback(p.author_name)}
-                                onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                                style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "none" }}
-                                alt={p.author_name}
-                              />
-                              <Link href={`/user/${p.author_id}`} onClick={e => e.stopPropagation()} style={{ color: "inherit", fontWeight: 600 }} className="name">{p.author_name}</Link>
-                            </div>
+                            <Link href={`/user/${toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none" }}>
+                              <div className="by">
+                                <img
+                                  className="avatar"
+                                  src={p.author_avatar || avatarFallback(p.author_name)}
+                                  onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
+                                  style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "none" }}
+                                  alt={p.author_name}
+                                />
+                                <div className="name">{p.author_name}</div>
+                              </div>
+                            </Link>
                             <div className="feature-title">{p.title}</div>
                             {p.excerpt && (
                               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "var(--fg-soft)", margin: 0 }}>
@@ -293,15 +297,15 @@ export function ExploreView() {
                             )}
                             <h3 className="post-title">{p.title}</h3>
                             <div className="post-meta">
-                              <span className="post-author">
+                              <Link href={`/user/${toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} className="post-author" style={{ textDecoration: "none", color: "inherit" }}>
                                 <img
                                   src={p.author_avatar || avatarFallback(p.author_name)}
                                   onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
                                   style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
                                   alt={p.author_name}
                                 />
-                                <Link href={`/user/${p.author_id}`} onClick={e => e.stopPropagation()} style={{ color: "inherit", fontWeight: 600 }}>{p.author_name}</Link>
-                              </span>
+                                {p.author_name}
+                              </Link>
                               <span className="meta-dot">·</span>
                               <span>{p.pub_date}</span>
                               <span style={{ flex: 1 }} />
@@ -424,7 +428,7 @@ export function ExploreView() {
                             {l.author_name && (
                               <span className="post-author">
                                 <span style={{ color: "var(--fg-soft)", fontFamily: "var(--font-mono)", fontSize: 10 }}>by</span>
-                                <Link href={`/user/${l.author_id}`} onClick={e => e.stopPropagation()} style={{ color: "var(--accent)", fontWeight: 600 }}>{l.author_name}</Link>
+                                <Link href={`/user/${toHandle(l.author_name)}`} onClick={e => e.stopPropagation()} style={{ color: "var(--accent)", fontWeight: 600 }}>{l.author_name}</Link>
                               </span>
                             )}
                             <span style={{ flex: 1 }} />
