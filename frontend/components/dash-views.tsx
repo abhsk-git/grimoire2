@@ -722,8 +722,9 @@ function PostCard({ post }: { post: ApiPost }) {
             : { background: postGradient(post.id), display: "flex", alignItems: "center", justifyContent: "center" }
         }
       >
+        <div className="post-cover-overlay" />
         {!post.cover_image && (
-          <span style={{ fontSize: 40, fontWeight: 800, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-display)", letterSpacing: "-0.03em" }}>
+          <span style={{ fontSize: 40, fontWeight: 800, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-display)", letterSpacing: "-0.03em", position: "relative", zIndex: 1 }}>
             {glyph}
           </span>
         )}

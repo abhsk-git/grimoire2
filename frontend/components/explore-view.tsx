@@ -234,6 +234,7 @@ export function ExploreView() {
                       <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
                         <article className="feature-post">
                           <div className="cover" style={coverStyle(p, i)}>
+                            <div className="post-cover-overlay" />
                             {p.featured ? <span className="pill" style={{ background: "rgba(255,255,255,0.18)" }}>Featured</span> : null}
                           </div>
                           <div className="info">
@@ -272,7 +273,14 @@ export function ExploreView() {
                     return (
                       <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
                         <article className="post-card">
-                          <div className="post-cover" style={coverStyle(p, i)} />
+                          <div className="post-cover" style={coverStyle(p, i)}>
+                            <div className="post-cover-overlay" />
+                            {p.reading_time > 0 && (
+                              <span className="post-readtime">
+                                <Icon name="book" size={11} /> {p.reading_time} min
+                              </span>
+                            )}
+                          </div>
                           <div className="post-body">
                             <div className="post-by">
                               <img
@@ -388,9 +396,12 @@ export function ExploreView() {
                     <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
                       <article className="post-card">
                         {l.image ? (
-                          <div className="post-cover" style={{ backgroundImage: `url(${l.image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                          <div className="post-cover" style={{ backgroundImage: `url(${l.image})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+                            <div className="post-cover-overlay" />
+                          </div>
                         ) : (
                           <div className="post-cover" style={{ background: COVER_GRADIENTS[l.id % COVER_GRADIENTS.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div className="post-cover-overlay" />
                             <Icon name="link" size={22} />
                           </div>
                         )}
