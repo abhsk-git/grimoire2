@@ -261,7 +261,7 @@ def list_posts():
         cur.execute(f'''
             SELECT p.id, p.title, p.slug, p.excerpt, p.cover_image, p.tags,
                    p.reading_time, p.views, p.likes, p.published_at, p.featured,
-                   u.name as author_name, u.avatar as author_avatar
+                   u.id as author_id, u.name as author_name, u.avatar as author_avatar
             FROM blog_posts p JOIN users u ON p.user_id=u.id
             WHERE {where}
             ORDER BY p.featured DESC, p.published_at DESC

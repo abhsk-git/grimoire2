@@ -117,16 +117,19 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
       )}
 
       <div className="side-foot">
-        <div
+        <Link
+          href={`/user/${username.toLowerCase().replace(/\s+/g, '-')}`}
           className="avatar"
-          style={{ background: "linear-gradient(135deg,#5b54d6,#8e8df0)" }}
+          style={{ background: "linear-gradient(135deg,#5b54d6,#8e8df0)", textDecoration: "none" }}
         >
           {initials}
-        </div>
-        <div className="who">
-          <div className="n">{username}</div>
-          <div className="e">{email}</div>
-        </div>
+        </Link>
+        <Link href={`/user/${username.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none", color: "inherit", minWidth: 0 }}>
+          <div className="who">
+            <div className="n">{username}</div>
+            <div className="e">{email}</div>
+          </div>
+        </Link>
         <button
           className="icon-btn"
           style={{ width: 28, height: 28, borderRadius: 6 }}

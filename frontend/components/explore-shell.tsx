@@ -50,15 +50,13 @@ export function PublicHeader({ loggedIn, username }: PublicHeaderProps) {
                   size={16}
                 />
               </button>
-              <div
+              <Link
+                href={`/user/${username ? username.toLowerCase().replace(/\s+/g, '-') : ''}`}
                 className="avatar"
-                style={{
-                  background: "linear-gradient(135deg,#5b54d6,#8e8df0)",
-                  cursor: "pointer",
-                }}
+                style={{ background: "linear-gradient(135deg,#5b54d6,#8e8df0)", textDecoration: "none" }}
               >
                 {initials}
-              </div>
+              </Link>
             </>
           ) : (
             <>

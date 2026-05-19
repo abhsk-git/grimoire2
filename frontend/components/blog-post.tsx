@@ -468,25 +468,27 @@ export function BlogPost({ slug }: Props) {
 
         <h1 className="post-title">{post.title}</h1>
 
-        <div className="post-byline">
-          <img
-            src={post.author_avatar || avatarFallback(post.author_name)}
-            alt={post.author_name}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = avatarFallback(
-                post.author_name
-              );
-            }}
-          />
-          <div>
-            <div className="byline-author">{post.author_name}</div>
-            <div className="byline-meta">
-              {fmtDate(post.published_at)}
-              {post.published_at ? " · " : ""}
-              {post.reading_time} min read · {post.views} views
+        <Link href={`/user/${post.author_name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="post-byline">
+            <img
+              src={post.author_avatar || avatarFallback(post.author_name)}
+              alt={post.author_name}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = avatarFallback(
+                  post.author_name
+                );
+              }}
+            />
+            <div>
+              <div className="byline-author">{post.author_name}</div>
+              <div className="byline-meta">
+                {fmtDate(post.published_at)}
+                {post.published_at ? " · " : ""}
+                {post.reading_time} min read · {post.views} views
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
 
         <div
           className="post-content"

@@ -18,6 +18,7 @@ interface Post {
   likes: number;
   pub_date: string;
   featured: number;
+  author_id: number;
   author_name: string;
   author_avatar: string;
 }
@@ -43,6 +44,7 @@ interface Link_ {
   created_at: string;
   author_name: string;
   author_avatar: string;
+  author_id: number;
 }
 
 interface Tag {
@@ -67,6 +69,8 @@ function coverStyle(post: Post, idx: number): React.CSSProperties {
 function avatarFallback(name: string) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=44&background=6366f1&color=fff`;
 }
+
+const toHandle = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 
 function fmtViews(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -234,19 +238,22 @@ export function ExploreView() {
                       <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
                         <article className="feature-post">
                           <div className="cover" style={coverStyle(p, i)}>
+                            <div className="post-cover-overlay" />
                             {p.featured ? <span className="pill" style={{ background: "rgba(255,255,255,0.18)" }}>Featured</span> : null}
                           </div>
                           <div className="info">
-                            <div className="by">
-                              <img
-                                className="avatar"
-                                src={p.author_avatar || avatarFallback(p.author_name)}
-                                onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                                style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "none" }}
-                                alt={p.author_name}
-                              />
-                              <div className="name">{p.author_name}</div>
-                            </div>
+                            <Link href={`/user/${toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none" }}>
+                              <div className="by">
+                                <img
+                                  className="avatar"
+                                  src={p.author_avatar || avatarFallback(p.author_name)}
+                                  onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
+                                  style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "none" }}
+                                  alt={p.author_name}
+                                />
+                                <div className="name">{p.author_name}</div>
+                              </div>
+                            </Link>
                             <div className="feature-title">{p.title}</div>
                             {p.excerpt && (
                               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "var(--fg-soft)", margin: 0 }}>
@@ -272,30 +279,37 @@ export function ExploreView() {
                     return (
                       <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
                         <article className="post-card">
-                          <div className="post-cover" style={coverStyle(p, i)} />
+                          <div className="post-cover" style={coverStyle(p, i)}>
+                            <div className="post-cover-overlay" />
+                            {p.reading_time > 0 && (
+                              <span className="post-readtime">
+                                <Icon name="book" size={11} /> {p.reading_time} min
+                              </span>
+                            )}
+                          </div>
                           <div className="post-body">
-                            <div className="post-by">
-                              <img
-                                src={p.author_avatar || avatarFallback(p.author_name)}
-                                onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                                style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover" }}
-                                alt={p.author_name}
-                              />
-                              <span style={{ fontWeight: 600 }}>{p.author_name}</span>
-                              <span>·</span>
-                              <span>{p.pub_date}</span>
-                            </div>
-                            <h3 className="post-title">{p.title}</h3>
                             {tagsList.length > 0 && (
-                              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
+                              <div className="lc-tags">
                                 {tagsList.slice(0, 3).map(t => (
-                                  <span key={t} className="lc-tag">#{t}</span>
+                                  <span key={t} className="lc-tag">{t}</span>
                                 ))}
                               </div>
                             )}
+                            <h3 className="post-title">{p.title}</h3>
                             <div className="post-meta">
-                              <span><Icon name="book" size={11} /> {p.reading_time} min</span>
-                              <span><Icon name="star" size={11} /> {p.likes}</span>
+                              <Link href={`/user/${toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} className="post-author" style={{ textDecoration: "none", color: "inherit" }}>
+                                <img
+                                  src={p.author_avatar || avatarFallback(p.author_name)}
+                                  onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
+                                  style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                                  alt={p.author_name}
+                                />
+                                {p.author_name}
+                              </Link>
+                              <span className="meta-dot">·</span>
+                              <span>{p.pub_date}</span>
+                              <span style={{ flex: 1 }} />
+                              <span className="meta-stat"><Icon name="star" size={11} /> {p.likes}</span>
                             </div>
                           </div>
                         </article>
@@ -338,25 +352,27 @@ export function ExploreView() {
           ) : (
             <div className="writers-grid">
               {writers.map((w, i) => (
-                <div key={w.id} className="writer-card">
-                  <div className="rank">#{i + 1}</div>
-                  <img
-                    src={w.avatar || avatarFallback(w.name)}
-                    onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
-                    style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                    alt={w.name}
-                  />
-                  <div className="info">
-                    <div className="name">{w.name}</div>
-                    <div className="counts">
-                      <span><b style={{ color: "var(--fg)" }}>{w.post_count}</b> posts</span>
-                      <span>·</span>
-                      <span><b style={{ color: "var(--fg)" }}>{fmtViews(w.total_views)}</b> views</span>
-                      <span>·</span>
-                      <span><b style={{ color: "var(--fg)" }}>{w.total_likes}</b> likes</span>
+                <Link key={w.id} href={`/user/${toHandle(w.name)}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="writer-card">
+                    <div className="rank">#{i + 1}</div>
+                    <img
+                      src={w.avatar || avatarFallback(w.name)}
+                      onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
+                      style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                      alt={w.name}
+                    />
+                    <div className="info">
+                      <div className="name">{w.name}</div>
+                      <div className="counts">
+                        <span><b style={{ color: "var(--fg)" }}>{w.post_count}</b> posts</span>
+                        <span>·</span>
+                        <span><b style={{ color: "var(--fg)" }}>{fmtViews(w.total_views)}</b> views</span>
+                        <span>·</span>
+                        <span><b style={{ color: "var(--fg)" }}>{w.total_likes}</b> likes</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -386,36 +402,38 @@ export function ExploreView() {
                   const domain = getDomain(l.url);
                   return (
                     <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                      <article className="post-card">
-                        {l.image ? (
-                          <div className="post-cover" style={{ backgroundImage: `url(${l.image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
-                        ) : (
-                          <div className="post-cover" style={{ background: COVER_GRADIENTS[l.id % COVER_GRADIENTS.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <Icon name="link" size={22} />
-                          </div>
-                        )}
+                      <article className="post-card ref-card">
+                        <div className="lc-stripe" style={{ background: `hsl(${(l.id * 47) % 360}, 55%, 50%)` }} />
                         <div className="post-body">
                           <div className="post-by">
                             {l.favicon ? (
                               <img src={l.favicon} style={{ width: 14, height: 14, borderRadius: 2 }} alt="" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                             ) : null}
-                            <span style={{ color: "var(--fg-muted)", fontSize: 12 }}>{domain}</span>
-                            <span>·</span>
-                            <span style={{ fontSize: 12 }}>{l.author_name}</span>
+                            <span>{domain}</span>
                           </div>
                           <h3 className="post-title">{l.title || domain}</h3>
                           {l.description && (
-                            <p style={{ fontSize: 13, color: "var(--fg-soft)", lineHeight: 1.5, marginBottom: 6 }}>
-                              {l.description.slice(0, 100)}{l.description.length > 100 ? "…" : ""}
+                            <p className="post-excerpt">
+                              {l.description.slice(0, 120)}{l.description.length > 120 ? "…" : ""}
                             </p>
                           )}
                           {tagsList.length > 0 && (
-                            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            <div className="lc-tags">
                               {tagsList.slice(0, 3).map(t => (
                                 <span key={t} className="lc-tag">#{t}</span>
                               ))}
                             </div>
                           )}
+                          <div className="post-meta">
+                            {l.author_name && (
+                              <span className="post-author">
+                                <span style={{ color: "var(--fg-soft)", fontFamily: "var(--font-mono)", fontSize: 10 }}>by</span>
+                                <Link href={`/user/${toHandle(l.author_name)}`} onClick={e => e.stopPropagation()} style={{ color: "var(--accent)", fontWeight: 600 }}>{l.author_name}</Link>
+                              </span>
+                            )}
+                            <span style={{ flex: 1 }} />
+                            <span>{l.created_at ? new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</span>
+                          </div>
                         </div>
                       </article>
                     </a>
