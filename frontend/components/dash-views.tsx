@@ -615,7 +615,7 @@ function PostCard({ post, onDelete }: { post: ApiPost; onDelete: (id: number) =>
   return (
     <div
       className="post-card"
-      onClick={() => { window.location.href = `/write/${post.id}`; }}
+      onClick={() => { window.location.href = `/blog/${post.slug}`; }}
     >
       <div
         className="post-cover"
@@ -812,7 +812,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
       ) : (
         <div>
           {filtered.map((p) => (
-            <div key={p.id} className="post-row">
+            <div key={p.id} className="post-row" onClick={() => { window.location.href = `/blog/${p.slug}`; }} style={{ cursor: "pointer" }}>
               <div className="thumb" style={{ background: p.cover_image ? "none" : postGradient(p.id) }}>
                 {p.cover_image
                   ? <img src={p.cover_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -835,7 +835,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
               <span className={`pill ${p.status === "published" ? "live" : "draft"}`}>
                 {p.status === "published" ? "PUBLISHED" : "DRAFT"}
               </span>
-              <div className="icons">
+              <div className="icons" onClick={(e) => e.stopPropagation()}>
                 <button
                   title="Edit"
                   onClick={() => { window.location.href = `/write/${p.id}`; }}
