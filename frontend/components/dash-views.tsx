@@ -813,7 +813,11 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
         <div>
           {filtered.map((p) => (
             <div key={p.id} className="post-row">
-              <div className="thumb">{p.title ? p.title.charAt(0).toUpperCase() : "·"}</div>
+              <div className="thumb" style={{ background: p.cover_image ? "none" : postGradient(p.id) }}>
+                {p.cover_image
+                  ? <img src={p.cover_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  : (p.title ? p.title.charAt(0).toUpperCase() : "·")}
+              </div>
               <div className="body">
                 <div className="t">{p.title || "Untitled"}</div>
                 <div className="m">
