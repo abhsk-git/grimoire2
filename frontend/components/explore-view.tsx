@@ -352,7 +352,7 @@ export function ExploreView() {
           ) : (
             <div className="writers-grid">
               {writers.map((w, i) => (
-                <Link key={w.id} href={`/user/${w.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link key={w.id} href={`/user/${toHandle(w.name)}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="writer-card">
                     <div className="rank">#{i + 1}</div>
                     <img
