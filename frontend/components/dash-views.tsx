@@ -218,10 +218,6 @@ function ListRow({
           </span>
         ))}
       </div>
-      <span className="vis">
-        <Icon name={link.is_public ? "globe" : "lock"} size={11} />
-        {link.is_public ? "Public" : "Private"}
-      </span>
       <span className="when">{formatDate(link.created_at)}</span>
       <button
         style={{
@@ -229,7 +225,9 @@ function ListRow({
           background: "none",
           border: "none",
           cursor: "pointer",
-          padding: 0,
+          padding: "0 4px",
+          display: "flex",
+          alignItems: "center",
         }}
         title={link.is_starred ? "Unstar" : "Star"}
         onClick={(e) => { e.stopPropagation(); onStar(link.id); }}
@@ -238,7 +236,7 @@ function ListRow({
       </button>
       <button
         title="Delete"
-        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--fg-muted)" }}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: "0 4px", color: "var(--fg-muted)", display: "flex", alignItems: "center" }}
         onClick={(e) => { e.stopPropagation(); onDelete(link.id); }}
       >
         <Icon name="trash" size={14} />
