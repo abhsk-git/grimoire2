@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Instrument_Serif, Rajdhani } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif, Rajdhani, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,6 +25,12 @@ const rajdhani = Rajdhani({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Grimoire — a quiet writing tool with a memory",
   description:
@@ -40,7 +46,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="light"
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${rajdhani.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${rajdhani.variable} ${spaceGrotesk.variable}`}
     >
       <head>
         <script

@@ -37,8 +37,8 @@
   --shadow: 0 6px 24px -10px rgba(20, 30, 22, 0.18), 0 2px 6px rgba(20, 30, 22, 0.06);
   --shadow-lg: 0 30px 80px -28px rgba(20, 30, 22, 0.25), 0 12px 28px -12px rgba(20, 30, 22, 0.10);
   color-scheme: light;
-  --font-sans: var(--font-rajdhani, 'Rajdhani', sans-serif);
-  --font-display: var(--font-rajdhani, 'Rajdhani', sans-serif);
+  --font-sans: var(--font-space-grotesk, 'Space Grotesk', sans-serif);
+  --font-display: var(--font-space-grotesk, 'Space Grotesk', sans-serif);
 }
 
 /* ----- DARK ----- */
