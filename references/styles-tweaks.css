@@ -1,0 +1,175 @@
+/* ====================== TWEAK: CARD SHAPE ====================== */
+
+/* --- EDITORIAL: bigger covers, larger type, magazine-style breathing room --- */
+body.card-editorial .grid {
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 22px;
+}
+body.card-editorial .grid.featured {
+  grid-template-columns: 1fr;
+  gap: 22px;
+}
+body.card-editorial .grid.featured .card {
+  flex-direction: row;
+}
+body.card-editorial .grid.featured .card-cover {
+  flex: 1.1;
+  aspect-ratio: auto;
+  min-height: 260px;
+}
+body.card-editorial .grid.featured .card-body {
+  flex: 1;
+  padding: 28px 28px 22px;
+  justify-content: center;
+}
+body.card-editorial .card-cover { aspect-ratio: 16 / 9; }
+body.card-editorial .card-body { padding: 18px 20px 20px; gap: 12px; }
+body.card-editorial .card-title { font-size: 18px; line-height: 1.3; }
+body.card-editorial .grid.featured .card-title { font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; }
+body.card-editorial .card-desc { font-size: 14px; line-height: 1.55; -webkit-line-clamp: 3; min-height: calc(1.55em * 3); }
+body.card-editorial .grid.featured .card-desc { font-size: 15px; -webkit-line-clamp: 3; }
+
+/* --- MINIMAL: text-only, no cover, vertical tag stripe --- */
+body.card-minimal .card-cover { display: none; }
+body.card-minimal .card {
+  border-radius: 4px;
+  position: relative;
+}
+body.card-minimal .card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 4px 0 0 4px;
+}
+body.card-minimal .card-body {
+  padding: 18px 18px 16px 22px;
+  min-height: 180px;
+}
+body.card-minimal .card-title { font-size: 16px; -webkit-line-clamp: 3; min-height: calc(1.4em * 3); }
+body.card-minimal .card-desc { -webkit-line-clamp: 3; min-height: calc(1.5em * 3); }
+body.card-minimal .grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+body.card-minimal .grid.featured .card-title { font-size: 20px; }
+
+/* ====================== TWEAK: SKIN ====================== */
+
+/* --- GRIMOIRE: warm parchment-dark, serif italic, soft rounded book feel --- */
+body.skin-grimoire {
+  --bg: #100c08;
+  --bg-elev: #15110c;
+  --surface: #1a1510;
+  --surface-2: #211b14;
+  --hover: #2a2218;
+  --border: #2b2218;
+  --border-strong: #3a2e20;
+  --text: #f0e6d2;
+  --muted: #9a8868;
+  --muted-2: #6b5a40;
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+}
+body.skin-grimoire .card-desc {
+  font-family: "Lora", "Iowan Old Style", "Palatino", Georgia, serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: color-mix(in srgb, var(--muted) 80%, var(--text));
+}
+body.skin-grimoire .card-title {
+  font-family: "Lora", "Iowan Old Style", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+body.skin-grimoire .page-title {
+  font-family: "Lora", "Iowan Old Style", Georgia, serif;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+body.skin-grimoire .brand-text {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+body.skin-grimoire .topbar { border-bottom-color: color-mix(in srgb, var(--accent) 15%, var(--border)); }
+body.skin-grimoire .card {
+  box-shadow: 0 1px 0 rgba(255, 240, 200, 0.03) inset, 0 12px 28px -16px rgba(0, 0, 0, 0.7);
+}
+body.skin-grimoire .card-cover-overlay {
+  background: linear-gradient(to top, rgba(16, 12, 8, 0.6), transparent 45%);
+}
+/* subtle paper grain */
+body.skin-grimoire::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(232, 180, 100, 0.025), transparent 60%),
+    radial-gradient(circle at 75% 70%, rgba(232, 180, 100, 0.02), transparent 60%);
+  z-index: 1;
+}
+body.skin-grimoire .topbar,
+body.skin-grimoire .page,
+body.skin-grimoire .tweaks-host { position: relative; z-index: 2; }
+
+/* --- ZINE: brutalist mono, hard edges, high contrast, posterised --- */
+body.skin-zine {
+  --bg: #0a0a0a;
+  --bg-elev: #000000;
+  --surface: #111111;
+  --surface-2: #161616;
+  --hover: #1f1f1f;
+  --border: #2a2a2a;
+  --border-strong: var(--accent);
+  --text: #ffffff;
+  --muted: #888888;
+  --muted-2: #555555;
+  --radius-sm: 0px;
+  --radius: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+}
+body.skin-zine .card,
+body.skin-zine .row,
+body.skin-zine .stat,
+body.skin-zine .topbar input,
+body.skin-zine .iconbtn,
+body.skin-zine .btn,
+body.skin-zine .tabs,
+body.skin-zine .tagchip,
+body.skin-zine .segmented { border-radius: 0 !important; }
+body.skin-zine .tabs { border-radius: 0; }
+body.skin-zine .tabs button { border-radius: 0; }
+body.skin-zine .segmented button { border-radius: 0; }
+body.skin-zine .tagchip { border-radius: 0; transform: translateY(0) skewX(-6deg); transform-origin: left center; }
+body.skin-zine .card-tag { border-radius: 0; padding: 3px 7px; }
+body.skin-zine .pill { border-radius: 0; padding: 2px 7px; height: 20px; }
+body.skin-zine .avatar { border-radius: 0; }
+body.skin-zine .card { border-width: 2px; }
+body.skin-zine .card:hover { border-color: var(--accent); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--accent); }
+body.skin-zine .row { border-width: 2px; }
+body.skin-zine .row:hover { border-color: var(--accent); }
+body.skin-zine .page-title {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+body.skin-zine .card-title { font-family: var(--font-mono); font-weight: 700; }
+body.skin-zine .row-title { font-family: var(--font-mono); font-weight: 700; }
+body.skin-zine .brand-text { text-transform: uppercase; letter-spacing: 0.1em; }
+body.skin-zine .brand-mark { border-radius: 0; }
+body.skin-zine .card-cover-overlay { background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 55%); }
+body.skin-zine .card-cover-img { filter: contrast(1.1) saturate(0.85); }
+
+/* lab skin = default (already in :root) */
+
+/* ====================== TWEAKS PANEL POSITIONING ====================== */
+.tweaks-host { position: relative; z-index: 60; }
+
+/* When the floating ViewSwitch is visible together with the panel, push it up */
+body.with-tweaks .view-switch { bottom: 84px !important; }

@@ -1,0 +1,109 @@
+/* ---------- Public Explore page (standalone) ---------- */
+
+.explore-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, color-mix(in oklab, var(--accent-3) 8%, transparent), transparent 60%),
+    var(--bg);
+  display: flex; flex-direction: column;
+}
+[data-theme="geek"] .explore-page {
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 28px 28px,
+    radial-gradient(1000px 500px at 80% -10%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 60%),
+    var(--bg);
+}
+
+.container-wide {
+  max-width: 1320px; margin: 0 auto;
+  padding: 0 32px;
+  width: 100%;
+}
+
+/* ===== public header ===== */
+.public-header {
+  position: sticky; top: 0; z-index: 40;
+  backdrop-filter: blur(14px) saturate(140%);
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+.public-header-inner {
+  max-width: 1320px; margin: 0 auto;
+  padding: 0 32px;
+  height: 68px;
+  display: flex; align-items: center; gap: 16px;
+}
+.public-header .brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 18px; letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.public-header .brand .brand-mark { color: var(--accent); }
+[data-theme="geek"] .public-header .brand { font-family: var(--font-mono); }
+
+.public-search {
+  flex: 1; max-width: 560px;
+  display: flex; align-items: center; gap: 10px;
+  height: 40px; padding: 0 14px;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--fg-muted);
+}
+.public-search input {
+  flex: 1; background: none; border: 0; outline: none;
+  color: var(--fg); font-family: inherit; font-size: 14px;
+}
+.public-search .kbd { margin-left: auto; }
+
+.public-header-right {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+}
+
+.public-dash {
+  /* slightly more emphatic primary for the dashboard link */
+  box-shadow: 0 6px 18px -8px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+
+/* ===== main + foot ===== */
+.public-main {
+  flex: 1;
+  padding: 40px 0 80px;
+}
+
+.public-foot {
+  border-top: 1px solid var(--border);
+  background: var(--bg-soft);
+  padding: 24px 0;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+.public-foot a:hover { color: var(--fg); }
+
+/* ===== explore tab bar tweaks for full-bleed ===== */
+.explore-page .explore-tabs { margin: 26px auto 0; }
+.explore-page .explore-section { margin-top: 44px; }
+.explore-page .explore-section h2 {
+  font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--fg-soft); margin: 0 0 16px; font-weight: 600;
+}
+
+/* mobile */
+@media (max-width: 900px) {
+  .public-search { display: none; }
+}
+@media (max-width: 720px) {
+  .container-wide { padding: 0 18px; }
+  .public-header-inner { padding: 0 18px; height: 60px; gap: 10px; }
+  .public-header .brand span:last-child { display: none; }
+  .public-dash .lucide,
+  .public-dash { padding: 0 12px; }
+  .public-header-right .btn-ghost { display: none; }
+  .public-main { padding: 24px 0 60px; }
+  .explore-tabs { width: 100%; }
+}
+@media (max-width: 480px) {
+  .public-header-right .avatar { display: none; }
+}
