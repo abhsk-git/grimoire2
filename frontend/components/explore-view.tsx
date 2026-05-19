@@ -43,6 +43,7 @@ interface Link_ {
   created_at: string;
   author_name: string;
   author_avatar: string;
+  author_id: number;
 }
 
 interface Tag {
@@ -420,7 +421,7 @@ export function ExploreView() {
                             {l.author_name && (
                               <span className="post-author">
                                 <span style={{ color: "var(--fg-soft)", fontFamily: "var(--font-mono)", fontSize: 10 }}>by</span>
-                                {l.author_name}
+                                <Link href={`/user/${l.author_id}`} onClick={e => e.stopPropagation()} style={{ color: "var(--accent)", fontWeight: 600 }}>{l.author_name}</Link>
                               </span>
                             )}
                             <span style={{ flex: 1 }} />
