@@ -108,29 +108,6 @@ function formatReadTime(minutes: number): string {
 
 // ─── link card ───────────────────────────────────────────────────────────────
 
-function LinkCardHero({
-  domain,
-}: {
-  link: ApiLink;
-  domain: string;
-}) {
-  const fav = getFavInitials(domain);
-  const favColor = getFavColor(domain);
-
-  return (
-    <div
-      className="lc-hero"
-      style={{ background: `linear-gradient(135deg, ${favColor}, color-mix(in oklab, ${favColor} 40%, #8e8df0))` }}
-    >
-      <div className="post-cover-overlay" />
-      <div className="ref-cover-domain">
-        <span className="ref-cover-fav" style={{ background: favColor }}>{fav}</span>
-        {domain}
-      </div>
-    </div>
-  );
-}
-
 function LinkCard({
   link,
   onStar,
@@ -142,10 +119,7 @@ function LinkCard({
   const fav = getFavInitials(domain);
   const favColor = getFavColor(domain);
   const tags = link.tags
-    ? link.tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean)
+    ? link.tags.split(",").map((t) => t.trim()).filter(Boolean)
     : [];
 
   return (
@@ -153,16 +127,10 @@ function LinkCard({
       className="lc"
       onClick={() => window.open(link.url, "_blank", "noopener")}
     >
-      <span className={`visibility ${link.is_public ? "pub" : "prv"}`}>
-        <Icon name={link.is_public ? "globe" : "lock"} size={9} />
-        {link.is_public ? "Public" : "Private"}
-      </span>
-      <LinkCardHero link={link} domain={domain} />
+      <div className="lc-stripe" style={{ background: favColor }} />
       <div className="lc-body">
         <div className="lc-source">
-          <span className="fav" style={{ background: favColor }}>
-            {fav}
-          </span>
+          <span className="fav" style={{ background: favColor }}>{fav}</span>
           <span>{domain}</span>
         </div>
         <div className="lc-title">{link.title}</div>
@@ -173,8 +141,7 @@ function LinkCard({
           <div className="lc-tags">
             {tags.map((t) => (
               <span key={t} className="lc-tag">
-                <span className="h">#</span>
-                {t}
+                <span className="h">#</span>{t}
               </span>
             ))}
           </div>
@@ -186,17 +153,8 @@ function LinkCard({
           <button
             className="star"
             title={link.is_starred ? "Unstar" : "Star"}
-            style={{
-              color: link.is_starred ? "#f4b860" : undefined,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onStar(link.id);
-            }}
+            style={{ color: link.is_starred ? "#f4b860" : undefined, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            onClick={(e) => { e.stopPropagation(); onStar(link.id); }}
           >
             <Icon name="star" size={13} />
           </button>

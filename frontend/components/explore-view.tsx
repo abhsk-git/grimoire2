@@ -394,14 +394,8 @@ export function ExploreView() {
                   const domain = getDomain(l.url);
                   return (
                     <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                      <article className="post-card">
-                        <div className="post-cover" style={{ background: COVER_GRADIENTS[l.id % COVER_GRADIENTS.length] }}>
-                          <div className="post-cover-overlay" />
-                          <div className="ref-cover-domain">
-                            <span className="ref-cover-fav" style={{ background: COVER_GRADIENTS[l.id % COVER_GRADIENTS.length].slice(0, 7) }}>{domain.slice(0, 2).toUpperCase()}</span>
-                            {domain}
-                          </div>
-                        </div>
+                      <article className="post-card ref-card">
+                        <div className="lc-stripe" style={{ background: `hsl(${(l.id * 47) % 360}, 55%, 50%)` }} />
                         <div className="post-body">
                           <div className="post-by">
                             {l.favicon ? (
@@ -423,6 +417,10 @@ export function ExploreView() {
                               ))}
                             </div>
                           )}
+                          <div className="post-meta">
+                            <span style={{ flex: 1 }} />
+                            <span>{l.created_at ? new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</span>
+                          </div>
                         </div>
                       </article>
                     </a>
