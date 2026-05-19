@@ -18,6 +18,7 @@ interface Post {
   likes: number;
   pub_date: string;
   featured: number;
+  author_id: number;
   author_name: string;
   author_avatar: string;
 }
@@ -247,7 +248,7 @@ export function ExploreView() {
                                 style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "none" }}
                                 alt={p.author_name}
                               />
-                              <div className="name">{p.author_name}</div>
+                              <Link href={`/user/${p.author_id}`} onClick={e => e.stopPropagation()} style={{ color: "inherit", fontWeight: 600 }} className="name">{p.author_name}</Link>
                             </div>
                             <div className="feature-title">{p.title}</div>
                             {p.excerpt && (
@@ -299,7 +300,7 @@ export function ExploreView() {
                                   style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
                                   alt={p.author_name}
                                 />
-                                {p.author_name}
+                                <Link href={`/user/${p.author_id}`} onClick={e => e.stopPropagation()} style={{ color: "inherit", fontWeight: 600 }}>{p.author_name}</Link>
                               </span>
                               <span className="meta-dot">·</span>
                               <span>{p.pub_date}</span>
@@ -347,25 +348,27 @@ export function ExploreView() {
           ) : (
             <div className="writers-grid">
               {writers.map((w, i) => (
-                <div key={w.id} className="writer-card">
-                  <div className="rank">#{i + 1}</div>
-                  <img
-                    src={w.avatar || avatarFallback(w.name)}
-                    onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
-                    style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                    alt={w.name}
-                  />
-                  <div className="info">
-                    <div className="name">{w.name}</div>
-                    <div className="counts">
-                      <span><b style={{ color: "var(--fg)" }}>{w.post_count}</b> posts</span>
-                      <span>·</span>
-                      <span><b style={{ color: "var(--fg)" }}>{fmtViews(w.total_views)}</b> views</span>
-                      <span>·</span>
-                      <span><b style={{ color: "var(--fg)" }}>{w.total_likes}</b> likes</span>
+                <Link key={w.id} href={`/user/${w.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="writer-card">
+                    <div className="rank">#{i + 1}</div>
+                    <img
+                      src={w.avatar || avatarFallback(w.name)}
+                      onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
+                      style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                      alt={w.name}
+                    />
+                    <div className="info">
+                      <div className="name">{w.name}</div>
+                      <div className="counts">
+                        <span><b style={{ color: "var(--fg)" }}>{w.post_count}</b> posts</span>
+                        <span>·</span>
+                        <span><b style={{ color: "var(--fg)" }}>{fmtViews(w.total_views)}</b> views</span>
+                        <span>·</span>
+                        <span><b style={{ color: "var(--fg)" }}>{w.total_likes}</b> likes</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

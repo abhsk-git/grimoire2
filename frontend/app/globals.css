@@ -2102,6 +2102,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   border: 2px solid var(--border);
 }
 .byline-author { font-size: 14px; font-weight: 700; color: var(--fg); }
+.byline-author:hover { color: var(--accent); }
 .byline-meta   { font-size: 13px; color: var(--fg-soft); margin-top: 2px; }
 
 /* Article typography */

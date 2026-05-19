@@ -76,7 +76,7 @@ def user_profile(user_id):
 
         cur.execute('''
             SELECT id, title, slug, excerpt, reading_time, views, likes, published_at
-            FROM posts
+            FROM blog_posts
             WHERE user_id = %s AND status = "published"
             ORDER BY published_at DESC LIMIT 20
         ''', (user_id,))

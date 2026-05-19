@@ -479,7 +479,7 @@ export function BlogPost({ slug }: Props) {
             }}
           />
           <div>
-            <div className="byline-author">{post.author_name}</div>
+            <Link href={`/user/${post.user_id}`} className="byline-author" style={{ textDecoration: "none", color: "inherit" }}>{post.author_name}</Link>
             <div className="byline-meta">
               {fmtDate(post.published_at)}
               {post.published_at ? " · " : ""}
