@@ -15,6 +15,7 @@ interface ApiLink {
   favicon?: string;
   tags: string;
   is_public: number;
+  is_starred: number;
   notes?: string;
   created_at: string;
   visit_count: number;
@@ -46,8 +47,11 @@ interface ApiStats {
 }
 
 function getDomain(url: string): string {
-  try { return new URL(url).hostname.replace(/^www\./, ""); }
-  catch { return url; }
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
 }
 
 function getFavInitials(domain: string): string {
@@ -79,12 +83,16 @@ function getFavColor(domain: string): string {
     if (domain.includes(d)) return c;
   }
   let hash = 0;
-  for (const ch of domain) hash = ((hash << 5) - hash) + ch.charCodeAt(0);
-  const palette = ["#5563d0", "#14613a", "#b46a2a", "#d04f63", "#2f7d4d", "#7c3aed", "#1f6fd9"];
+  for (const ch of domain) hash = (hash << 5) - hash + ch.charCodeAt(0);
+  const palette = [
+    "#5563d0", "#14613a", "#b46a2a", "#d04f63", "#2f7d4d", "#7c3aed", "#1f6fd9",
+  ];
   return palette[Math.abs(hash) % palette.length];
 }
 
-function getCardType(link: ApiLink): "article" | "placeholder" | "video" | "code" {
+function getCardType(
+  link: ApiLink
+): "article" | "placeholder" | "video" | "code" {
   const domain = getDomain(link.url);
   if (domain.includes("youtube") || domain.includes("youtu.be")) return "video";
   if (domain.includes("github") || domain.includes("gitlab")) return "code";
@@ -94,8 +102,13 @@ function getCardType(link: ApiLink): "article" | "placeholder" | "video" | "code
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  } catch { return ""; }
+    return new Date(iso).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "";
+  }
 }
 
 function formatReadTime(minutes: number): string {
@@ -104,14 +117,26 @@ function formatReadTime(minutes: number): string {
 
 // ─── link card ───────────────────────────────────────────────────────────────
 
-function LinkCardHero({ link, domain }: { link: ApiLink; domain: string }) {
+function LinkCardHero({
+  link,
+  domain,
+}: {
+  link: ApiLink;
+  domain: string;
+}) {
   const type = getCardType(link);
   const fav = getFavInitials(domain);
   const favColor = getFavColor(domain);
 
   if (type === "video") {
     return (
-      <div className="lc-hero video" style={{ background: "linear-gradient(160deg,#2d5fb8 0%,#f9c623 55%,#1b3a8a 100%)" }}>
+      <div
+        className="lc-hero video"
+        style={{
+          background:
+            "linear-gradient(160deg,#2d5fb8 0%,#f9c623 55%,#1b3a8a 100%)",
+        }}
+      >
         <div className="play">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             <path d="M4 2.5v11l10-5.5z" />
@@ -123,11 +148,31 @@ function LinkCardHero({ link, domain }: { link: ApiLink; domain: string }) {
   if (type === "code") {
     return (
       <div className="lc-hero code">
-        <div><span className="ln">1</span> <span className="cm">// {domain}</span></div>
-        <div><span className="ln">2</span> <span className="kw">import</span> {"{ "}<span className="fn">Module</span>{" }"} <span className="kw">from</span> <span className="st">&apos;lib&apos;</span></div>
-        <div><span className="ln">3</span> </div>
-        <div><span className="ln">4</span> <span className="kw">export default</span> <span className="kw">function</span> <span className="fn">App</span>() {"{"}</div>
-        <div><span className="ln">5</span>   <span className="kw">return</span> &lt;<span className="fn">Module</span> /&gt;</div>
+        <div>
+          <span className="ln">1</span>{" "}
+          <span className="cm">// {domain}</span>
+        </div>
+        <div>
+          <span className="ln">2</span>{" "}
+          <span className="kw">import</span> {"{ "}
+          <span className="fn">Module</span>
+          {" }"} <span className="kw">from</span>{" "}
+          <span className="st">&apos;lib&apos;</span>
+        </div>
+        <div>
+          <span className="ln">3</span>{" "}
+        </div>
+        <div>
+          <span className="ln">4</span>{" "}
+          <span className="kw">export default</span>{" "}
+          <span className="kw">function</span> <span className="fn">App</span>(){" "}
+          {"{"}
+        </div>
+        <div>
+          <span className="ln">5</span>{"   "}
+          <span className="kw">return</span> &lt;
+          <span className="fn">Module</span> /&gt;
+        </div>
       </div>
     );
   }
@@ -135,7 +180,9 @@ function LinkCardHero({ link, domain }: { link: ApiLink; domain: string }) {
     return (
       <div
         className="lc-hero img"
-        style={{ background: `linear-gradient(135deg, ${favColor}, color-mix(in oklab, ${favColor} 40%, #8e8df0))` }}
+        style={{
+          background: `linear-gradient(135deg, ${favColor}, color-mix(in oklab, ${favColor} 40%, #8e8df0))`,
+        }}
       />
     );
   }
@@ -144,7 +191,17 @@ function LinkCardHero({ link, domain }: { link: ApiLink; domain: string }) {
       <div className="site">
         <span
           className="fav"
-          style={{ width: 14, height: 14, borderRadius: 3, background: favColor, color: "white", display: "inline-grid", placeItems: "center", fontSize: 8, fontWeight: 800 }}
+          style={{
+            width: 14,
+            height: 14,
+            borderRadius: 3,
+            background: favColor,
+            color: "white",
+            display: "inline-grid",
+            placeItems: "center",
+            fontSize: 8,
+            fontWeight: 800,
+          }}
         >
           {fav}
         </span>
@@ -154,14 +211,28 @@ function LinkCardHero({ link, domain }: { link: ApiLink; domain: string }) {
   );
 }
 
-function LinkCard({ link }: { link: ApiLink }) {
+function LinkCard({
+  link,
+  onStar,
+}: {
+  link: ApiLink;
+  onStar: (id: number) => void;
+}) {
   const domain = getDomain(link.url);
   const fav = getFavInitials(domain);
   const favColor = getFavColor(domain);
-  const tags = link.tags ? link.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+  const tags = link.tags
+    ? link.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
 
   return (
-    <div className="lc" onClick={() => window.open(link.url, "_blank", "noopener")}>
+    <div
+      className="lc"
+      onClick={() => window.open(link.url, "_blank", "noopener")}
+    >
       <span className={`visibility ${link.is_public ? "pub" : "prv"}`}>
         <Icon name={link.is_public ? "globe" : "lock"} size={9} />
         {link.is_public ? "Public" : "Private"}
@@ -169,15 +240,22 @@ function LinkCard({ link }: { link: ApiLink }) {
       <LinkCardHero link={link} domain={domain} />
       <div className="lc-body">
         <div className="lc-source">
-          <span className="fav" style={{ background: favColor }}>{fav}</span>
+          <span className="fav" style={{ background: favColor }}>
+            {fav}
+          </span>
           <span>{domain}</span>
         </div>
         <div className="lc-title">{link.title}</div>
-        {link.description && <div className="lc-desc">{link.description}</div>}
+        {link.description && (
+          <div className="lc-desc">{link.description}</div>
+        )}
         {tags.length > 0 && (
           <div className="lc-tags">
             {tags.map((t) => (
-              <span key={t} className="lc-tag"><span className="h">#</span>{t}</span>
+              <span key={t} className="lc-tag">
+                <span className="h">#</span>
+                {t}
+              </span>
             ))}
           </div>
         )}
@@ -185,29 +263,69 @@ function LinkCard({ link }: { link: ApiLink }) {
           <span>{formatDate(link.created_at)}</span>
           <span>·</span>
           <span>{link.is_public ? "Public" : "Private"}</span>
-          <span className="star"><Icon name="star" size={13} /></span>
+          <button
+            className="star"
+            title={link.is_starred ? "Unstar" : "Star"}
+            style={{
+              color: link.is_starred ? "#f4b860" : undefined,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onStar(link.id);
+            }}
+          >
+            <Icon name="star" size={13} />
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function ListRow({ link }: { link: ApiLink }) {
+function ListRow({
+  link,
+  onStar,
+}: {
+  link: ApiLink;
+  onStar: (id: number) => void;
+}) {
   const domain = getDomain(link.url);
   const fav = getFavInitials(domain);
   const favColor = getFavColor(domain);
-  const tags = link.tags ? link.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+  const tags = link.tags
+    ? link.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
 
   return (
-    <div className="list-row" onClick={() => window.open(link.url, "_blank", "noopener")}>
-      <div className="fav" style={{ background: favColor }}>{fav}</div>
+    <div
+      className="list-row"
+      onClick={() => window.open(link.url, "_blank", "noopener")}
+    >
+      <div className="fav" style={{ background: favColor }}>
+        {fav}
+      </div>
       <div>
         <div className="title">{link.title}</div>
-        <div className="desc">{domain}{link.description ? " — " + link.description.slice(0, 80) + "…" : ""}</div>
+        <div className="desc">
+          {domain}
+          {link.description
+            ? " — " + link.description.slice(0, 80) + "…"
+            : ""}
+        </div>
       </div>
       <div className="tags">
         {tags.slice(0, 3).map((t) => (
-          <span key={t} className="lc-tag"><span className="h">#</span>{t}</span>
+          <span key={t} className="lc-tag">
+            <span className="h">#</span>
+            {t}
+          </span>
         ))}
       </div>
       <span className="vis">
@@ -215,7 +333,22 @@ function ListRow({ link }: { link: ApiLink }) {
         {link.is_public ? "Public" : "Private"}
       </span>
       <span className="when">{formatDate(link.created_at)}</span>
-      <span style={{ color: "var(--fg-soft)" }}><Icon name="star" size={14} /></span>
+      <button
+        style={{
+          color: link.is_starred ? "#f4b860" : "var(--fg-soft)",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+        }}
+        title={link.is_starred ? "Unstar" : "Star"}
+        onClick={(e) => {
+          e.stopPropagation();
+          onStar(link.id);
+        }}
+      >
+        <Icon name="star" size={14} />
+      </button>
     </div>
   );
 }
@@ -224,23 +357,157 @@ function ListRow({ link }: { link: ApiLink }) {
 
 function StatStrip({ stats }: { stats: ApiStats | null }) {
   const items = [
-    { l: "References",  n: stats?.total       ?? "—", ico: "bookmark" },
-    { l: "Public",      n: stats?.public_count ?? "—", ico: "globe"    },
-    { l: "Collections", n: stats?.collections  ?? "—", ico: "folder"   },
-    { l: "Total visits",n: stats?.total_visits ?? "—", ico: "zap"      },
+    { l: "References", n: stats?.total ?? "—", ico: "bookmark" },
+    { l: "Public", n: stats?.public_count ?? "—", ico: "globe" },
+    { l: "Collections", n: stats?.collections ?? "—", ico: "folder" },
+    { l: "Total visits", n: stats?.total_visits ?? "—", ico: "zap" },
   ];
 
   return (
     <div className="dash-stats">
       {items.map((s) => (
         <div key={s.l} className="stat">
-          <div className="ico"><Icon name={s.ico} size={16} /></div>
+          <div className="ico">
+            <Icon name={s.ico} size={16} />
+          </div>
           <div>
             <div className="n">{String(s.n)}</div>
             <div className="l">{s.l}</div>
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── New Collection modal ────────────────────────────────────────────────────
+
+const COLLECTION_COLORS = [
+  "#6366f1", "#14613a", "#b46a2a", "#d04f63", "#2f7d4d",
+  "#7c3aed", "#1f6fd9", "#e11d48", "#0891b2", "#65a30d",
+];
+
+function NewCollectionModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#6366f1");
+  const [icon, setIcon] = useState("📁");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const r = await fetch("/api/collections", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), color, icon }),
+      });
+      if (r.ok) {
+        onCreated();
+        onClose();
+      } else {
+        const d = await r.json();
+        setError(d.error || "Failed to create collection");
+      }
+    } catch {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={onClose}
+    >
+      <form
+        className="auth-form"
+        style={{ maxWidth: 360, width: "100%", padding: 24 }}
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 style={{ marginBottom: 16, fontSize: 18 }}>New collection</h2>
+        {error && (
+          <div className="auth-error" style={{ marginBottom: 12 }}>
+            {error}
+          </div>
+        )}
+        <div className="field">
+          <label>Name</label>
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Design resources"
+            required
+          />
+        </div>
+        <div className="field">
+          <label>Icon</label>
+          <input
+            value={icon}
+            onChange={(e) => setIcon(e.target.value)}
+            placeholder="📁"
+            maxLength={4}
+          />
+        </div>
+        <div className="field">
+          <label>Color</label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+            {COLLECTION_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  background: c,
+                  border: color === c ? "2px solid var(--fg)" : "2px solid transparent",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ flex: 1 }}
+            disabled={loading || !name.trim()}
+          >
+            {loading ? "Creating…" : "Create"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -253,30 +520,37 @@ interface AllLinksViewProps {
   onStatsLoaded?: (stats: ApiStats) => void;
 }
 
-export function AllLinksView({ viewMode, filter, onStatsLoaded }: AllLinksViewProps) {
+export function AllLinksView({
+  viewMode,
+  filter,
+  onStatsLoaded,
+}: AllLinksViewProps) {
   const [links, setLinks] = useState<ApiLink[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<ApiStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [collectionModalOpen, setCollectionModalOpen] = useState(false);
+  const [collectionsVersion, setCollectionsVersion] = useState(0);
 
   const titles: Record<DashView, string> = {
-    all:     "Saved · references",
-    public:  "Public references",
+    all: "Saved · references",
+    public: "Public references",
     private: "Private references",
     starred: "Starred",
-    posts:   "My Posts",
+    posts: "My Posts",
   };
 
-  useEffect(() => {
+  const fetchLinks = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams({ per_page: "50" });
     if (filter === "public") params.set("public", "1");
     if (filter === "private") params.set("public", "0");
+    if (filter === "starred") params.set("starred", "1");
     if (activeTag) params.set("tag", activeTag);
 
     fetch(`/api/links?${params}`, { credentials: "include" })
-      .then((r) => r.ok ? r.json() : { links: [], total: 0 })
+      .then((r) => (r.ok ? r.json() : { links: [], total: 0 }))
       .then((data) => {
         setLinks(data.links ?? []);
         setTotal(data.total ?? 0);
@@ -285,9 +559,13 @@ export function AllLinksView({ viewMode, filter, onStatsLoaded }: AllLinksViewPr
   }, [filter, activeTag]);
 
   useEffect(() => {
+    fetchLinks();
+  }, [fetchLinks]);
+
+  useEffect(() => {
     if (filter !== "all") return;
     fetch("/api/stats", { credentials: "include" })
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
           setStats(data);
@@ -296,9 +574,25 @@ export function AllLinksView({ viewMode, filter, onStatsLoaded }: AllLinksViewPr
       });
   }, [filter]);
 
-  const displayLinks = filter === "starred"
-    ? links.filter(() => false) // no starred filter in API — show empty
-    : links;
+  async function toggleStar(linkId: number) {
+    const r = await fetch(`/api/links/${linkId}/star`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setLinks((prev) =>
+        prev.map((l) =>
+          l.id === linkId ? { ...l, is_starred: data.starred ? 1 : 0 } : l
+        )
+      );
+      // Remove from starred view if unstarred
+      if (filter === "starred" && !data.starred) {
+        setLinks((prev) => prev.filter((l) => l.id !== linkId));
+        setTotal((t) => Math.max(0, t - 1));
+      }
+    }
+  }
 
   return (
     <div>
@@ -308,7 +602,10 @@ export function AllLinksView({ viewMode, filter, onStatsLoaded }: AllLinksViewPr
           <span className="meta">{total} saved</span>
         </h1>
         <div className="actions">
-          <button className="btn btn-ghost btn-sm">
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setCollectionModalOpen(true)}
+          >
             <Icon name="folder" size={13} /> New collection
           </button>
         </div>
@@ -326,12 +623,19 @@ export function AllLinksView({ viewMode, filter, onStatsLoaded }: AllLinksViewPr
         <span className="sep">·</span>
         <button className="filter-chip">
           Sort: Recently saved{" "}
-          <Icon name="chevron-right" size={11} style={{ transform: "rotate(90deg)" }} />
+          <Icon
+            name="chevron-right"
+            size={11}
+            style={{ transform: "rotate(90deg)" }}
+          />
         </button>
         {activeTag && (
           <>
             <span className="sep">·</span>
-            <button className="filter-chip active" onClick={() => setActiveTag(null)}>
+            <button
+              className="filter-chip active"
+              onClick={() => setActiveTag(null)}
+            >
               #{activeTag} <span className="close">×</span>
             </button>
           </>
@@ -339,12 +643,21 @@ export function AllLinksView({ viewMode, filter, onStatsLoaded }: AllLinksViewPr
       </div>
 
       {loading ? (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--fg-soft)", fontSize: 14 }}>
+        <div
+          style={{
+            padding: "40px 0",
+            textAlign: "center",
+            color: "var(--fg-soft)",
+            fontSize: 14,
+          }}
+        >
           Loading…
         </div>
-      ) : displayLinks.length === 0 ? (
+      ) : links.length === 0 ? (
         <div className="empty">
-          <div className="ico"><Icon name="bookmark" size={26} /></div>
+          <div className="ico">
+            <Icon name="bookmark" size={26} />
+          </div>
           <h3>Nothing here yet</h3>
           <p>
             {filter === "starred"
@@ -354,12 +667,23 @@ export function AllLinksView({ viewMode, filter, onStatsLoaded }: AllLinksViewPr
         </div>
       ) : viewMode === "grid" ? (
         <div className="cards">
-          {displayLinks.map((l) => <LinkCard key={l.id} link={l} />)}
+          {links.map((l) => (
+            <LinkCard key={l.id} link={l} onStar={toggleStar} />
+          ))}
         </div>
       ) : (
         <div className="list-view">
-          {displayLinks.map((l) => <ListRow key={l.id} link={l} />)}
+          {links.map((l) => (
+            <ListRow key={l.id} link={l} onStar={toggleStar} />
+          ))}
         </div>
+      )}
+
+      {collectionModalOpen && (
+        <NewCollectionModal
+          onClose={() => setCollectionModalOpen(false)}
+          onCreated={() => setCollectionsVersion((v) => v + 1)}
+        />
       )}
     </div>
   );
@@ -367,7 +691,7 @@ export function AllLinksView({ viewMode, filter, onStatsLoaded }: AllLinksViewPr
 
 // ─── my posts view ────────────────────────────────────────────────────────────
 
-type PostFilter = "all" | "published" | "draft" | "scheduled";
+type PostFilter = "all" | "published" | "draft";
 
 export function MyPostsView() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
@@ -376,7 +700,7 @@ export function MyPostsView() {
 
   useEffect(() => {
     fetch("/api/blog/my-posts", { credentials: "include" })
-      .then((r) => r.ok ? r.json() : [])
+      .then((r) => (r.ok ? r.json() : []))
       .then((data) => setPosts(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
   }, []);
@@ -385,26 +709,22 @@ export function MyPostsView() {
     if (filter === "all") return true;
     if (filter === "published") return p.status === "published";
     if (filter === "draft") return p.status === "draft";
-    if (filter === "scheduled") return p.status === "scheduled";
     return true;
   });
 
   const counts = {
-    total:     posts.length,
+    total: posts.length,
     published: posts.filter((p) => p.status === "published").length,
-    drafts:    posts.filter((p) => p.status === "draft").length,
-    scheduled: posts.filter((p) => p.status === "scheduled").length,
+    drafts: posts.filter((p) => p.status === "draft").length,
   };
 
   const pillClass = (status: string) => {
     if (status === "published") return "live";
-    if (status === "scheduled") return "sched";
     return "draft";
   };
 
   const pillLabel = (status: string) => {
     if (status === "published") return "PUBLISHED";
-    if (status === "scheduled") return "SCHEDULED";
     return "DRAFT";
   };
 
@@ -415,14 +735,11 @@ export function MyPostsView() {
       <div className="page-title">
         <h1>
           My Posts
-          <span className="meta">
-            {counts.total} total
-            {counts.scheduled > 0 && ` · ${counts.scheduled} scheduled`}
-          </span>
+          <span className="meta">{counts.total} total</span>
         </h1>
         <div className="actions">
           <div className="filter-bar" style={{ margin: 0 }}>
-            {(["all", "published", "draft", "scheduled"] as PostFilter[]).map((f) => (
+            {(["all", "published", "draft"] as PostFilter[]).map((f) => (
               <button
                 key={f}
                 className={`filter-chip ${filter === f ? "active" : ""}`}
@@ -441,38 +758,68 @@ export function MyPostsView() {
       {/* stats strip */}
       <div className="dash-stats">
         <div className="stat">
-          <div className="ico"><Icon name="feather" size={16} /></div>
-          <div><div className="n">{counts.total}</div><div className="l">Total posts</div></div>
-        </div>
-        <div className="stat">
-          <div className="ico"><Icon name="globe" size={16} /></div>
-          <div><div className="n">{counts.published}</div><div className="l">Published</div></div>
-        </div>
-        <div className="stat">
-          <div className="ico"><Icon name="users" size={16} /></div>
+          <div className="ico">
+            <Icon name="feather" size={16} />
+          </div>
           <div>
-            <div className="n">{posts.reduce((s, p) => s + (p.views || 0), 0).toLocaleString()}</div>
+            <div className="n">{counts.total}</div>
+            <div className="l">Total posts</div>
+          </div>
+        </div>
+        <div className="stat">
+          <div className="ico">
+            <Icon name="globe" size={16} />
+          </div>
+          <div>
+            <div className="n">{counts.published}</div>
+            <div className="l">Published</div>
+          </div>
+        </div>
+        <div className="stat">
+          <div className="ico">
+            <Icon name="users" size={16} />
+          </div>
+          <div>
+            <div className="n">
+              {posts.reduce((s, p) => s + (p.views || 0), 0).toLocaleString()}
+            </div>
             <div className="l">Total reads</div>
           </div>
         </div>
         <div className="stat">
-          <div className="ico"><Icon name="star" size={16} /></div>
+          <div className="ico">
+            <Icon name="star" size={16} />
+          </div>
           <div>
-            <div className="n">{posts.reduce((s, p) => s + (p.likes || 0), 0)}</div>
+            <div className="n">
+              {posts.reduce((s, p) => s + (p.likes || 0), 0)}
+            </div>
             <div className="l">Likes</div>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--fg-soft)", fontSize: 14 }}>
+        <div
+          style={{
+            padding: "40px 0",
+            textAlign: "center",
+            color: "var(--fg-soft)",
+            fontSize: 14,
+          }}
+        >
           Loading…
         </div>
       ) : filtered.length === 0 ? (
         <div className="empty">
-          <div className="ico"><Icon name="feather" size={26} /></div>
+          <div className="ico">
+            <Icon name="feather" size={26} />
+          </div>
           <h3>No posts yet</h3>
-          <p>Start writing your first post. It can be a draft — no pressure to publish right away.</p>
+          <p>
+            Start writing your first post. It can be a draft — no pressure to
+            publish right away.
+          </p>
           <a href="/write" className="btn btn-primary btn-sm">
             <Icon name="pen" size={13} /> Start writing
           </a>
@@ -487,8 +834,12 @@ export function MyPostsView() {
                 <div className="m">
                   <span>{formatDate(p.updated_at)}</span>
                   <span>·</span>
-                  {p.reading_time > 0 && <span>{formatReadTime(p.reading_time)}</span>}
-                  {p.views > 0 && <span>{p.views.toLocaleString()} views</span>}
+                  {p.reading_time > 0 && (
+                    <span>{formatReadTime(p.reading_time)}</span>
+                  )}
+                  {p.views > 0 && (
+                    <span>{p.views.toLocaleString()} views</span>
+                  )}
                   {p.likes > 0 && <span>{p.likes} likes</span>}
                 </div>
               </div>
@@ -496,11 +847,21 @@ export function MyPostsView() {
                 {pillLabel(p.status)}
               </span>
               <div className="icons">
-                <button title="Edit" onClick={() => { window.location.href = `/write/${p.id}`; }}>
+                <button
+                  title="Edit"
+                  onClick={() => {
+                    window.location.href = `/write/${p.id}`;
+                  }}
+                >
                   <Icon name="pen" size={14} />
                 </button>
                 {p.status === "published" && (
-                  <button title="View" onClick={() => window.open(`/blog/${p.slug}`, "_blank")}>
+                  <button
+                    title="View"
+                    onClick={() =>
+                      window.open(`/blog/${p.slug}`, "_blank")
+                    }
+                  >
                     <Icon name="globe" size={14} />
                   </button>
                 )}

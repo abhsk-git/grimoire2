@@ -348,10 +348,31 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
 export function ForgotForm({ switchTo }: { switchTo: (v: FormView) => void }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSent(true);
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      // Always show "sent" regardless of whether the email exists (prevent enumeration)
+      if (res.ok || res.status === 404) {
+        setSent(true);
+      } else {
+        const data = await res.json();
+        setError(data.error || "Something went wrong. Please try again.");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -372,6 +393,7 @@ export function ForgotForm({ switchTo }: { switchTo: (v: FormView) => void }) {
 
         {!sent && (
           <>
+            {error && <div className="auth-error">{error}</div>}
             <div className="field">
               <label>Email</label>
               <input
@@ -383,8 +405,12 @@ export function ForgotForm({ switchTo }: { switchTo: (v: FormView) => void }) {
                 autoComplete="email"
               />
             </div>
-            <button className="btn btn-primary" style={{ width: "100%" }}>
-              Send me a magic link <Icon name="zap" size={14} />
+            <button
+              className="btn btn-primary"
+              style={{ width: "100%" }}
+              disabled={loading}
+            >
+              {loading ? "Sending…" : <>Send me a reset link <Icon name="zap" size={14} /></>}
             </button>
           </>
         )}

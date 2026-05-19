@@ -73,6 +73,11 @@ interface PostData {
   status: string;
 }
 
+interface Tag {
+  name: string;
+  count: number;
+}
+
 interface WriteEditorProps {
   postId?: number;
 }
@@ -82,7 +87,9 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
   const [postId, setPostId] = useState<number | null>(initialPostId ?? null);
   const [status, setStatus] = useState<"draft" | "published">("draft");
-  const [saveStatus, setSaveStatus] = useState<"" | "saving" | "saved" | "unsaved" | "error">("");
+  const [saveStatus, setSaveStatus] = useState<
+    "" | "saving" | "saved" | "unsaved" | "error"
+  >("");
   const [editorReady, setEditorReady] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -92,17 +99,27 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const [coverUrl, setCoverUrl] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [tagSuggestions, setTagSuggestions] = useState<Tag[]>([]);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   const editorRef = useRef<any>(null);
   const postIdRef = useRef<number | null>(initialPostId ?? null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
+  const coverFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
       window.location.href = "/login";
     }
   }, [user, authLoading]);
+
+  // Load available tags for autocomplete
+  useEffect(() => {
+    fetch("/api/blog/tags")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setTagSuggestions(Array.isArray(data) ? data : []));
+  }, []);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -112,7 +129,9 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
       if (initialPostId) {
         try {
-          const r = await fetch(`/api/blog/posts/${initialPostId}`, { credentials: "include" });
+          const r = await fetch(`/api/blog/posts/${initialPostId}`, {
+            credentials: "include",
+          });
           if (r.ok) {
             const post: PostData = await r.json();
             setTitle(post.title || "");
@@ -185,6 +204,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           checklist: { class: window.Checklist, inlineToolbar: true },
           linkTool: {
             class: window.LinkTool,
+            // Use /api/link-meta which is now properly implemented
             config: { endpoint: "/api/link-meta" },
           },
         },
@@ -218,13 +238,19 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       const data = await editorRef.current.save();
       const text = data.blocks
         .map((b: any) => {
-          if (b.type === "paragraph" || b.type === "header") return b.data?.text || "";
+          if (b.type === "paragraph" || b.type === "header")
+            return b.data?.text || "";
           if (b.type === "list") return (b.data?.items || []).join(" ");
           return "";
         })
         .join(" ")
         .replace(/<[^>]+>/g, "");
-      setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
+      setWordCount(
+        text
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean).length
+      );
     } catch {
       // ignore
     }
@@ -250,7 +276,9 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       try {
         const payload = await buildPayload();
         const isNew = !postIdRef.current;
-        const url = isNew ? "/api/blog/posts" : `/api/blog/posts/${postIdRef.current}`;
+        const url = isNew
+          ? "/api/blog/posts"
+          : `/api/blog/posts/${postIdRef.current}`;
         const method = isNew ? "POST" : "PUT";
 
         const r = await fetch(url, {
@@ -309,6 +337,54 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     }
   }
 
+  async function handleCoverFileUpload(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const r = await fetch("/api/blog/upload", {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.success && data.file?.url) {
+          setCoverUrl(data.file.url);
+        }
+      }
+    } finally {
+      setCoverUploading(false);
+      if (coverFileRef.current) coverFileRef.current.value = "";
+    }
+  }
+
+  function addTagSuggestion(tagName: string) {
+    const existing = tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (!existing.includes(tagName)) {
+      setTags(existing.length > 0 ? `${tags}, ${tagName}` : tagName);
+    }
+  }
+
+  // Tags not yet added from the suggestions list
+  const unusedSuggestions = tagSuggestions
+    .map((t) => t.name)
+    .filter((n) => {
+      const current = tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      return !current.includes(n);
+    })
+    .slice(0, 10);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
@@ -322,8 +398,12 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
   if (authLoading || !user) {
     return (
-      <div style={{ height: "100vh", display: "grid", placeItems: "center" }}>
-        <span style={{ color: "var(--fg-soft)", fontSize: 14 }}>Loading…</span>
+      <div
+        style={{ height: "100vh", display: "grid", placeItems: "center" }}
+      >
+        <span style={{ color: "var(--fg-soft)", fontSize: 14 }}>
+          Loading…
+        </span>
       </div>
     );
   }
@@ -415,7 +495,6 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
             setTitle(e.target.value);
             setSaveStatus("unsaved");
             scheduleAutoSave();
-            // Auto-resize
             e.target.style.height = "auto";
             e.target.style.height = e.target.scrollHeight + "px";
           }}
@@ -454,6 +533,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
               placeholder="auto-generated-from-title"
             />
           </div>
+
           <div className="field">
             <label>Tags</label>
             <input
@@ -461,7 +541,37 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
               onChange={(e) => setTags(e.target.value)}
               placeholder="comma, separated, tags"
             />
+            {unusedSuggestions.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 4,
+                  marginTop: 6,
+                }}
+              >
+                {unusedSuggestions.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => addTagSuggestion(t)}
+                    style={{
+                      fontSize: 11,
+                      padding: "2px 7px",
+                      borderRadius: 99,
+                      border: "1px solid var(--border)",
+                      background: "var(--surface)",
+                      color: "var(--fg-soft)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    + {t}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
           <div className="field">
             <label>Excerpt</label>
             <textarea
@@ -471,13 +581,43 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
               placeholder="Short description for previews…"
             />
           </div>
+
           <div className="field">
-            <label>Cover image URL</label>
+            <label>Cover image</label>
             <input
               value={coverUrl}
               onChange={(e) => setCoverUrl(e.target.value)}
-              placeholder="https://…"
+              placeholder="https://… or upload below"
             />
+            <div style={{ marginTop: 6, display: "flex", gap: 8 }}>
+              <input
+                ref={coverFileRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleCoverFileUpload}
+              />
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                style={{ flex: 1, fontSize: 12 }}
+                onClick={() => coverFileRef.current?.click()}
+                disabled={coverUploading}
+              >
+                <Icon name="upload" size={12} />
+                {coverUploading ? "Uploading…" : "Upload image"}
+              </button>
+              {coverUrl && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: 12 }}
+                  onClick={() => setCoverUrl("")}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
 
           {coverUrl && (
@@ -495,7 +635,13 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           )}
 
           {postId && (
-            <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+            <div
+              style={{
+                marginTop: 24,
+                paddingTop: 16,
+                borderTop: "1px solid var(--border)",
+              }}
+            >
               {deleteConfirm ? (
                 <div style={{ display: "flex", gap: 8 }}>
                   <button

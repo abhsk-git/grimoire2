@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS links (
     tags VARCHAR(255),
     notes TEXT,
     is_public TINYINT(1) DEFAULT 0,
+    is_starred TINYINT(1) DEFAULT 0,
     visit_count INT DEFAULT 0,
     last_visited TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -51,5 +52,18 @@ CREATE TABLE IF NOT EXISTS links (
     FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
     INDEX idx_user (user_id),
     INDEX idx_public (is_public),
+    INDEX idx_starred (user_id, is_starred),
     FULLTEXT INDEX ft_search (title, description, tags)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Password reset tokens
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token CHAR(64) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    used TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_token (token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

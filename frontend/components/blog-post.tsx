@@ -27,13 +27,39 @@ interface Post {
 interface Comment {
   id: number;
   content: string;
+  display_name: string;
   author_name: string;
+  avatar: string;
   author_avatar: string;
   user_id: number | null;
   created_at: string;
 }
 
-// Port of Flask's _to_html
+// ── XSS sanitizer ────────────────────────────────────────────────────────────
+// Applied to EditorJS text fields that may contain inline HTML (b, i, a, etc.)
+// Strips dangerous tags, event handlers, and javascript: URIs.
+function sanitize(html: string): string {
+  if (!html) return "";
+  // Remove script/style/iframe/object/embed blocks
+  let s = html.replace(
+    /<(?:script|style|iframe|object|embed)[\s>][\s\S]*?<\/(?:script|style|iframe|object|embed)>/gi,
+    ""
+  );
+  // Remove self-closing dangerous tags
+  s = s.replace(/<(?:script|style|iframe|object|embed)[^>]*\/>/gi, "");
+  // Remove on* event handler attributes
+  s = s.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, "");
+  // Remove javascript: URIs
+  s = s.replace(
+    /(?:href|src|action)\s*=\s*["']?\s*javascript:[^"'\s>]*/gi,
+    ""
+  );
+  // Remove data: URIs in src
+  s = s.replace(/src\s*=\s*["']?\s*data:[^"'\s>]*/gi, "");
+  return s;
+}
+
+// ── HTML renderer ─────────────────────────────────────────────────────────────
 function toHtml(contentJson: string): string {
   let data: any;
   try {
@@ -47,11 +73,11 @@ function toHtml(contentJson: string): string {
     const bd: any = b.data || {};
 
     if (bt === "paragraph") {
-      parts.push(`<p>${bd.text || ""}</p>`);
+      parts.push(`<p>${sanitize(bd.text || "")}</p>`);
     } else if (bt === "header") {
       const lvl = Math.min(Math.max(parseInt(bd.level) || 2, 1), 6);
-      const text: string = bd.text || "";
-      const anchor = text
+      const text = sanitize(bd.text || "");
+      const anchor = (bd.text || "")
         .replace(/<[^>]+>/g, "")
         .trim()
         .toLowerCase()
@@ -61,23 +87,32 @@ function toHtml(contentJson: string): string {
       parts.push(`<h${lvl} id="${esc(anchor)}">${text}</h${lvl}>`);
     } else if (bt === "list") {
       const tag = bd.style === "ordered" ? "ol" : "ul";
-      const items = (bd.items || []).map((i: string) => `<li>${i}</li>`).join("");
+      const items = (bd.items || [])
+        .map((i: string) => `<li>${sanitize(i)}</li>`)
+        .join("");
       parts.push(`<${tag}>${items}</${tag}>`);
     } else if (bt === "checklist") {
       const rows = (bd.items || [])
         .map(
           (item: any) =>
-            `<label class="cl-item"><input type="checkbox"${item.checked ? " checked" : ""} disabled><span>${item.text || ""}</span></label>`
+            `<label class="cl-item"><input type="checkbox"${
+              item.checked ? " checked" : ""
+            } disabled><span>${sanitize(item.text || "")}</span></label>`
         )
         .join("");
       parts.push(`<div class="blog-checklist">${rows}</div>`);
     } else if (bt === "quote") {
-      const cap = bd.caption ? `<cite>${bd.caption}</cite>` : "";
+      const cap = bd.caption
+        ? `<cite>${sanitize(bd.caption)}</cite>`
+        : "";
       const align = esc(bd.alignment || "left");
       parts.push(
-        `<blockquote style="text-align:${align}"><p>${bd.text || ""}</p>${cap}</blockquote>`
+        `<blockquote style="text-align:${align}"><p>${sanitize(
+          bd.text || ""
+        )}</p>${cap}</blockquote>`
       );
     } else if (bt === "code") {
+      // Code is always fully escaped — no inline formatting
       const lang = esc(bd.language || "");
       const code = escHtml(bd.code || "");
       parts.push(`<pre><code class="language-${lang}">${code}</code></pre>`);
@@ -91,14 +126,20 @@ function toHtml(contentJson: string): string {
       ]
         .filter(Boolean)
         .join(" ");
-      const capHtml = cap ? `<figcaption>${cap}</figcaption>` : "";
+      const capHtml = cap
+        ? `<figcaption>${sanitize(cap)}</figcaption>`
+        : "";
       parts.push(
-        `<figure class="blog-figure ${cls}"><img src="${url}" alt="${esc(cap)}" loading="lazy">${capHtml}</figure>`
+        `<figure class="blog-figure ${cls}"><img src="${url}" alt="${esc(
+          cap.replace(/<[^>]+>/g, "")
+        )}" loading="lazy">${capHtml}</figure>`
       );
     } else if (bt === "embed") {
       const embed = esc(bd.embed || "");
       const cap: string = bd.caption || "";
-      const capHtml = cap ? `<figcaption>${cap}</figcaption>` : "";
+      const capHtml = cap
+        ? `<figcaption>${sanitize(cap)}</figcaption>`
+        : "";
       parts.push(
         `<figure class="blog-embed"><iframe src="${embed}" frameborder="0" allowfullscreen loading="lazy"></iframe>${capHtml}</figure>`
       );
@@ -106,14 +147,21 @@ function toHtml(contentJson: string): string {
       let rowsHtml = "";
       (bd.content || []).forEach((row: string[], i: number) => {
         const tag = i === 0 ? "th" : "td";
-        rowsHtml += "<tr>" + row.map((c) => `<${tag}>${c}</${tag}>`).join("") + "</tr>";
+        rowsHtml +=
+          "<tr>" +
+          row.map((c) => `<${tag}>${sanitize(c)}</${tag}>`).join("") +
+          "</tr>";
       });
-      parts.push(`<div class="table-wrap"><table>${rowsHtml}</table></div>`);
+      parts.push(
+        `<div class="table-wrap"><table>${rowsHtml}</table></div>`
+      );
     } else if (bt === "delimiter") {
       parts.push('<div class="blog-delimiter">✦ &nbsp; ✦ &nbsp; ✦</div>');
     } else if (bt === "warning") {
       parts.push(
-        `<div class="blog-warning"><strong>${bd.title || ""}</strong><p>${bd.message || ""}</p></div>`
+        `<div class="blog-warning"><strong>${sanitize(
+          bd.title || ""
+        )}</strong><p>${sanitize(bd.message || "")}</p></div>`
       );
     }
   }
@@ -121,7 +169,11 @@ function toHtml(contentJson: string): string {
 }
 
 function esc(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 function escHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -130,11 +182,30 @@ function escHtml(s: string): string {
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function avatarFallback(name: string): string {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=44&background=6366f1&color=fff`;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    name
+  )}&size=44&background=6366f1&color=fff`;
+}
+
+// Generate or retrieve a stable anonymous session key for likes
+function getSessionKey(): string {
+  const KEY = "grimoire_session_key";
+  let k = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
+  if (!k) {
+    k = Array.from(crypto.getRandomValues(new Uint8Array(24)))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    if (typeof window !== "undefined") localStorage.setItem(KEY, k);
+  }
+  return k;
 }
 
 interface Props {
@@ -157,7 +228,10 @@ export function BlogPost({ slug }: Props) {
   useEffect(() => {
     fetch(`/api/blog/posts/slug/${slug}`, { credentials: "include" })
       .then((r) => {
-        if (r.status === 404) { setNotFound(true); return null; }
+        if (r.status === 404) {
+          setNotFound(true);
+          return null;
+        }
         return r.json();
       })
       .then((data) => {
@@ -170,7 +244,7 @@ export function BlogPost({ slug }: Props) {
   useEffect(() => {
     if (!post) return;
     fetch(`/api/blog/posts/${post.id}/comments`, { credentials: "include" })
-      .then((r) => r.ok ? r.json() : [])
+      .then((r) => (r.ok ? r.json() : []))
       .then((data) => setComments(Array.isArray(data) ? data : []));
   }, [post]);
 
@@ -179,7 +253,8 @@ export function BlogPost({ slug }: Props) {
       if (!progressRef.current) return;
       const scrolled = window.scrollY;
       const total = document.body.scrollHeight - window.innerHeight;
-      progressRef.current.style.width = total > 0 ? `${(scrolled / total) * 100}%` : "0%";
+      progressRef.current.style.width =
+        total > 0 ? `${(scrolled / total) * 100}%` : "0%";
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -187,14 +262,20 @@ export function BlogPost({ slug }: Props) {
 
   async function toggleLike() {
     if (!post) return;
+    const body: Record<string, string> = {};
+    if (!user) {
+      body.session_key = getSessionKey();
+    }
     const r = await fetch(`/api/blog/posts/${post.id}/like`, {
       method: "POST",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
     if (r.ok) {
       const data = await r.json();
       setLiked(data.action === "liked");
-      setLikeCount((c) => data.action === "liked" ? c + 1 : Math.max(0, c - 1));
+      setLikeCount(data.likes ?? (data.action === "liked" ? likeCount + 1 : Math.max(0, likeCount - 1)));
     }
   }
 
@@ -206,7 +287,9 @@ export function BlogPost({ slug }: Props) {
   }
 
   function shareTwitter() {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(post?.title || "")}&url=${encodeURIComponent(window.location.href)}`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+      post?.title || ""
+    )}&url=${encodeURIComponent(window.location.href)}`;
     window.open(url, "_blank", "noopener");
   }
 
@@ -217,7 +300,10 @@ export function BlogPost({ slug }: Props) {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: commentText, author_name: commentName }),
+      body: JSON.stringify({
+        content: commentText,
+        author_name: commentName,
+      }),
     });
     setSubmitting(false);
     if (r.ok) {
@@ -238,13 +324,35 @@ export function BlogPost({ slug }: Props) {
     }
   }
 
+  function commentDisplayName(c: Comment): string {
+    return c.display_name || c.author_name || "Anonymous";
+  }
+  function commentAvatar(c: Comment): string {
+    return (
+      c.avatar ||
+      c.author_avatar ||
+      avatarFallback(commentDisplayName(c))
+    );
+  }
+
   if (notFound) {
     return (
-      <div style={{ height: "100vh", display: "grid", placeItems: "center", textAlign: "center" }}>
+      <div
+        style={{
+          height: "100vh",
+          display: "grid",
+          placeItems: "center",
+          textAlign: "center",
+        }}
+      >
         <div>
           <div style={{ fontSize: 48, marginBottom: 16 }}>404</div>
-          <div style={{ color: "var(--fg-soft)", marginBottom: 24 }}>Post not found.</div>
-          <Link href="/explore" className="btn btn-primary btn-sm">Browse posts</Link>
+          <div style={{ color: "var(--fg-soft)", marginBottom: 24 }}>
+            Post not found.
+          </div>
+          <Link href="/explore" className="btn btn-primary btn-sm">
+            Browse posts
+          </Link>
         </div>
       </div>
     );
@@ -252,13 +360,20 @@ export function BlogPost({ slug }: Props) {
 
   if (!post) {
     return (
-      <div style={{ height: "100vh", display: "grid", placeItems: "center" }}>
-        <span style={{ color: "var(--fg-soft)", fontSize: 14 }}>Loading…</span>
+      <div
+        style={{ height: "100vh", display: "grid", placeItems: "center" }}
+      >
+        <span style={{ color: "var(--fg-soft)", fontSize: 14 }}>
+          Loading…
+        </span>
       </div>
     );
   }
 
-  const tagsList = (post.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
+  const tagsList = (post.tags || "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
   const contentHtml = toHtml(post.content || "{}");
 
   return (
@@ -269,13 +384,29 @@ export function BlogPost({ slug }: Props) {
       <header className="post-topbar">
         <div className="post-topbar-left">
           <Link href="/explore" className="post-back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
             </svg>
             Back
           </Link>
           <span style={{ color: "var(--border-hover)" }}>·</span>
-          <Link href="/" style={{ fontSize: 14, textDecoration: "none", color: "var(--fg-soft)", fontWeight: 600 }}>
+          <Link
+            href="/"
+            style={{
+              fontSize: 14,
+              textDecoration: "none",
+              color: "var(--fg-soft)",
+              fontWeight: 600,
+            }}
+          >
             Grimoire
           </Link>
         </div>
@@ -288,9 +419,19 @@ export function BlogPost({ slug }: Props) {
             <span className="heart">♥</span> {likeCount}
           </button>
           <button className="btn-share" onClick={copyLink}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
             {copied ? "Copied!" : "Share"}
           </button>
@@ -314,7 +455,11 @@ export function BlogPost({ slug }: Props) {
         {tagsList.length > 0 && (
           <div className="post-tag-row">
             {tagsList.map((tag) => (
-              <Link key={tag} href={`/explore?mode=blog&tag=${tag}`} className="post-article-tag">
+              <Link
+                key={tag}
+                href={`/explore?mode=blog&tag=${encodeURIComponent(tag)}`}
+                className="post-article-tag"
+              >
                 #{tag}
               </Link>
             ))}
@@ -327,7 +472,11 @@ export function BlogPost({ slug }: Props) {
           <img
             src={post.author_avatar || avatarFallback(post.author_name)}
             alt={post.author_name}
-            onError={(e) => { (e.target as HTMLImageElement).src = avatarFallback(post.author_name); }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = avatarFallback(
+                post.author_name
+              );
+            }}
           />
           <div>
             <div className="byline-author">{post.author_name}</div>
@@ -347,18 +496,36 @@ export function BlogPost({ slug }: Props) {
 
       {/* Footer bar */}
       <div className="post-footer-bar">
-        <button className={`btn-like${liked ? " liked" : ""}`} onClick={toggleLike}>
+        <button
+          className={`btn-like${liked ? " liked" : ""}`}
+          onClick={toggleLike}
+        >
           <span className="heart">♥</span> {likeCount} Likes
         </button>
         <button className="btn-share" onClick={copyLink}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
           </svg>
           {copied ? "Copied!" : "Copy link"}
         </button>
         <button className="btn-share" onClick={shareTwitter}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.736-8.836L2.25 2.25h6.917l4.254 5.622 4.823-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
           </svg>
           Tweet
@@ -382,13 +549,15 @@ export function BlogPost({ slug }: Props) {
             onChange={(e) => setCommentText(e.target.value)}
           />
           <div className="comment-form-row">
-            <input
-              type="text"
-              className="comment-name-input"
-              placeholder="Your name (optional, for guests)"
-              value={commentName}
-              onChange={(e) => setCommentName(e.target.value)}
-            />
+            {!user && (
+              <input
+                type="text"
+                className="comment-name-input"
+                placeholder="Your name (optional)"
+                value={commentName}
+                onChange={(e) => setCommentName(e.target.value)}
+              />
+            )}
             <button
               className="btn btn-primary btn-sm"
               onClick={submitComment}
@@ -401,7 +570,14 @@ export function BlogPost({ slug }: Props) {
         </div>
 
         {comments.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "32px", color: "var(--fg-soft)", fontSize: 14 }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "32px",
+              color: "var(--fg-soft)",
+              fontSize: 14,
+            }}
+          >
             No comments yet — be the first!
           </div>
         ) : (
@@ -409,16 +585,27 @@ export function BlogPost({ slug }: Props) {
             <div key={c.id} className="comment-item">
               <img
                 className="comment-avatar"
-                src={c.author_avatar || avatarFallback(c.author_name || "?")}
-                alt={c.author_name}
-                onError={(e) => { (e.target as HTMLImageElement).src = avatarFallback(c.author_name || "?"); }}
+                src={commentAvatar(c)}
+                alt={commentDisplayName(c)}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = avatarFallback(
+                    commentDisplayName(c)
+                  );
+                }}
               />
               <div className="comment-bubble">
                 <div className="comment-header">
-                  <span className="comment-author">{c.author_name || "Anonymous"}</span>
-                  <span className="comment-date">{fmtDate(c.created_at)}</span>
+                  <span className="comment-author">
+                    {commentDisplayName(c)}
+                  </span>
+                  <span className="comment-date">
+                    {fmtDate(c.created_at)}
+                  </span>
                   {(user?.id === c.user_id || post.is_owner) && (
-                    <button className="comment-delete" onClick={() => deleteComment(c.id)}>
+                    <button
+                      className="comment-delete"
+                      onClick={() => deleteComment(c.id)}
+                    >
                       delete
                     </button>
                   )}
