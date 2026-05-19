@@ -1604,7 +1604,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 /* ===== list view ===== */
 .list-view { display: flex; flex-direction: column; gap: 8px; }
 .list-row {
-  display: grid; grid-template-columns: 40px 1fr 220px 100px 90px 30px;
+  display: grid; grid-template-columns: 40px 1fr 220px 90px 28px 28px;
   align-items: center; gap: 14px; padding: 12px 14px;
   background: var(--bg-elev); border: 1px solid var(--border);
   border-radius: var(--radius); font-size: 13px; cursor: pointer;
@@ -1615,11 +1615,10 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .list-row .title { font-weight: 600; letter-spacing: -0.01em; }
 .list-row .desc { color: var(--fg-soft); font-size: 12px; margin-top: 2px; }
 .list-row .tags { display: flex; gap: 4px; flex-wrap: wrap; }
-.list-row .vis { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--fg-soft); font-weight: 600; }
 .list-row .when { color: var(--fg-soft); font-size: 12px; font-family: var(--font-mono); }
 @media (max-width: 880px) {
-  .list-row { grid-template-columns: 36px 1fr 60px; }
-  .list-row .tags, .list-row .vis, .list-row .when { display: none; }
+  .list-row { grid-template-columns: 36px 1fr 28px 28px; }
+  .list-row .tags, .list-row .when { display: none; }
 }
 
 /* ===== my posts ===== */
