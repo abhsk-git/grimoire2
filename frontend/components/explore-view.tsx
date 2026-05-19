@@ -402,7 +402,6 @@ export function ExploreView() {
                               <img src={l.favicon} style={{ width: 14, height: 14, borderRadius: 2 }} alt="" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                             ) : null}
                             <span>{domain}</span>
-                            {l.author_name && <><span>·</span><span>{l.author_name}</span></>}
                           </div>
                           <h3 className="post-title">{l.title || domain}</h3>
                           {l.description && (
@@ -418,6 +417,12 @@ export function ExploreView() {
                             </div>
                           )}
                           <div className="post-meta">
+                            {l.author_name && (
+                              <span className="post-author">
+                                <span style={{ color: "var(--fg-soft)", fontFamily: "var(--font-mono)", fontSize: 10 }}>by</span>
+                                {l.author_name}
+                              </span>
+                            )}
                             <span style={{ flex: 1 }} />
                             <span>{l.created_at ? new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</span>
                           </div>
