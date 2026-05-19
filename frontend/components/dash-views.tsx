@@ -111,9 +111,11 @@ function formatReadTime(minutes: number): string {
 function LinkCard({
   link,
   onStar,
+  onDelete,
 }: {
   link: ApiLink;
   onStar: (id: number) => void;
+  onDelete: (id: number) => void;
 }) {
   const domain = getDomain(link.url);
   const fav = getFavInitials(domain);
@@ -149,7 +151,8 @@ function LinkCard({
         <div className="lc-foot">
           <span>{formatDate(link.created_at)}</span>
           <span>·</span>
-          <span>{link.is_public ? "Public" : "Private"}</span>
+          <span><Icon name={link.is_public ? "globe" : "lock"} size={11} /></span>
+          <span style={{ flex: 1 }} />
           <button
             className="star"
             title={link.is_starred ? "Unstar" : "Star"}
@@ -157,6 +160,13 @@ function LinkCard({
             onClick={(e) => { e.stopPropagation(); onStar(link.id); }}
           >
             <Icon name="star" size={13} />
+          </button>
+          <button
+            title="Delete"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--fg-muted)" }}
+            onClick={(e) => { e.stopPropagation(); onDelete(link.id); }}
+          >
+            <Icon name="trash" size={13} />
           </button>
         </div>
       </div>
@@ -167,9 +177,11 @@ function LinkCard({
 function ListRow({
   link,
   onStar,
+  onDelete,
 }: {
   link: ApiLink;
   onStar: (id: number) => void;
+  onDelete: (id: number) => void;
 }) {
   const domain = getDomain(link.url);
   const fav = getFavInitials(domain);
@@ -220,12 +232,16 @@ function ListRow({
           padding: 0,
         }}
         title={link.is_starred ? "Unstar" : "Star"}
-        onClick={(e) => {
-          e.stopPropagation();
-          onStar(link.id);
-        }}
+        onClick={(e) => { e.stopPropagation(); onStar(link.id); }}
       >
         <Icon name="star" size={14} />
+      </button>
+      <button
+        title="Delete"
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--fg-muted)" }}
+        onClick={(e) => { e.stopPropagation(); onDelete(link.id); }}
+      >
+        <Icon name="trash" size={14} />
       </button>
     </div>
   );
@@ -464,11 +480,22 @@ export function AllLinksView({
           l.id === linkId ? { ...l, is_starred: data.starred ? 1 : 0 } : l
         )
       );
-      // Remove from starred view if unstarred
       if (filter === "starred" && !data.starred) {
         setLinks((prev) => prev.filter((l) => l.id !== linkId));
         setTotal((t) => Math.max(0, t - 1));
       }
+    }
+  }
+
+  async function deleteLink(linkId: number) {
+    if (!window.confirm("Delete this reference? This can't be undone.")) return;
+    const r = await fetch(`/api/links/${linkId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (r.ok) {
+      setLinks((prev) => prev.filter((l) => l.id !== linkId));
+      setTotal((t) => Math.max(0, t - 1));
     }
   }
 
@@ -546,13 +573,13 @@ export function AllLinksView({
       ) : viewMode === "grid" ? (
         <div className="cards">
           {links.map((l) => (
-            <LinkCard key={l.id} link={l} onStar={toggleStar} />
+            <LinkCard key={l.id} link={l} onStar={toggleStar} onDelete={deleteLink} />
           ))}
         </div>
       ) : (
         <div className="list-view">
           {links.map((l) => (
-            <ListRow key={l.id} link={l} onStar={toggleStar} />
+            <ListRow key={l.id} link={l} onStar={toggleStar} onDelete={deleteLink} />
           ))}
         </div>
       )}
@@ -582,7 +609,7 @@ function postGradient(id: number) {
   return POST_GRADIENTS[id % POST_GRADIENTS.length];
 }
 
-function PostCard({ post }: { post: ApiPost }) {
+function PostCard({ post, onDelete }: { post: ApiPost; onDelete: (id: number) => void }) {
   const glyph = post.title ? post.title.charAt(0).toUpperCase() : "·";
   const pillClass = post.status === "published" ? "live" : "draft";
   const pillLabel = post.status === "published" ? "PUBLISHED" : "DRAFT";
@@ -615,10 +642,17 @@ function PostCard({ post }: { post: ApiPost }) {
         )}
         <div className="post-meta">
           <span><Icon name="feather" size={11} />{formatDate(post.updated_at)}</span>
+          {post.reading_time > 0 && <><span>·</span><span>{formatReadTime(post.reading_time)}</span></>}
           <span style={{ flex: 1 }} />
-          {post.reading_time > 0 && <span>{formatReadTime(post.reading_time)}</span>}
           {post.views > 0 && <span><Icon name="users" size={11} />{post.views.toLocaleString()}</span>}
           {post.likes > 0 && <span><Icon name="star" size={11} />{post.likes}</span>}
+          <button
+            title="Delete"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--fg-muted)" }}
+            onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
+          >
+            <Icon name="trash" size={13} />
+          </button>
         </div>
       </div>
     </div>
@@ -665,6 +699,17 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
   };
 
   const glyph = (title: string) => title.charAt(0).toUpperCase() || "·";
+
+  async function deletePost(postId: number) {
+    if (!window.confirm("Delete this post permanently? This can't be undone.")) return;
+    const r = await fetch(`/api/blog/posts/${postId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (r.ok) {
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    }
+  }
 
   return (
     <div>
@@ -763,7 +808,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
       ) : viewMode === "grid" ? (
         <div className="cards">
           {filtered.map((p) => (
-            <PostCard key={p.id} post={p} />
+            <PostCard key={p.id} post={p} onDelete={deletePost} />
           ))}
         </div>
       ) : (
@@ -803,6 +848,13 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
                     <Icon name="globe" size={14} />
                   </button>
                 )}
+                <button
+                  title="Delete"
+                  style={{ color: "var(--fg-muted)" }}
+                  onClick={() => deletePost(p.id)}
+                >
+                  <Icon name="trash" size={14} />
+                </button>
               </div>
             </div>
           ))}
