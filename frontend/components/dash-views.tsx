@@ -90,15 +90,6 @@ function getFavColor(domain: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-function getCardType(
-  link: ApiLink
-): "article" | "placeholder" | "video" | "code" {
-  const domain = getDomain(link.url);
-  if (domain.includes("youtube") || domain.includes("youtu.be")) return "video";
-  if (domain.includes("github") || domain.includes("gitlab")) return "code";
-  if (link.image) return "article";
-  return "placeholder";
-}
 
 function formatDate(iso: string): string {
   try {
@@ -118,93 +109,22 @@ function formatReadTime(minutes: number): string {
 // ─── link card ───────────────────────────────────────────────────────────────
 
 function LinkCardHero({
-  link,
   domain,
 }: {
   link: ApiLink;
   domain: string;
 }) {
-  const type = getCardType(link);
   const fav = getFavInitials(domain);
   const favColor = getFavColor(domain);
 
-  if (type === "video") {
-    return (
-      <div
-        className="lc-hero video"
-        style={{
-          background:
-            "linear-gradient(160deg,#2d5fb8 0%,#f9c623 55%,#1b3a8a 100%)",
-        }}
-      >
-        <div className="play">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M4 2.5v11l10-5.5z" />
-          </svg>
-        </div>
-      </div>
-    );
-  }
-  if (type === "code") {
-    return (
-      <div className="lc-hero code">
-        <div>
-          <span className="ln">1</span>{" "}
-          <span className="cm">// {domain}</span>
-        </div>
-        <div>
-          <span className="ln">2</span>{" "}
-          <span className="kw">import</span> {"{ "}
-          <span className="fn">Module</span>
-          {" }"} <span className="kw">from</span>{" "}
-          <span className="st">&apos;lib&apos;</span>
-        </div>
-        <div>
-          <span className="ln">3</span>{" "}
-        </div>
-        <div>
-          <span className="ln">4</span>{" "}
-          <span className="kw">export default</span>{" "}
-          <span className="kw">function</span> <span className="fn">App</span>(){" "}
-          {"{"}
-        </div>
-        <div>
-          <span className="ln">5</span>{"   "}
-          <span className="kw">return</span> &lt;
-          <span className="fn">Module</span> /&gt;
-        </div>
-      </div>
-    );
-  }
-  if (type === "article" && link.image) {
-    return (
-      <div
-        className="lc-hero img"
-        style={{
-          background: `linear-gradient(135deg, ${favColor}, color-mix(in oklab, ${favColor} 40%, #8e8df0))`,
-        }}
-      />
-    );
-  }
   return (
-    <div className="lc-hero placeholder">
-      <div className="site">
-        <span
-          className="fav"
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: 3,
-            background: favColor,
-            color: "white",
-            display: "inline-grid",
-            placeItems: "center",
-            fontSize: 8,
-            fontWeight: 800,
-          }}
-        >
-          {fav}
-        </span>
+    <div
+      className="lc-hero"
+      style={{ background: `linear-gradient(135deg, ${favColor}, color-mix(in oklab, ${favColor} 40%, #8e8df0))` }}
+    >
+      <div className="post-cover-overlay" />
+      <div className="ref-cover-domain">
+        <span className="ref-cover-fav" style={{ background: favColor }}>{fav}</span>
         {domain}
       </div>
     </div>

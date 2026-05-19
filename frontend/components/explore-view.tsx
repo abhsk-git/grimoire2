@@ -395,33 +395,29 @@ export function ExploreView() {
                   return (
                     <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
                       <article className="post-card">
-                        {l.image ? (
-                          <div className="post-cover" style={{ backgroundImage: `url(${l.image})`, backgroundSize: "cover", backgroundPosition: "center" }}>
-                            <div className="post-cover-overlay" />
+                        <div className="post-cover" style={{ background: COVER_GRADIENTS[l.id % COVER_GRADIENTS.length] }}>
+                          <div className="post-cover-overlay" />
+                          <div className="ref-cover-domain">
+                            <span className="ref-cover-fav" style={{ background: COVER_GRADIENTS[l.id % COVER_GRADIENTS.length].slice(0, 7) }}>{domain.slice(0, 2).toUpperCase()}</span>
+                            {domain}
                           </div>
-                        ) : (
-                          <div className="post-cover" style={{ background: COVER_GRADIENTS[l.id % COVER_GRADIENTS.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <div className="post-cover-overlay" />
-                            <Icon name="link" size={22} />
-                          </div>
-                        )}
+                        </div>
                         <div className="post-body">
                           <div className="post-by">
                             {l.favicon ? (
                               <img src={l.favicon} style={{ width: 14, height: 14, borderRadius: 2 }} alt="" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                             ) : null}
-                            <span style={{ color: "var(--fg-muted)", fontSize: 12 }}>{domain}</span>
-                            <span>·</span>
-                            <span style={{ fontSize: 12 }}>{l.author_name}</span>
+                            <span>{domain}</span>
+                            {l.author_name && <><span>·</span><span>{l.author_name}</span></>}
                           </div>
                           <h3 className="post-title">{l.title || domain}</h3>
                           {l.description && (
-                            <p style={{ fontSize: 13, color: "var(--fg-soft)", lineHeight: 1.5, marginBottom: 6 }}>
-                              {l.description.slice(0, 100)}{l.description.length > 100 ? "…" : ""}
+                            <p className="post-excerpt">
+                              {l.description.slice(0, 120)}{l.description.length > 120 ? "…" : ""}
                             </p>
                           )}
                           {tagsList.length > 0 && (
-                            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            <div className="lc-tags">
                               {tagsList.slice(0, 3).map(t => (
                                 <span key={t} className="lc-tag">#{t}</span>
                               ))}
