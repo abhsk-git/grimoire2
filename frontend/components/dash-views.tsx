@@ -643,6 +643,7 @@ function PostCard({ post }: { post: ApiPost }) {
         }
       >
         <div className="post-cover-overlay" />
+        <span className={`pill ${pillClass}`} style={{ position: "absolute", top: 10, left: 10, zIndex: 2 }}>{pillLabel}</span>
         {!post.cover_image && (
           <span style={{ fontSize: 40, fontWeight: 800, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-display)", letterSpacing: "-0.03em", position: "relative", zIndex: 1 }}>
             {glyph}
@@ -650,13 +651,13 @@ function PostCard({ post }: { post: ApiPost }) {
         )}
       </div>
       <div className="post-body">
-        <span className={`pill ${pillClass}`} style={{ alignSelf: "flex-start" }}>{pillLabel}</span>
         <div className="post-title">{post.title || "Untitled"}</div>
         {post.excerpt && (
           <div className="post-excerpt">{post.excerpt}</div>
         )}
         <div className="post-meta">
           <span><Icon name="feather" size={11} />{formatDate(post.updated_at)}</span>
+          <span style={{ flex: 1 }} />
           {post.reading_time > 0 && <span>{formatReadTime(post.reading_time)}</span>}
           {post.views > 0 && <span><Icon name="users" size={11} />{post.views.toLocaleString()}</span>}
           {post.likes > 0 && <span><Icon name="star" size={11} />{post.likes}</span>}

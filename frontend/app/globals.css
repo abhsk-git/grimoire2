@@ -1057,7 +1057,14 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   margin-top: auto; padding-top: 12px;
   border-top: 1px solid var(--border);
 }
-.post-meta span { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); }
+.post-meta span { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 11.5px; }
+.post-author {
+  display: inline-flex !important; align-items: center; gap: 6px;
+  color: var(--fg) !important; font-weight: 500;
+  font-family: var(--font-sans) !important; font-size: 12px !important;
+}
+.meta-dot { color: var(--fg-soft); font-family: var(--font-sans) !important; }
+.meta-stat { font-family: var(--font-mono); }
 
 /* writers grid */
 .writers-grid {

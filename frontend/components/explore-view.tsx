@@ -282,28 +282,28 @@ export function ExploreView() {
                             )}
                           </div>
                           <div className="post-body">
-                            <div className="post-by">
-                              <img
-                                src={p.author_avatar || avatarFallback(p.author_name)}
-                                onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                                style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover" }}
-                                alt={p.author_name}
-                              />
-                              <span style={{ fontWeight: 600 }}>{p.author_name}</span>
-                              <span>·</span>
-                              <span>{p.pub_date}</span>
-                            </div>
-                            <h3 className="post-title">{p.title}</h3>
                             {tagsList.length > 0 && (
-                              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
+                              <div className="lc-tags">
                                 {tagsList.slice(0, 3).map(t => (
-                                  <span key={t} className="lc-tag">#{t}</span>
+                                  <span key={t} className="lc-tag">{t}</span>
                                 ))}
                               </div>
                             )}
+                            <h3 className="post-title">{p.title}</h3>
                             <div className="post-meta">
-                              <span><Icon name="book" size={11} /> {p.reading_time} min</span>
-                              <span><Icon name="star" size={11} /> {p.likes}</span>
+                              <span className="post-author">
+                                <img
+                                  src={p.author_avatar || avatarFallback(p.author_name)}
+                                  onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
+                                  style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                                  alt={p.author_name}
+                                />
+                                {p.author_name}
+                              </span>
+                              <span className="meta-dot">·</span>
+                              <span>{p.pub_date}</span>
+                              <span style={{ flex: 1 }} />
+                              <span className="meta-stat"><Icon name="star" size={11} /> {p.likes}</span>
                             </div>
                           </div>
                         </article>
