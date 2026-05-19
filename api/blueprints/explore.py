@@ -39,7 +39,7 @@ def explore_links():
         cur.execute(f'''
             SELECT l.id, l.url, l.title, l.description, l.image, l.favicon,
                    l.tags, l.visit_count, l.created_at,
-                   u.name as author_name, u.avatar as author_avatar
+                   u.id as author_id, u.name as author_name, u.avatar as author_avatar
             FROM links l
             JOIN users u ON l.user_id = u.id
             WHERE {where}
@@ -54,6 +54,42 @@ def explore_links():
         if lnk.get('created_at'): lnk['created_at'] = lnk['created_at'].isoformat()
 
     return jsonify({'links': links, 'total': total, 'page': page, 'per_page': per_page})
+
+
+@bp.route('/api/user/<int:user_id>', methods=['GET'])
+def user_profile(user_id):
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('SELECT id, name, avatar, bio FROM users WHERE id = %s', (user_id,))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'error': 'Not found'}), 404
+
+        cur.execute('''
+            SELECT l.id, l.url, l.title, l.description, l.favicon, l.tags, l.created_at
+            FROM links l
+            WHERE l.user_id = %s AND l.is_public = 1
+            ORDER BY l.created_at DESC LIMIT 50
+        ''', (user_id,))
+        links = cur.fetchall()
+
+        cur.execute('''
+            SELECT id, title, slug, excerpt, reading_time, views, likes, published_at
+            FROM posts
+            WHERE user_id = %s AND status = "published"
+            ORDER BY published_at DESC LIMIT 20
+        ''', (user_id,))
+        posts = cur.fetchall()
+    finally:
+        db.close()
+
+    for l in links:
+        if l.get('created_at'): l['created_at'] = l['created_at'].isoformat()
+    for p in posts:
+        if p.get('published_at'): p['published_at'] = p['published_at'].isoformat()
+
+    return jsonify({'user': user, 'links': links, 'posts': posts})
 
 
 @bp.route('/api/explore/trending-tags', methods=['GET'])
