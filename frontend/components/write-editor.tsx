@@ -110,7 +110,7 @@ const SLASH_CMDS: SlashCmd[] = [
   { id:"checklist", label:"Checklist",     hint:"To-do list with checkboxes",   type:"checklist", data:{},                    icon:"☑",  keywords:["todo","check","task"] },
   { id:"quote",     label:"Quote",         hint:"Highlighted blockquote",       type:"quote",     data:{},                    icon:"❝",  keywords:["quote","blockquote","cite"] },
   { id:"code",      label:"Code Block",    hint:"Syntax-highlighted code",      type:"code",      data:{},                    icon:"<>", keywords:["code","pre","snippet"] },
-  { id:"table",     label:"Table",         hint:"Grid of rows and columns",     type:"table",     data:{},                    icon:"▦",  keywords:["table","grid","data"] },
+  { id:"grid",      label:"Table",         hint:"Grid of rows and columns",     type:"table",     data:{},                    icon:"▦",  keywords:["table","grid","data"] },
   { id:"warning",   label:"Warning",       hint:"Callout or alert box",         type:"warning",   data:{},                    icon:"⚠",  keywords:["warning","alert","note"] },
   { id:"divider",   label:"Divider",       hint:"Visual section break",         type:"delimiter", data:{},                    icon:"—",  keywords:["hr","divider","line","break","delimiter"] },
   { id:"image",     label:"Image",         hint:"Upload or embed an image",     type:"image",     data:{},                    icon:"🖼", keywords:["image","img","photo"] },
@@ -119,10 +119,12 @@ const SLASH_CMDS: SlashCmd[] = [
 function getFilteredCmds(query: string): SlashCmd[] {
   if (!query) return SLASH_CMDS;
   const q = query.toLowerCase();
-  // Rank: id/label prefix first, then keyword prefix, then substring fallback
   const prefixMatch = (s: string) => s.startsWith(q);
   const subMatch    = (s: string) => s.includes(q);
   const score = (c: SlashCmd) => {
+    // Single-char queries: only match by id prefix — keeps results tight
+    // (e.g. "/t" → only "text", not "table" whose label also starts with T)
+    if (q.length === 1) return prefixMatch(c.id) ? 0 : 3;
     if (prefixMatch(c.id) || prefixMatch(c.label.toLowerCase())) return 0;
     if (c.keywords.some(prefixMatch)) return 1;
     if (subMatch(c.id) || subMatch(c.label.toLowerCase()) || c.keywords.some(subMatch)) return 2;
