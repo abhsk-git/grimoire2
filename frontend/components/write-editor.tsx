@@ -473,6 +473,11 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const slashMenuRef = useRef(slashMenu);
   useEffect(() => { slashMenuRef.current = slashMenu; }, [slashMenu]);
 
+  // stable ref so the autosave timer (inside a stale EditorJS closure) always
+  // calls the latest saveDraft — without this, the timer calls the version from
+  // the initial render where editorReady=false and returns early every time
+  const saveDraftRef = useRef<(silent?: boolean) => Promise<void>>(async () => {});
+
   useEffect(() => {
     if (!authLoading && !user) window.location.href = "/login";
   }, [user, authLoading]);
@@ -609,7 +614,8 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
   function scheduleAutoSave() {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => saveDraft(true), 4000);
+    // use ref so the timer always calls the latest saveDraft, not the stale closure version
+    autoSaveTimer.current = setTimeout(() => saveDraftRef.current(true), 4000);
   }
 
   async function updateWordCount() {
@@ -683,6 +689,8 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [editorReady, excerpt, coverUrl, tagList, slug]
   );
+  // keep ref in sync so stale closures (EditorJS onChange timer) always call latest version
+  useEffect(() => { saveDraftRef.current = saveDraft; }, [saveDraft]);
 
   async function selectSlashCmd(cmd: SlashCmd) {
     setSlashMenu(null);
@@ -788,9 +796,11 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
               {saveStatus === "saving" && <span className="save-dot" />}
               {saveLabel}
             </span>
-          ) : lastSavedLabel ? (
-            <span className="write-last-saved">{lastSavedLabel}</span>
           ) : null}
+          {/* show timestamp whenever a save has happened and we're not mid-save */}
+          {lastSaved && saveStatus !== "saving" && saveStatus !== "saved" && (
+            <span className="write-last-saved">{lastSavedLabel}</span>
+          )}
           {wordCount > 0 && (
             <span className="write-word-count">
               {wordCount} {wordCount === 1 ? "word" : "words"}
