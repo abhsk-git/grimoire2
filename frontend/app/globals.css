@@ -1735,14 +1735,70 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .write-save-status {
   font-size: 12px; color: var(--fg-soft);
   padding: 3px 8px; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 5px;
 }
-.write-save-status.saving  { color: var(--accent-3); }
+@keyframes save-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
+.write-save-status.saving  { color: var(--accent-3); animation: save-pulse 1.4s ease-in-out infinite; }
 .write-save-status.error   { color: #c8453d; }
 .write-save-status.unsaved { color: var(--fg-muted); }
+@keyframes dot-ping { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.2);opacity:0} }
+.save-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent-3); flex-shrink: 0;
+  animation: dot-ping 1.4s ease-out infinite;
+}
+.write-last-saved {
+  font-size: 11px; color: var(--fg-soft);
+  padding: 3px 8px; opacity: 0.75;
+}
 .write-word-count {
   font-size: 12px; color: var(--fg-soft);
   padding: 3px 8px;
 }
+
+/* ── Slash command palette ── */
+.slash-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 264px; max-width: 320px;
+  max-height: 380px; overflow-y: auto;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
+  padding: 5px;
+  display: flex; flex-direction: column; gap: 1px;
+  scrollbar-width: thin;
+}
+.slash-menu-heading {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--fg-soft);
+  padding: 4px 10px 5px;
+}
+.slash-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  padding: 6px 8px; border-radius: var(--radius-sm);
+  border: none; background: none; cursor: pointer;
+  font-family: inherit; transition: background 0.08s;
+}
+.slash-menu-item:hover,
+.slash-menu-item.selected { background: var(--bg-soft); }
+.slash-menu-icon {
+  width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--fg);
+  font-family: var(--font-mono, monospace);
+  transition: background 0.08s, border-color 0.08s;
+}
+.slash-menu-item.selected .slash-menu-icon,
+.slash-menu-item:hover    .slash-menu-icon {
+  background: var(--bg-elev); border-color: var(--border-strong);
+}
+.slash-menu-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.slash-menu-label { font-size: 13px; font-weight: 500; color: var(--fg); }
+.slash-menu-hint  { font-size: 11px; color: var(--fg-soft); }
 .write-topbar-right {
   margin-left: auto;
   display: flex; gap: 8px; align-items: center;

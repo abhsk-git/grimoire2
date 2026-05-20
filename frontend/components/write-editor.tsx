@@ -89,6 +89,102 @@ interface WriteEditorProps {
   postId?: number;
 }
 
+// ── Slash command definitions ─────────────────────────────────────────────────
+
+interface SlashCmd {
+  id: string;
+  label: string;
+  hint: string;
+  type: string;
+  data: Record<string, unknown>;
+  icon: string;
+  keywords: string[];
+}
+
+const SLASH_CMDS: SlashCmd[] = [
+  { id:"paragraph", label:"Paragraph",     hint:"Plain text",                  type:"paragraph", data:{},                    icon:"P",  keywords:["p","text","body"] },
+  { id:"h2",        label:"Heading 2",     hint:"Large section heading",       type:"header",    data:{ level:2 },           icon:"H2", keywords:["h2","heading","title"] },
+  { id:"h3",        label:"Heading 3",     hint:"Medium section heading",      type:"header",    data:{ level:3 },           icon:"H3", keywords:["h3","subheading","sub"] },
+  { id:"bullet",    label:"Bullet List",   hint:"Unordered list",              type:"list",      data:{ style:"unordered" }, icon:"•",  keywords:["ul","list","bullet"] },
+  { id:"numbered",  label:"Numbered List", hint:"Ordered / numbered list",     type:"list",      data:{ style:"ordered" },   icon:"1.", keywords:["ol","ordered","number"] },
+  { id:"checklist", label:"Checklist",     hint:"To-do list with checkboxes",  type:"checklist", data:{},                    icon:"☑",  keywords:["todo","check","task"] },
+  { id:"quote",     label:"Quote",         hint:"Highlighted blockquote",      type:"quote",     data:{},                    icon:"❝",  keywords:["quote","blockquote","cite"] },
+  { id:"code",      label:"Code Block",    hint:"Syntax-highlighted code",     type:"code",      data:{},                    icon:"<>", keywords:["code","pre","snippet"] },
+  { id:"table",     label:"Table",         hint:"Grid of rows and columns",    type:"table",     data:{},                    icon:"▦",  keywords:["table","grid","data"] },
+  { id:"warning",   label:"Warning",       hint:"Callout or alert box",        type:"warning",   data:{},                    icon:"⚠",  keywords:["warning","alert","note"] },
+  { id:"delimiter", label:"Divider",       hint:"Visual section break",        type:"delimiter", data:{},                    icon:"—",  keywords:["hr","divider","line","break"] },
+  { id:"image",     label:"Image",         hint:"Upload or embed an image",    type:"image",     data:{},                    icon:"🖼", keywords:["image","img","photo"] },
+];
+
+function getFilteredCmds(query: string): SlashCmd[] {
+  if (!query) return SLASH_CMDS;
+  const q = query.toLowerCase();
+  return SLASH_CMDS.filter(c =>
+    c.id.includes(q) ||
+    c.label.toLowerCase().includes(q) ||
+    c.keywords.some(k => k.includes(q))
+  );
+}
+
+// ── Slash Menu Panel ──────────────────────────────────────────────────────────
+
+function SlashMenuPanel({
+  query,
+  selected,
+  pos,
+  onSelect,
+  onHover,
+}: {
+  query: string;
+  selected: number;
+  pos: { top: number; left: number };
+  onSelect: (cmd: SlashCmd) => void;
+  onHover: (idx: number) => void;
+}) {
+  const filtered = getFilteredCmds(query);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const item = listRef.current?.children[
+      query ? filtered.findIndex((_, i) => i === selected) + 1 : selected
+    ] as HTMLElement;
+    item?.scrollIntoView({ block: "nearest" });
+  }, [selected, filtered, query]);
+
+  if (!filtered.length) return null;
+
+  const menuHeight = Math.min(filtered.length, 7) * 52 + (query ? 36 : 8) + 8;
+  const adjustedTop =
+    pos.top + menuHeight > window.innerHeight - 8
+      ? pos.top - menuHeight - 28
+      : pos.top;
+  const adjustedLeft = Math.min(pos.left, window.innerWidth - 292);
+
+  return (
+    <div
+      className="slash-menu"
+      ref={listRef}
+      style={{ top: adjustedTop, left: adjustedLeft }}
+    >
+      {query && <div className="slash-menu-heading">Blocks</div>}
+      {filtered.map((cmd, i) => (
+        <button
+          key={cmd.id}
+          className={`slash-menu-item${i === selected ? " selected" : ""}`}
+          onMouseDown={(e) => { e.preventDefault(); onSelect(cmd); }}
+          onMouseEnter={() => onHover(i)}
+        >
+          <span className="slash-menu-icon">{cmd.icon}</span>
+          <div className="slash-menu-text">
+            <span className="slash-menu-label">{cmd.label}</span>
+            <span className="slash-menu-hint">{cmd.hint}</span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── Cover Image Zone ──────────────────────────────────────────────────────────
 
 function CoverZone({
@@ -360,12 +456,22 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [slashMenu, setSlashMenu] = useState<{
+    open: boolean;
+    query: string;
+    selected: number;
+    pos: { top: number; left: number };
+  } | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const editorRef = useRef<any>(null);
   const postIdRef = useRef<number | null>(initialPostId ?? null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const excerptRef = useRef<HTMLTextAreaElement>(null);
+  // stable ref so event handlers always see latest slash-menu state
+  const slashMenuRef = useRef(slashMenu);
+  useEffect(() => { slashMenuRef.current = slashMenu; }, [slashMenu]);
 
   useEffect(() => {
     if (!authLoading && !user) window.location.href = "/login";
@@ -463,6 +569,30 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           setSaveStatus("unsaved");
           scheduleAutoSave();
           updateWordCount();
+
+          // Slash command detection — check if focused block starts with "/"
+          const active = document.activeElement as HTMLElement | null;
+          const editorEl = document.getElementById("editorjs");
+          if (active && editorEl?.contains(active)) {
+            const text = (active.textContent ?? "").trim();
+            if (text.startsWith("/")) {
+              const query = text.slice(1).toLowerCase();
+              const sel = window.getSelection();
+              const rect = sel?.rangeCount
+                ? sel.getRangeAt(0).getBoundingClientRect()
+                : active.getBoundingClientRect();
+              if (rect.height > 0) {
+                setSlashMenu({
+                  open: true,
+                  query,
+                  selected: 0,
+                  pos: { top: rect.bottom + 6, left: Math.max(rect.left, 20) },
+                });
+                return;
+              }
+            }
+          }
+          setSlashMenu((prev) => (prev?.open ? null : prev));
         },
       });
 
@@ -488,9 +618,14 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       const data = await editorRef.current.save();
       const text = data.blocks
         .map((b: any) => {
-          if (b.type === "paragraph" || b.type === "header")
+          if (["paragraph", "header", "quote"].includes(b.type))
             return b.data?.text || "";
           if (b.type === "list") return (b.data?.items || []).join(" ");
+          if (b.type === "code") return b.data?.code || "";
+          if (b.type === "checklist")
+            return (b.data?.items || [])
+              .map((i: any) => i?.text || "")
+              .join(" ");
           return "";
         })
         .join(" ")
@@ -512,9 +647,9 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   }
 
   const saveDraft = useCallback(
-    async (silent = false) => {
+    async (_silent = false) => {
       if (!editorRef.current || !editorReady) return;
-      if (!silent) setSaveStatus("saving");
+      setSaveStatus("saving");
       try {
         const payload = await buildPayload();
         const isNew = !postIdRef.current;
@@ -536,6 +671,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           }
           if (data.slug) setSlug(data.slug);
           setSaveStatus("saved");
+          setLastSaved(new Date());
           setTimeout(() => setSaveStatus(""), 3000);
         } else {
           setSaveStatus("error");
@@ -547,6 +683,18 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [editorReady, excerpt, coverUrl, tagList, slug]
   );
+
+  async function selectSlashCmd(cmd: SlashCmd) {
+    setSlashMenu(null);
+    if (!editorRef.current) return;
+    try {
+      const idx = editorRef.current.blocks?.getCurrentBlockIndex?.() ?? -1;
+      if (idx >= 0) {
+        editorRef.current.blocks.delete(idx);
+        editorRef.current.blocks.insert(cmd.type, cmd.data, {}, idx, true);
+      }
+    } catch {}
+  }
 
   async function handlePublish() {
     await saveDraft(true);
@@ -609,11 +757,17 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   }
 
   const saveLabel =
-    saveStatus === "saving" ? "Saving…"
-    : saveStatus === "saved" ? "Saved ✓"
-    : saveStatus === "error" ? "Save failed"
+    saveStatus === "saving"  ? "Saving…"
+    : saveStatus === "saved"   ? "Saved ✓"
+    : saveStatus === "error"   ? "Save failed"
     : saveStatus === "unsaved" ? "Unsaved"
     : "";
+
+  const lastSavedLabel = lastSaved
+    ? `Saved ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+    : "";
+
+  const filteredCmds = slashMenu?.open ? getFilteredCmds(slashMenu.query) : [];
 
   return (
     <div className="write-page">
@@ -629,11 +783,14 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           <span className={`write-status-pill${status === "published" ? " published" : ""}`}>
             {status === "published" ? "Live" : "Draft"}
           </span>
-          {saveLabel && (
+          {saveLabel ? (
             <span className={`write-save-status${saveStatus === "error" ? " error" : saveStatus === "unsaved" ? " unsaved" : saveStatus === "saving" ? " saving" : ""}`}>
+              {saveStatus === "saving" && <span className="save-dot" />}
               {saveLabel}
             </span>
-          )}
+          ) : lastSavedLabel ? (
+            <span className="write-last-saved">{lastSavedLabel}</span>
+          ) : null}
           {wordCount > 0 && (
             <span className="write-word-count">
               {wordCount} {wordCount === 1 ? "word" : "words"}
@@ -668,7 +825,24 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       </div>
 
       {/* ── Canvas ── */}
-      <div className="write-canvas">
+      <div
+        className="write-canvas"
+        onKeyDownCapture={(e) => {
+          if (!slashMenu?.open || !filteredCmds.length) return;
+          if (!["ArrowDown","ArrowUp","Enter","Tab","Escape"].includes(e.key)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.key === "ArrowDown")
+            setSlashMenu((p) => p && { ...p, selected: (p.selected + 1) % filteredCmds.length });
+          else if (e.key === "ArrowUp")
+            setSlashMenu((p) => p && { ...p, selected: (p.selected - 1 + filteredCmds.length) % filteredCmds.length });
+          else if (e.key === "Enter" || e.key === "Tab") {
+            const cmd = filteredCmds[slashMenu.selected];
+            if (cmd) selectSlashCmd(cmd);
+          } else if (e.key === "Escape")
+            setSlashMenu(null);
+        }}
+      >
 
         {/* Cover zone */}
         <CoverZone
@@ -797,6 +971,17 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           )}
         </div>
       </div>
+
+      {/* ── Slash command palette ── */}
+      {slashMenu?.open && filteredCmds.length > 0 && (
+        <SlashMenuPanel
+          query={slashMenu.query}
+          selected={slashMenu.selected}
+          pos={slashMenu.pos}
+          onSelect={selectSlashCmd}
+          onHover={(i) => setSlashMenu((p) => p && { ...p, selected: i })}
+        />
+      )}
     </div>
   );
 }

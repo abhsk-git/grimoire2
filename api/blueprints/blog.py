@@ -31,16 +31,23 @@ def _unique_slug(cur, base, exclude_id=None):
 def _reading_time(content_json):
     try:
         data = json.loads(content_json) if isinstance(content_json, str) else content_json
-        text = ''
+        words = 0
+        code_lines = 0
         for b in data.get('blocks', []):
             bd, bt = b.get('data', {}), b.get('type', '')
             if bt in ('paragraph', 'header', 'quote'):
-                text += ' ' + re.sub(r'<[^>]+>', '', bd.get('text', ''))
+                words += len(re.sub(r'<[^>]+>', '', bd.get('text', '')).split())
             elif bt == 'list':
-                text += ' '.join(bd.get('items', []))
+                for item in bd.get('items', []):
+                    words += len(re.sub(r'<[^>]+>', '', item).split())
+            elif bt == 'checklist':
+                for item in bd.get('items', []):
+                    words += len(re.sub(r'<[^>]+>', '', item.get('text', '') if isinstance(item, dict) else item).split())
             elif bt == 'code':
-                text += ' ' + bd.get('code', '')
-        return max(1, round(len(text.split()) / 200))
+                code_lines += len(bd.get('code', '').splitlines())
+        # prose at 200 wpm; code at 25 lines/min (readers slow down for code)
+        minutes = words / 200 + code_lines / 25
+        return max(1, round(minutes))
     except Exception:
         return 1
 
