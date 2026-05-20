@@ -145,11 +145,11 @@ function SlashMenuPanel({
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const item = listRef.current?.children[
-      query ? filtered.findIndex((_, i) => i === selected) + 1 : selected
-    ] as HTMLElement;
+    // children[0] is the heading div when query is set, so items are offset by 1
+    const childIdx = query ? selected + 1 : selected;
+    const item = listRef.current?.children[childIdx] as HTMLElement;
     item?.scrollIntoView({ block: "nearest" });
-  }, [selected, filtered, query]);
+  }, [selected, query]); // filtered is derived from query; no need to list it
 
   if (!filtered.length) return null;
 
