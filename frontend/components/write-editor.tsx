@@ -102,28 +102,36 @@ interface SlashCmd {
 }
 
 const SLASH_CMDS: SlashCmd[] = [
-  { id:"paragraph", label:"Paragraph",     hint:"Plain text",                  type:"paragraph", data:{},                    icon:"P",  keywords:["p","text","body"] },
-  { id:"h2",        label:"Heading 2",     hint:"Large section heading",       type:"header",    data:{ level:2 },           icon:"H2", keywords:["h2","heading","title"] },
-  { id:"h3",        label:"Heading 3",     hint:"Medium section heading",      type:"header",    data:{ level:3 },           icon:"H3", keywords:["h3","subheading","sub"] },
-  { id:"bullet",    label:"Bullet List",   hint:"Unordered list",              type:"list",      data:{ style:"unordered" }, icon:"•",  keywords:["ul","list","bullet"] },
-  { id:"numbered",  label:"Numbered List", hint:"Ordered / numbered list",     type:"list",      data:{ style:"ordered" },   icon:"1.", keywords:["ol","ordered","number"] },
-  { id:"checklist", label:"Checklist",     hint:"To-do list with checkboxes",  type:"checklist", data:{},                    icon:"☑",  keywords:["todo","check","task"] },
-  { id:"quote",     label:"Quote",         hint:"Highlighted blockquote",      type:"quote",     data:{},                    icon:"❝",  keywords:["quote","blockquote","cite"] },
-  { id:"code",      label:"Code Block",    hint:"Syntax-highlighted code",     type:"code",      data:{},                    icon:"<>", keywords:["code","pre","snippet"] },
-  { id:"table",     label:"Table",         hint:"Grid of rows and columns",    type:"table",     data:{},                    icon:"▦",  keywords:["table","grid","data"] },
-  { id:"warning",   label:"Warning",       hint:"Callout or alert box",        type:"warning",   data:{},                    icon:"⚠",  keywords:["warning","alert","note"] },
-  { id:"delimiter", label:"Divider",       hint:"Visual section break",        type:"delimiter", data:{},                    icon:"—",  keywords:["hr","divider","line","break"] },
-  { id:"image",     label:"Image",         hint:"Upload or embed an image",    type:"image",     data:{},                    icon:"🖼", keywords:["image","img","photo"] },
+  { id:"text",      label:"Text",          hint:"Plain paragraph text",         type:"paragraph", data:{},                    icon:"P",  keywords:["p","text","body","paragraph"] },
+  { id:"h2",        label:"Heading 2",     hint:"Large section heading",        type:"header",    data:{ level:2 },           icon:"H2", keywords:["h2","heading","title"] },
+  { id:"h3",        label:"Heading 3",     hint:"Medium section heading",       type:"header",    data:{ level:3 },           icon:"H3", keywords:["h3","subheading","sub"] },
+  { id:"bullet",    label:"Bullet List",   hint:"Unordered list",               type:"list",      data:{ style:"unordered" }, icon:"•",  keywords:["ul","list","bullet"] },
+  { id:"numbered",  label:"Numbered List", hint:"Ordered / numbered list",      type:"list",      data:{ style:"ordered" },   icon:"1.", keywords:["ol","ordered","number"] },
+  { id:"checklist", label:"Checklist",     hint:"To-do list with checkboxes",   type:"checklist", data:{},                    icon:"☑",  keywords:["todo","check","task"] },
+  { id:"quote",     label:"Quote",         hint:"Highlighted blockquote",       type:"quote",     data:{},                    icon:"❝",  keywords:["quote","blockquote","cite"] },
+  { id:"code",      label:"Code Block",    hint:"Syntax-highlighted code",      type:"code",      data:{},                    icon:"<>", keywords:["code","pre","snippet"] },
+  { id:"table",     label:"Table",         hint:"Grid of rows and columns",     type:"table",     data:{},                    icon:"▦",  keywords:["table","grid","data"] },
+  { id:"warning",   label:"Warning",       hint:"Callout or alert box",         type:"warning",   data:{},                    icon:"⚠",  keywords:["warning","alert","note"] },
+  { id:"divider",   label:"Divider",       hint:"Visual section break",         type:"delimiter", data:{},                    icon:"—",  keywords:["hr","divider","line","break","delimiter"] },
+  { id:"image",     label:"Image",         hint:"Upload or embed an image",     type:"image",     data:{},                    icon:"🖼", keywords:["image","img","photo"] },
 ];
 
 function getFilteredCmds(query: string): SlashCmd[] {
   if (!query) return SLASH_CMDS;
   const q = query.toLowerCase();
-  return SLASH_CMDS.filter(c =>
-    c.id.includes(q) ||
-    c.label.toLowerCase().includes(q) ||
-    c.keywords.some(k => k.includes(q))
-  );
+  // Rank: id/label prefix first, then keyword prefix, then substring fallback
+  const prefixMatch = (s: string) => s.startsWith(q);
+  const subMatch    = (s: string) => s.includes(q);
+  const score = (c: SlashCmd) => {
+    if (prefixMatch(c.id) || prefixMatch(c.label.toLowerCase())) return 0;
+    if (c.keywords.some(prefixMatch)) return 1;
+    if (subMatch(c.id) || subMatch(c.label.toLowerCase()) || c.keywords.some(subMatch)) return 2;
+    return 3;
+  };
+  return SLASH_CMDS.map(c => ({ c, s: score(c) }))
+    .filter(({ s }) => s < 3)
+    .sort((a, b) => a.s - b.s)
+    .map(({ c }) => c);
 }
 
 // ── Slash Menu Panel ──────────────────────────────────────────────────────────
@@ -166,7 +174,14 @@ function SlashMenuPanel({
       ref={listRef}
       style={{ top: adjustedTop, left: adjustedLeft }}
     >
-      {query && <div className="slash-menu-heading">Blocks</div>}
+      {query && (
+        <div className="slash-menu-heading">
+          Blocks
+          {filtered.length === 1 && (
+            <span className="slash-menu-enter-hint">↵ to insert</span>
+          )}
+        </div>
+      )}
       {filtered.map((cmd, i) => (
         <button
           key={cmd.id}
