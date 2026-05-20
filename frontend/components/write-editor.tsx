@@ -678,7 +678,9 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           if (data.slug) setSlug(data.slug);
           setSaveStatus("saved");
           setLastSaved(new Date());
-          setTimeout(() => setSaveStatus(""), 3000);
+          // 2800 ms matches the saved-flash CSS animation so React removes
+          // the element right as it finishes fading out — no visible pop
+          setTimeout(() => setSaveStatus(""), 2800);
         } else {
           setSaveStatus("error");
         }
@@ -792,14 +794,21 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
             {status === "published" ? "Live" : "Draft"}
           </span>
           {saveLabel ? (
-            <span className={`write-save-status${saveStatus === "error" ? " error" : saveStatus === "unsaved" ? " unsaved" : saveStatus === "saving" ? " saving" : ""}`}>
+            /* key=saveStatus forces a remount on every state change,
+               which restarts the CSS entry animation from scratch */
+            <span
+              key={saveStatus}
+              className={`write-save-status${saveStatus === "error" ? " error" : saveStatus === "unsaved" ? " unsaved" : saveStatus === "saving" ? " saving" : saveStatus === "saved" ? " saved" : ""}`}
+            >
               {saveStatus === "saving" && <span className="save-dot" />}
               {saveLabel}
             </span>
           ) : null}
-          {/* show timestamp whenever a save has happened and we're not mid-save */}
+          {/* timestamp: key=lastSaved ms so it remounts (and re-animates) after each save */}
           {lastSaved && saveStatus !== "saving" && saveStatus !== "saved" && (
-            <span className="write-last-saved">{lastSavedLabel}</span>
+            <span key={lastSaved.getTime()} className="write-last-saved">
+              {lastSavedLabel}
+            </span>
           )}
           {wordCount > 0 && (
             <span className="write-word-count">
