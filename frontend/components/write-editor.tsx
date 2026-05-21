@@ -724,8 +724,9 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     try {
       const idx = editorRef.current.blocks?.getCurrentBlockIndex?.() ?? -1;
       if (idx >= 0) {
-        editorRef.current.blocks.delete(idx);
-        editorRef.current.blocks.insert(cmd.type, cmd.data, {}, idx, true);
+        // replace:true (6th arg) swaps the "/" block in-place — no delete+insert
+        // race that would let EditorJS's Enter handler sneak in a new empty block
+        editorRef.current.blocks.insert(cmd.type, cmd.data, {}, idx, true, true);
       }
     } catch {}
   }

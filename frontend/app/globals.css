@@ -1852,6 +1852,100 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .slash-menu-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .slash-menu-label { font-size: 13px; font-weight: 500; color: var(--fg); }
 .slash-menu-hint  { font-size: 11px; color: var(--fg-soft); }
+
+/* ── EditorJS native toolbox — styled to match slash menu ── */
+
+/* Remap EditorJS's internal color tokens to our theme */
+.ce-popover {
+  --color-text-primary:              var(--fg);
+  --color-text-secondary:            var(--fg-soft);
+  --color-border:                    var(--border);
+  --color-background-item-hover:     var(--bg-soft);
+  --color-background-item-focus:     var(--bg-soft);
+  --color-background-icon-active:    var(--accent-soft);
+  --color-text-icon-active:          var(--accent-ink);
+  --item-padding:                    6px 8px;
+  --border-radius:                   var(--radius-sm);
+}
+
+/* Main popover container */
+.ce-popover__container {
+  background:    var(--bg-elev) !important;
+  border:        1px solid var(--border-strong) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow:    0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1) !important;
+  padding:       5px !important;
+  min-width:     264px !important;
+}
+
+/* Search input */
+.cdx-search-field {
+  background:    var(--bg-soft) !important;
+  border:        1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+  margin-bottom: 4px !important;
+}
+.cdx-search-field__icon svg { color: var(--fg-soft) !important; }
+.cdx-search-field__input { color: var(--fg) !important; font-family: var(--font-sans) !important; }
+
+/* Each item row */
+.ce-popover .ce-popover-item { gap: 10px !important; }
+
+/* Icon badge — match our .slash-menu-icon style */
+.ce-popover .ce-popover-item__icon--tool {
+  width:         32px !important;
+  height:        32px !important;
+  border-radius: 6px !important;
+  background:    var(--bg-soft) !important;
+  border:        1px solid var(--border) !important;
+  box-shadow:    none !important;
+  flex-shrink:   0;
+  transition:    background 0.08s, border-color 0.08s;
+}
+.ce-popover .ce-popover-item__icon--tool svg { width: 14px !important; height: 14px !important; color: var(--fg) !important; }
+
+/* Hover / focused icon */
+.ce-popover .ce-popover-item:hover .ce-popover-item__icon--tool,
+.ce-popover .ce-popover-item--focused .ce-popover-item__icon--tool {
+  background:   var(--bg-elev) !important;
+  border-color: var(--border-strong) !important;
+}
+
+/* Item text */
+.ce-popover .ce-popover-item__title {
+  font-size:   13px !important;
+  font-weight: 500 !important;
+  font-family: var(--font-sans) !important;
+  color:       var(--fg) !important;
+}
+.ce-popover .ce-popover-item__secondary-title {
+  font-size:      11px !important;
+  letter-spacing: 0 !important;
+  opacity:        1 !important;
+}
+
+/* Separator line */
+.ce-popover-item-separator__line { background: var(--border) !important; }
+
+/* "Nothing found" message */
+.ce-popover__nothing-found-message {
+  color:     var(--fg-soft) !important;
+  font-size: 13px !important;
+  font-family: var(--font-sans) !important;
+}
+
+/* Toolbar left-side buttons ("+", tune) */
+.ce-toolbar__plus,
+.ce-toolbar__settings-btn {
+  color:         var(--fg-muted) !important;
+  border-radius: var(--radius-sm) !important;
+}
+.ce-toolbar__plus:hover,
+.ce-toolbar__settings-btn:hover {
+  color:      var(--fg) !important;
+  background: var(--bg-soft) !important;
+}
+
 .write-topbar-right {
   margin-left: auto;
   display: flex; gap: 8px; align-items: center;
