@@ -2280,8 +2280,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .post-back-btn:hover { color: var(--fg); }
 
-.post-cover-wrap { max-height: 520px; overflow: hidden; background: var(--bg-soft); }
-.post-cover-wrap img { width: 100%; max-height: 520px; object-fit: cover; display: block; }
+.post-cover-wrap { max-width: 1100px; max-height: 520px; margin: 32px auto 0; padding: 0 24px; overflow: hidden; background: transparent; }
+.post-cover-wrap img { width: 100%; max-height: 520px; object-fit: cover; display: block; border-radius: 12px; }
 
 .post-article { max-width: 760px; margin: 0 auto; padding: 56px 24px 80px; }
 
@@ -2454,6 +2454,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 @media (max-width: 768px) {
   .post-article, .post-footer-bar, .comments-wrap { padding-left: 16px; padding-right: 16px; }
   .post-topbar { padding: 10px 16px; }
+  .post-cover-wrap { padding: 0 16px; margin-top: 20px; }
 }
 
 /* ── Explore real-data additions ─────────────────────────────── */
