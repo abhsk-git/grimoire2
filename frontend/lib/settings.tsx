@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { useTheme } from "./theme";
 
 export interface EditorSettings {
   slashMenu:         boolean;
@@ -49,15 +50,22 @@ const SettingsContext = createContext<SettingsContextValue>({
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(DEFAULTS);
   const [loaded,   setLoaded]   = useState(false);
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data?.settings) setSettings(data.settings as UserSettings);
+        if (data?.settings) {
+          const s = data.settings as UserSettings;
+          setSettings(s);
+          // Sync theme from account settings (cross-device)
+          if (s.appearance?.theme) setTheme(s.appearance.theme as any);
+        }
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const update = useCallback(async (patch: DeepPartial<UserSettings>) => {

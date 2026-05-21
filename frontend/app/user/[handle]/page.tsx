@@ -2,7 +2,6 @@
 
 import { use } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { ThemeProvider } from "@/lib/theme";
 import { PublicHeader } from "@/components/explore-shell";
 import { UserProfile } from "@/components/user-profile";
 import { BrandMark } from "@/components/icons";
@@ -49,10 +48,10 @@ export default function UserPage({ params }: { params: Promise<{ handle: string 
   const { handle } = use(params);
 
   return (
-    <ThemeProvider>
+
       <AuthProvider>
         <ProfileContent handle={handle} />
       </AuthProvider>
-    </ThemeProvider>
+
   );
 }

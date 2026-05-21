@@ -1,7 +1,6 @@
 "use client";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { ThemeProvider } from "@/lib/theme";
 import { Header } from "@/components/header";
 import { HeroLoggedOut } from "@/components/hero-logged-out";
 import { HeroLoggedIn } from "@/components/hero-logged-in";
@@ -51,10 +50,10 @@ function LandingContent() {
 
 export default function Page() {
   return (
-    <ThemeProvider>
+
       <AuthProvider>
         <LandingContent />
       </AuthProvider>
-    </ThemeProvider>
+
   );
 }

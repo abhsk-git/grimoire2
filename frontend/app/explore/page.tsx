@@ -1,7 +1,6 @@
 "use client";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { ThemeProvider } from "@/lib/theme";
 import { PublicHeader } from "@/components/explore-shell";
 import { ExploreView } from "@/components/explore-view";
 import { BrandMark } from "@/components/icons";
@@ -58,10 +57,10 @@ function ExploreContent() {
 
 export default function ExplorePage() {
   return (
-    <ThemeProvider>
+
       <AuthProvider>
         <ExploreContent />
       </AuthProvider>
-    </ThemeProvider>
+
   );
 }

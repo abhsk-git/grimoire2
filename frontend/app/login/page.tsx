@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ThemeProvider } from "@/lib/theme";
 import { AuthArt, SignInForm, SignUpForm, ForgotForm } from "@/components/auth-forms";
 
 type FormView = "signin" | "signup" | "forgot";
@@ -26,8 +25,8 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <ThemeProvider>
+
       <LoginContent />
-    </ThemeProvider>
+
   );
 }
