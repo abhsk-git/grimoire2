@@ -2271,14 +2271,23 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 24px; gap: 16px;
 }
-.post-topbar-left  { display: flex; align-items: center; gap: 12px; }
-.post-topbar-actions { display: flex; align-items: center; gap: 8px; }
+.post-topbar-left  { display: flex; align-items: center; gap: 12px; min-width: 120px; }
+.post-topbar-actions { display: flex; align-items: center; gap: 8px; min-width: 120px; justify-content: flex-end; }
 .post-back-btn {
   display: flex; align-items: center; gap: 6px;
   font-size: 14px; font-weight: 600; color: var(--fg-soft);
   text-decoration: none; transition: color .15s;
 }
 .post-back-btn:hover { color: var(--fg); }
+.topbar-brand-desktop { display: none; }
+.topbar-brand-center {
+  font-size: 15px; font-weight: 700; color: var(--fg);
+  text-decoration: none; transition: color .15s; white-space: nowrap;
+  position: absolute; left: 50%; transform: translateX(-50%);
+}
+.topbar-brand-center:hover { color: var(--accent); }
+.post-edit-icon { display: none; align-items: center; color: var(--fg-soft); text-decoration: none; transition: color .15s; }
+.post-edit-icon:hover { color: var(--fg); }
 
 .post-cover-wrap { max-width: 1100px; max-height: 520px; margin: 32px auto 0; padding: 0 24px; overflow: hidden; background: transparent; }
 .post-cover-wrap img { width: 100%; max-height: 520px; object-fit: cover; display: block; border-radius: 12px; }
@@ -2386,31 +2395,25 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .post-content table th { background: var(--bg-soft); font-weight: 700; color: var(--fg); }
 
 /* Post footer */
-.post-footer-bar {
-  max-width: 760px; margin: 0 auto 48px; padding: 0 24px;
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+.post-engagement {
+  max-width: 760px; margin: 0 auto 48px; padding: 24px 24px 0;
+  display: flex; align-items: center; gap: 6px;
+  border-top: 1px solid var(--border);
 }
-.btn-like {
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px 24px; border-radius: 100px;
-  border: 2px solid var(--border); background: none;
-  font-size: 15px; font-weight: 700; color: var(--fg-soft);
-  cursor: pointer; transition: all .18s;
-}
-.btn-like:hover,.btn-like.liked {
-  border-color: #e53e3e; color: #e53e3e; background: rgba(229,62,62,.07);
-}
-.btn-like .heart { font-size: 18px; }
-.btn-share {
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px 22px; border-radius: 100px;
+.eng-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px;
   border: 1px solid var(--border); background: none;
   font-size: 14px; font-weight: 600; color: var(--fg-soft);
-  cursor: pointer; transition: all .18s;
+  cursor: pointer; transition: all .15s;
 }
-.btn-share:hover { border-color: var(--border); color: var(--fg); }
+.eng-btn:hover { border-color: var(--border-hover); color: var(--fg); }
+.eng-like.liked { border-color: #e53e3e; color: #e53e3e; background: rgba(229,62,62,.07); }
+.eng-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+.eng-edit { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--fg-muted); text-decoration: none; transition: color .15s; }
+.eng-edit:hover { color: var(--accent); }
 .post-edit-link {
-  margin-left: auto; font-size: 13px; font-weight: 600;
+  font-size: 13px; font-weight: 600;
   color: var(--fg-muted); text-decoration: none; transition: color .15s;
 }
 .post-edit-link:hover { color: var(--accent); }
@@ -2452,9 +2455,18 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .comment-delete:hover { color: #ef4444; background: rgba(239,68,68,.08); }
 
 @media (max-width: 768px) {
-  .post-article, .post-footer-bar, .comments-wrap { padding-left: 16px; padding-right: 16px; }
-  .post-topbar { padding: 10px 16px; }
+  .post-article, .comments-wrap { padding-left: 16px; padding-right: 16px; }
+  .post-topbar { padding: 10px 16px; position: relative; }
   .post-cover-wrap { padding: 0 16px; margin-top: 20px; }
+  .back-label, .topbar-sep, .topbar-brand-desktop { display: none; }
+  .topbar-brand-center {
+    display: block; position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 15px; font-weight: 700; color: var(--fg); text-decoration: none; white-space: nowrap;
+  }
+  .post-edit-link { display: none; }
+  .post-edit-icon { display: flex; }
+  .post-engagement { padding: 20px 16px 0; }
+  .eng-label { display: none; }
 }
 
 /* ── Explore real-data additions ─────────────────────────────── */
