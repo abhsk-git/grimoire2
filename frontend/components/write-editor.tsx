@@ -864,6 +864,14 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       <div
         className="write-canvas"
         onKeyDownCapture={(e) => {
+          // Block EditorJS's built-in slashPressed() so our custom menu is the
+          // only thing that shows — without this, EditorJS opens its native toolbox
+          // in empty paragraph blocks while table cells get our menu (inconsistent).
+          if (e.key === "/" && !e.ctrlKey && !e.metaKey && !slashMenu?.open) {
+            e.stopPropagation();
+            return;
+          }
+
           if (!slashMenu?.open || !filteredCmds.length) return;
           if (!["ArrowDown","ArrowUp","Enter","Tab","Escape"].includes(e.key)) return;
           e.preventDefault();
