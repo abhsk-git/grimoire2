@@ -711,6 +711,13 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   // keep ref in sync so stale closures (EditorJS onChange timer) always call latest version
   useEffect(() => { saveDraftRef.current = saveDraft; }, [saveDraft]);
 
+  // Close slash menu on window scroll — menu is position:fixed so it drifts from cursor
+  useEffect(() => {
+    const close = () => setSlashMenu(null);
+    window.addEventListener("scroll", close, { passive: true });
+    return () => window.removeEventListener("scroll", close);
+  }, []);
+
   async function selectSlashCmd(cmd: SlashCmd) {
     setSlashMenu(null);
     if (!editorRef.current) return;
