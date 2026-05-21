@@ -30,11 +30,13 @@ def create_app():
     from blueprints.links import bp as links_bp
     from blueprints.explore import bp as explore_bp
     from blueprints.blog import bp as blog_bp
+    from blueprints.settings import bp as settings_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(links_bp)
     app.register_blueprint(explore_bp)
     app.register_blueprint(blog_bp)
+    app.register_blueprint(settings_bp)
 
     return app
 

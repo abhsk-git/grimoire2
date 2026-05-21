@@ -149,18 +149,22 @@ def logout():
 @bp.route('/api/auth/me')
 @login_required
 def me():
+    import json as _json
+    from blueprints.settings import _load as _load_settings
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
         cur.execute(
-            'SELECT id, name, email, avatar, bio, created_at FROM users WHERE id=%s',
+            'SELECT id, name, email, avatar, bio, created_at, settings FROM users WHERE id=%s',
             (request.user_id,)
         )
         user = cur.fetchone()
     finally:
         db.close()
-    if user and user.get('created_at'):
-        user['created_at'] = user['created_at'].isoformat()
+    if user:
+        if user.get('created_at'):
+            user['created_at'] = user['created_at'].isoformat()
+        user['settings'] = _load_settings(user.get('settings'))
     return jsonify(user)
 
 
@@ -176,6 +180,32 @@ def update_profile():
     cur = db.cursor()
     try:
         cur.execute('UPDATE users SET name=%s, bio=%s WHERE id=%s', (name, bio, request.user_id))
+        db.commit()
+    finally:
+        db.close()
+    return jsonify({'success': True})
+
+
+@bp.route('/api/auth/change-password', methods=['POST'])
+@login_required
+def change_password():
+    data     = request.json or {}
+    old_pw   = data.get('old_password', '')
+    new_pw   = data.get('new_password', '')
+    pw_error = _validate_password(new_pw)
+    if pw_error:
+        return jsonify({'error': pw_error}), 400
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('SELECT password_hash FROM users WHERE id=%s', (request.user_id,))
+        row = cur.fetchone()
+        if not row or not row.get('password_hash'):
+            return jsonify({'error': 'Cannot change password for OAuth accounts'}), 400
+        if not bcrypt.checkpw(old_pw.encode(), row['password_hash'].encode()):
+            return jsonify({'error': 'Current password is incorrect'}), 400
+        new_hash = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
+        cur.execute('UPDATE users SET password_hash=%s WHERE id=%s', (new_hash, request.user_id))
         db.commit()
     finally:
         db.close()
