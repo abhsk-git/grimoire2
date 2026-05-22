@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Rajdhani, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth";
+import { ThemeProvider } from "@/lib/theme";
+import { SettingsProvider } from "@/lib/settings";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,7 +58,15 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <ThemeProvider>
+            <SettingsProvider>
+              {children}
+            </SettingsProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

@@ -2864,3 +2864,160 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .about-grid { grid-template-columns: 1fr; }
   .about-col-l { padding: 20px; }
 }
+
+/* ── Banner ─────────────────────────────────────────────────────────────────── */
+.sett-banner-wrap {
+  position: relative; width: 100%; height: 130px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden; cursor: pointer;
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--accent) 40%, var(--bg-soft)),
+    color-mix(in oklab, var(--accent-3) 30%, var(--bg-inset)));
+}
+.sett-banner-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sett-banner-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+}
+.sett-banner-wrap:hover .sett-banner-overlay { background: rgba(0,0,0,0.38); }
+.sett-banner-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.92); color: #111;
+  font-size: 13px; font-weight: 600;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .18s, transform .18s;
+}
+.sett-banner-wrap:hover .sett-banner-btn { opacity: 1; transform: none; }
+
+/* ── Avatar upload ───────────────────────────────────────────────────────────── */
+.sett-avatar-section {
+  display: flex; align-items: flex-end; gap: 14px;
+  padding: 0 18px 16px;
+  margin-top: -32px;
+  position: relative; z-index: 2;
+}
+.sett-avatar-wrap { position: relative; flex-shrink: 0; width: 64px; height: 64px; }
+.sett-avatar-img {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 3px solid var(--bg-elev); object-fit: cover; display: block;
+}
+.sett-avatar-initials {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 3px solid var(--bg-elev);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #fff;
+}
+.sett-avatar-edit {
+  position: absolute; bottom: 0; right: 0;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-fg);
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg-elev); cursor: pointer; transition: transform .15s;
+}
+.sett-avatar-edit:hover { transform: scale(1.12); }
+.sett-avatar-info-col { display: flex; flex-direction: column; gap: 2px; padding-bottom: 4px; min-width: 0; }
+.sett-avatar-name { font-size: 16px; font-weight: 700; color: var(--fg); }
+.sett-avatar-email { font-size: 12px; color: var(--fg-soft); }
+
+/* ── Upload source toggle ────────────────────────────────────────────────────── */
+.sett-upload-tabs {
+  display: inline-flex; padding: 3px;
+  background: var(--bg-inset); border-radius: var(--radius-sm);
+  gap: 2px; margin-bottom: 10px;
+}
+.sett-upload-tab { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--fg-soft); transition: all .12s; }
+.sett-upload-tab.active { background: var(--bg-elev); color: var(--fg); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.sett-upload-url-row { display: flex; gap: 8px; align-items: center; }
+.sett-upload-url-row .sett-input { flex: 1; margin: 0; }
+
+/* ── Handle ──────────────────────────────────────────────────────────────────── */
+.sett-handle-wrap {
+  display: flex; align-items: center;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); overflow: hidden; transition: border-color .12s;
+}
+.sett-handle-wrap:focus-within { border-color: var(--accent); }
+.sett-handle-prefix {
+  padding: 8px 10px 8px 12px; font-size: 14px; color: var(--fg-soft);
+  background: var(--bg-inset); border-right: 1px solid var(--border);
+  user-select: none; white-space: nowrap;
+  display: flex; align-items: center;
+}
+.sett-handle-input {
+  flex: 1; background: none; border: none; outline: none;
+  padding: 8px 12px; font-size: 14px; color: var(--fg); font-family: inherit;
+}
+.sett-handle-hint { font-size: 11px; color: var(--fg-soft); padding: 4px 2px; display: block; }
+
+/* ── Social links ────────────────────────────────────────────────────────────── */
+.sett-socials-list { display: flex; flex-direction: column; }
+.sett-social-row {
+  display: flex; align-items: center; gap: 0;
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+}
+.sett-socials-list .sett-social-row:last-child { border-bottom: none; }
+.sett-social-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-right: 12px;
+}
+.sett-social-prefix { font-size: 13px; color: var(--fg-soft); white-space: nowrap; flex-shrink: 0; padding: 8px 8px 8px 0; }
+.sett-social-input {
+  flex: 1; background: var(--bg-soft); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 7px 10px;
+  font-size: 14px; color: var(--fg); font-family: inherit; outline: none;
+  transition: border-color .12s;
+}
+.sett-social-input:focus { border-color: var(--accent); }
+
+/* ── Reading mode picker ─────────────────────────────────────────────────────── */
+.sett-reading-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 18px; }
+.sett-reading-card {
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; cursor: pointer; transition: border-color .15s; position: relative;
+}
+.sett-reading-card:hover { border-color: var(--border-strong); }
+.sett-reading-card.active { border-color: var(--accent); }
+.sett-reading-preview {
+  padding: 12px; background: var(--bg-soft);
+  display: flex; flex-direction: column; gap: 4px; min-height: 70px;
+}
+.sett-reading-preview .rp-title { height: 6px; width: 70%; background: var(--fg-muted); border-radius: 3px; opacity: 0.7; }
+.sett-reading-preview .rp-line  { height: 4px; background: var(--border-strong); border-radius: 2px; }
+.sett-reading-label { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; font-size: 12px; font-weight: 600; color: var(--fg-muted); }
+.sett-reading-check { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: flex; align-items: center; justify-content: center; }
+
+/* ── Visibility pills ────────────────────────────────────────────────────────── */
+.sett-vis-pills { display: flex; gap: 4px; }
+.sett-vis-pill { padding: 5px 14px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; border: 1.5px solid var(--border); background: var(--bg-soft); color: var(--fg-muted); transition: all .12s; cursor: pointer; }
+.sett-vis-pill:hover { border-color: var(--border-strong); color: var(--fg); }
+.sett-vis-pill.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+/* ── RSS box ─────────────────────────────────────────────────────────────────── */
+.sett-rss-box { display: flex; align-items: center; gap: 8px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; font-family: var(--font-mono); color: var(--fg-muted); overflow: hidden; }
+.sett-rss-url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sett-rss-copy { flex-shrink: 0; padding: 4px 10px; border-radius: 6px; background: var(--bg-elev); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--fg-muted); transition: all .12s; cursor: pointer; font-family: var(--font-sans); }
+.sett-rss-copy:hover { color: var(--fg); border-color: var(--border-strong); }
+.sett-rss-copy.copied { color: var(--accent); border-color: var(--accent); }
+
+/* ── Notification badge ──────────────────────────────────────────────────────── */
+.sett-notif-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 7px; border-radius: var(--radius-pill); background: color-mix(in oklab, var(--accent-2) 16%, var(--bg)); color: var(--accent-2); border: 1px solid color-mix(in oklab, var(--accent-2) 35%, transparent); }
+
+/* ── Danger zone ─────────────────────────────────────────────────────────────── */
+.sett-danger { border: 1.5px solid color-mix(in oklab, #ef4444 45%, transparent); border-radius: var(--radius-lg); overflow: hidden; }
+.sett-danger-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px; background: color-mix(in oklab, #ef4444 6%, var(--bg-elev)); border-bottom: 1px solid color-mix(in oklab, #ef4444 25%, transparent); }
+.sett-danger-title { font-size: 14px; font-weight: 700; color: #ef4444; margin: 0; }
+.sett-danger-desc { font-size: 13px; color: var(--fg-muted); line-height: 1.5; margin: 0; }
+.sett-danger-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.sett-danger-btn { background: #ef4444; color: #fff; border: none; border-radius: var(--radius-pill); padding: 0 20px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, opacity .15s; font-family: inherit; }
+.sett-danger-btn:hover { background: #dc2626; }
+.sett-danger-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+@media (max-width: 640px) {
+  .sett-reading-grid { grid-template-columns: 1fr 1fr; }
+  .sett-banner-wrap { height: 100px; }
+  .sett-social-prefix { display: none; }
+}

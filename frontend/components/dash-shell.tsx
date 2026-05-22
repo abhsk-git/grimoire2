@@ -130,14 +130,14 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
             <div className="e">{email}</div>
           </div>
         </Link>
-        <button
+        <Link
+          href="/settings"
           className="icon-btn"
-          style={{ width: 28, height: 28, borderRadius: 6 }}
+          style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
           title="Settings"
-          onClick={() => { window.location.href = "/"; }}
         >
           <Icon name="cmd" size={13} />
-        </button>
+        </Link>
       </div>
     </aside>
   );

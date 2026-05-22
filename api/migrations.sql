@@ -21,3 +21,6 @@ CREATE TABLE IF NOT EXISTS password_resets (
 
 -- Ensure blog_posts has the featured column (already in schema_blog.sql but safe to repeat)
 ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS featured TINYINT(1) DEFAULT 0;
+
+-- User settings: JSON blob, synced per-account (editor prefs, theme, etc.)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS settings JSON NULL;

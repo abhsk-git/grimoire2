@@ -10,6 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { useSettings } from "@/lib/settings";
 import { Icon } from "./icons";
 
 declare global {
@@ -456,6 +457,7 @@ function TagChips({
 
 export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const { user, loading: authLoading } = useAuth();
+  const { settings } = useSettings();
 
   const [postId, setPostId] = useState<number | null>(initialPostId ?? null);
   const [status, setStatus] = useState<"draft" | "published">("draft");
@@ -489,6 +491,10 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   // stable ref so event handlers always see latest slash-menu state
   const slashMenuRef = useRef(slashMenu);
   useEffect(() => { slashMenuRef.current = slashMenu; }, [slashMenu]);
+
+  // Keep settings accessible inside EditorJS onChange (stale closure guard)
+  const editorSettingsRef = useRef(settings.editor);
+  useEffect(() => { editorSettingsRef.current = settings.editor; }, [settings.editor]);
 
   // stable ref so the autosave timer (inside a stale EditorJS closure) always
   // calls the latest saveDraft — without this, the timer calls the version from
@@ -592,25 +598,27 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           scheduleAutoSave();
           updateWordCount();
 
-          // Slash command detection — check if focused block starts with "/"
-          const active = document.activeElement as HTMLElement | null;
-          const editorEl = document.getElementById("editorjs");
-          if (active && editorEl?.contains(active)) {
-            const text = (active.textContent ?? "").trim();
-            if (text.startsWith("/")) {
-              const query = text.slice(1).toLowerCase();
-              const sel = window.getSelection();
-              const rect = sel?.rangeCount
-                ? sel.getRangeAt(0).getBoundingClientRect()
-                : active.getBoundingClientRect();
-              if (rect.height > 0) {
-                setSlashMenu({
-                  open: true,
-                  query,
-                  selected: 0,
-                  pos: { top: rect.bottom + 6, left: Math.max(rect.left, 20) },
-                });
-                return;
+          // Slash command detection (respects settings via ref, avoids stale closure)
+          if (editorSettingsRef.current.slashMenu) {
+            const active = document.activeElement as HTMLElement | null;
+            const editorEl = document.getElementById("editorjs");
+            if (active && editorEl?.contains(active)) {
+              const text = (active.textContent ?? "").trim();
+              if (text.startsWith("/")) {
+                const query = text.slice(1).toLowerCase();
+                const sel = window.getSelection();
+                const rect = sel?.rangeCount
+                  ? sel.getRangeAt(0).getBoundingClientRect()
+                  : active.getBoundingClientRect();
+                if (rect.height > 0) {
+                  setSlashMenu({
+                    open: true,
+                    query,
+                    selected: 0,
+                    pos: { top: rect.bottom + 6, left: Math.max(rect.left, 20) },
+                  });
+                  return;
+                }
               }
             }
           }
@@ -630,9 +638,10 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   }, [authLoading, user]);
 
   function scheduleAutoSave() {
+    if (!settings.editor.autosave) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    // use ref so the timer always calls the latest saveDraft, not the stale closure version
-    autoSaveTimer.current = setTimeout(() => saveDraftRef.current(true), 4000);
+    const ms = (settings.editor.autosaveInterval ?? 4) * 1000;
+    autoSaveTimer.current = setTimeout(() => saveDraftRef.current(true), ms);
   }
 
   async function updateWordCount() {
@@ -835,7 +844,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
               {lastSavedLabel}
             </span>
           )}
-          {wordCount > 0 && (
+          {settings.editor.wordCount && wordCount > 0 && (
             <span className="write-word-count">
               {wordCount} {wordCount === 1 ? "word" : "words"}
             </span>
@@ -843,6 +852,13 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         </div>
 
         <div className="write-topbar-right">
+          <Link
+            href="/settings?tab=editor"
+            className="write-details-btn"
+            title="Editor settings"
+          >
+            <Icon name="cmd" size={14} />
+          </Link>
           <button
             className="write-details-btn"
             onClick={() => setDetailsOpen((v) => !v)}
@@ -876,7 +892,8 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           // only thing that shows — without this, EditorJS opens its native toolbox
           // in empty paragraph blocks while table cells get our menu (inconsistent).
           if (e.key === "/" && !e.ctrlKey && !e.metaKey && !slashMenu?.open) {
-            e.stopPropagation();
+            // Only intercept if slash menu is enabled in settings
+            if (settings.editor.slashMenu) e.stopPropagation();
             return;
           }
 
@@ -1024,8 +1041,8 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         </div>
       </div>
 
-      {/* ── Slash command palette ── */}
-      {slashMenu?.open && filteredCmds.length > 0 && (
+      {/* ── Slash command palette (gated by editor settings) ── */}
+      {settings.editor.slashMenu && slashMenu?.open && filteredCmds.length > 0 && (
         <SlashMenuPanel
           query={slashMenu.query}
           selected={slashMenu.selected}

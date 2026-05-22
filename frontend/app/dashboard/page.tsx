@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ThemeProvider } from "@/lib/theme";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { DashSidebar, DashHeader, type DashView } from "@/components/dash-shell";
 import { AllLinksView, MyPostsView } from "@/components/dash-views";
@@ -75,10 +74,10 @@ function DashContent() {
 
 export default function DashboardPage() {
   return (
-    <ThemeProvider>
+
       <AuthProvider>
         <DashContent />
       </AuthProvider>
-    </ThemeProvider>
+
   );
 }
