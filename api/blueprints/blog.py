@@ -511,10 +511,11 @@ def get_comments(post_id):
     try:
         cur.execute('''
             SELECT c.id, c.content, c.author_name, c.user_id, c.created_at,
+                   c.parent_id, c.likes, c.dislikes,
                    u.name as user_name, u.avatar as user_avatar
             FROM blog_comments c
             LEFT JOIN users u ON c.user_id=u.id
-            WHERE c.post_id=%s ORDER BY c.created_at ASC LIMIT 200
+            WHERE c.post_id=%s ORDER BY c.created_at ASC LIMIT 500
         ''', (post_id,))
         comments = cur.fetchall()
     finally:
@@ -526,22 +527,25 @@ def get_comments(post_id):
             c['created_at'] = c['created_at'].isoformat()
         display = c.get('user_name') or c.get('author_name') or 'Anonymous'
         c['display_name']  = display
-        c['author_name']   = display   # backward-compat alias
+        c['author_name']   = display
         c['avatar']        = c.get('user_avatar') or \
             f"https://ui-avatars.com/api/?name={_q(display[:2])}&size=40&background=6366f1&color=fff"
         c['author_avatar'] = c['avatar']
+        c['parent_id']     = c.get('parent_id')
+        c['likes']         = c.get('likes') or 0
+        c['dislikes']      = c.get('dislikes') or 0
     return jsonify(comments)
 
 
 @bp.route('/api/blog/posts/<int:post_id>/comments', methods=['POST'])
 @optional_auth
 def add_comment(post_id):
-    data    = request.json or {}
-    content = (data.get('content') or '').strip()[:2000]
+    data       = request.json or {}
+    content    = (data.get('content') or '').strip()[:2000]
     if not content:
         return jsonify({'error': 'Comment cannot be empty'}), 400
-    # For guests, use provided name; for users, we'll fetch from DB
     guest_name = (data.get('author_name') or 'Anonymous').strip()[:100]
+    parent_id  = data.get('parent_id') or None
 
     db  = get_db()
     cur = db.cursor(dictionary=True)
@@ -550,8 +554,12 @@ def add_comment(post_id):
         if not cur.fetchone():
             return jsonify({'error': 'Post not found'}), 404
 
+        if parent_id:
+            cur.execute('SELECT id FROM blog_comments WHERE id=%s AND post_id=%s', (parent_id, post_id))
+            if not cur.fetchone():
+                return jsonify({'error': 'Invalid parent comment'}), 400
+
         if request.user_id:
-            # Fetch the user's actual name so author_name is always populated
             cur.execute('SELECT name FROM users WHERE id=%s', (request.user_id,))
             u = cur.fetchone()
             stored_author = u['name'] if u else 'Unknown'
@@ -559,8 +567,8 @@ def add_comment(post_id):
             stored_author = guest_name
 
         cur.execute(
-            'INSERT INTO blog_comments (post_id,user_id,author_name,content) VALUES (%s,%s,%s,%s)',
-            (post_id, request.user_id, stored_author, content)
+            'INSERT INTO blog_comments (post_id,parent_id,user_id,author_name,content) VALUES (%s,%s,%s,%s,%s)',
+            (post_id, parent_id, request.user_id, stored_author, content)
         )
         db.commit()
         cid = cur.lastrowid
@@ -568,11 +576,15 @@ def add_comment(post_id):
         if request.user_id:
             cur.execute('''
                 SELECT c.id, c.content, c.author_name, c.user_id, c.created_at,
+                       c.parent_id, c.likes, c.dislikes,
                        u.name as user_name, u.avatar as user_avatar
                 FROM blog_comments c JOIN users u ON c.user_id=u.id WHERE c.id=%s
             ''', (cid,))
         else:
-            cur.execute('SELECT id,content,author_name,user_id,created_at FROM blog_comments WHERE id=%s', (cid,))
+            cur.execute(
+                'SELECT id,content,author_name,user_id,created_at,parent_id,likes,dislikes FROM blog_comments WHERE id=%s',
+                (cid,)
+            )
         c = cur.fetchone()
 
         if c.get('created_at'):
@@ -584,6 +596,9 @@ def add_comment(post_id):
         c['avatar']        = c.get('user_avatar') or \
             f"https://ui-avatars.com/api/?name={_q(display[:2])}&size=40&background=6366f1&color=fff"
         c['author_avatar'] = c['avatar']
+        c['parent_id']     = c.get('parent_id')
+        c['likes']         = c.get('likes') or 0
+        c['dislikes']      = c.get('dislikes') or 0
         return jsonify(c), 201
     except Exception:
         return jsonify({'error': 'Failed to post comment'}), 500
@@ -606,6 +621,78 @@ def delete_comment(comment_id):
     finally:
         db.close()
     return jsonify({'success': True})
+
+
+@bp.route('/api/blog/comments/<int:comment_id>/vote', methods=['POST'])
+def vote_comment(comment_id):
+    data        = request.json or {}
+    vote        = data.get('vote')
+    session_key = (data.get('session_key') or '').strip()[:64]
+
+    if vote not in (1, -1) or not session_key:
+        return jsonify({'error': 'Invalid vote'}), 400
+
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute(
+            'SELECT vote FROM comment_votes WHERE comment_id=%s AND session_key=%s',
+            (comment_id, session_key)
+        )
+        existing = cur.fetchone()
+
+        if existing:
+            if existing['vote'] == vote:
+                # Same vote → toggle off
+                cur.execute(
+                    'DELETE FROM comment_votes WHERE comment_id=%s AND session_key=%s',
+                    (comment_id, session_key)
+                )
+                if vote == 1:
+                    cur.execute('UPDATE blog_comments SET likes=GREATEST(0,likes-1) WHERE id=%s', (comment_id,))
+                else:
+                    cur.execute('UPDATE blog_comments SET dislikes=GREATEST(0,dislikes-1) WHERE id=%s', (comment_id,))
+                action = 'removed'
+            else:
+                # Flip vote
+                cur.execute(
+                    'UPDATE comment_votes SET vote=%s WHERE comment_id=%s AND session_key=%s',
+                    (vote, comment_id, session_key)
+                )
+                if vote == 1:
+                    cur.execute(
+                        'UPDATE blog_comments SET likes=likes+1, dislikes=GREATEST(0,dislikes-1) WHERE id=%s',
+                        (comment_id,)
+                    )
+                else:
+                    cur.execute(
+                        'UPDATE blog_comments SET dislikes=dislikes+1, likes=GREATEST(0,likes-1) WHERE id=%s',
+                        (comment_id,)
+                    )
+                action = 'changed'
+        else:
+            cur.execute(
+                'INSERT INTO comment_votes (comment_id, session_key, vote) VALUES (%s,%s,%s)',
+                (comment_id, session_key, vote)
+            )
+            if vote == 1:
+                cur.execute('UPDATE blog_comments SET likes=likes+1 WHERE id=%s', (comment_id,))
+            else:
+                cur.execute('UPDATE blog_comments SET dislikes=dislikes+1 WHERE id=%s', (comment_id,))
+            action = 'added'
+
+        db.commit()
+        cur.execute('SELECT likes, dislikes FROM blog_comments WHERE id=%s', (comment_id,))
+        row = cur.fetchone()
+        return jsonify({
+            'action':   action,
+            'likes':    row['likes']    if row else 0,
+            'dislikes': row['dislikes'] if row else 0,
+        })
+    except Exception:
+        return jsonify({'error': 'Failed to vote'}), 500
+    finally:
+        db.close()
 
 
 @bp.route('/api/blog/my-posts', methods=['GET'])

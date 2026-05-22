@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { PublicFooter } from "@/components/sections";
 
 interface Post {
   id: number;
@@ -33,6 +34,10 @@ interface Comment {
   author_avatar: string;
   user_id: number | null;
   created_at: string;
+  parent_id: number | null;
+  likes: number;
+  dislikes: number;
+  replies?: Comment[];
 }
 
 // ── XSS sanitizer ────────────────────────────────────────────────────────────
@@ -208,6 +213,267 @@ function getSessionKey(): string {
   return k;
 }
 
+// ── Comment vote state (localStorage) ────────────────────────────────────────
+const COMMENT_VOTE_KEY = "grimoire_cvotes";
+function getVoteMap(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(COMMENT_VOTE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+function saveVote(id: number, v: number) {
+  const m = getVoteMap();
+  if (v === 0) delete m[String(id)];
+  else m[String(id)] = v;
+  if (typeof window !== "undefined")
+    localStorage.setItem(COMMENT_VOTE_KEY, JSON.stringify(m));
+}
+function getStoredVote(id: number): number {
+  return getVoteMap()[String(id)] || 0;
+}
+
+// ── Flat comment list → nested tree ──────────────────────────────────────────
+function buildCommentTree(flat: Comment[]): Comment[] {
+  const map = new Map<number, Comment>();
+  const roots: Comment[] = [];
+  for (const c of flat) map.set(c.id, { ...c, replies: [] });
+  for (const c of flat) {
+    const node = map.get(c.id)!;
+    if (c.parent_id != null && map.has(c.parent_id)) {
+      map.get(c.parent_id)!.replies!.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+  return roots;
+}
+
+// ── Comment card (recursive for replies) ─────────────────────────────────────
+interface CommentCardProps {
+  comment: Comment;
+  postId: number;
+  postIsOwner: boolean;
+  currentUserId: number | null | undefined;
+  isLoggedIn: boolean;
+  depth?: number;
+  onDelete: (id: number) => void;
+}
+
+function CommentCard({
+  comment,
+  postId,
+  postIsOwner,
+  currentUserId,
+  isLoggedIn,
+  depth = 0,
+  onDelete,
+}: CommentCardProps) {
+  const [vote, setVote] = useState<number>(() =>
+    typeof window !== "undefined" ? getStoredVote(comment.id) : 0
+  );
+  const [likes, setLikes] = useState(comment.likes ?? 0);
+  const [dislikes, setDislikes] = useState(comment.dislikes ?? 0);
+  const [showReply, setShowReply] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showReplies, setShowReplies] = useState(true);
+  const [localReplies, setLocalReplies] = useState<Comment[]>(
+    comment.replies ?? []
+  );
+
+  const displayName =
+    comment.display_name || comment.author_name || "Anonymous";
+  const avatar =
+    comment.avatar || comment.author_avatar || avatarFallback(displayName);
+  const canDelete = !!(
+    currentUserId &&
+    (currentUserId === comment.user_id || postIsOwner)
+  );
+
+  async function castVote(v: 1 | -1) {
+    const wasVote = vote;
+    const newVote = wasVote === v ? 0 : v;
+    setVote(newVote);
+    if (wasVote === 1) setLikes((l) => Math.max(0, l - 1));
+    if (wasVote === -1) setDislikes((d) => Math.max(0, d - 1));
+    if (newVote === 1) setLikes((l) => l + 1);
+    if (newVote === -1) setDislikes((d) => d + 1);
+    saveVote(comment.id, newVote);
+    try {
+      const r = await fetch(`/api/blog/comments/${comment.id}/vote`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_key: getSessionKey(), vote: v }),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        setLikes(data.likes);
+        setDislikes(data.dislikes);
+        const confirmed = data.action === "removed" ? 0 : v;
+        setVote(confirmed);
+        saveVote(comment.id, confirmed);
+      }
+    } catch {}
+  }
+
+  async function submitReply() {
+    if (!replyText.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      const r = await fetch(`/api/blog/posts/${postId}/comments`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: replyText,
+          parent_id: comment.id,
+        }),
+      });
+      if (r.ok) {
+        const nr: Comment = await r.json();
+        setLocalReplies((prev) => [
+          ...prev,
+          { ...nr, likes: 0, dislikes: 0, parent_id: comment.id, replies: [] },
+        ]);
+        setReplyText("");
+        setShowReply(false);
+        setShowReplies(true);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className={`cmt-row${depth > 0 ? " cmt-reply" : ""}`}>
+      <img
+        className="cmt-avatar"
+        src={avatar}
+        alt={displayName}
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = avatarFallback(displayName);
+        }}
+      />
+      <div className="cmt-body">
+        <div className="cmt-meta">
+          <span className="cmt-author">{displayName}</span>
+          <span className="cmt-date">{fmtDate(comment.created_at)}</span>
+          {canDelete && (
+            <button
+              className="cmt-del"
+              onClick={async () => {
+                const r = await fetch(`/api/blog/comments/${comment.id}`, {
+                  method: "DELETE",
+                  credentials: "include",
+                });
+                if (r.ok) onDelete(comment.id);
+              }}
+            >
+              delete
+            </button>
+          )}
+        </div>
+
+        <p className="cmt-text">{comment.content}</p>
+
+        <div className="cmt-actions">
+          <button
+            className={`cmt-vote${vote === 1 ? " up" : ""}`}
+            onClick={() => castVote(1)}
+            title="Upvote"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3 22 21H2z" />
+            </svg>
+            {likes > 0 && <span>{likes}</span>}
+          </button>
+          <button
+            className={`cmt-vote${vote === -1 ? " down" : ""}`}
+            onClick={() => castVote(-1)}
+            title="Downvote"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 21 2 3h20z" />
+            </svg>
+            {dislikes > 0 && <span>{dislikes}</span>}
+          </button>
+          <button
+            className={`cmt-reply-btn${showReply ? " active" : ""}`}
+            onClick={() => {
+              if (!isLoggedIn) { window.location.href = "/login"; return; }
+              setShowReply((p) => !p);
+            }}
+          >
+            ↩ Reply
+          </button>
+        </div>
+
+        {showReply && (
+          <div className="cmt-reply-box">
+            <textarea
+              className="cmt-reply-textarea"
+              placeholder={`Reply to ${displayName}…`}
+              rows={2}
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              autoFocus
+            />
+            <div className="cmt-reply-btns">
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={submitReply}
+                disabled={submitting || !replyText.trim()}
+              >
+                {submitting ? "Posting…" : "Post reply"}
+              </button>
+              <button
+                className="cmt-cancel-btn"
+                onClick={() => { setShowReply(false); setReplyText(""); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {localReplies.length > 0 && depth < 2 && (
+          <div className="cmt-thread">
+            <button
+              className="cmt-toggle"
+              onClick={() => setShowReplies((p) => !p)}
+            >
+              <span className="cmt-toggle-arrow">{showReplies ? "▾" : "▸"}</span>
+              {showReplies ? "Hide" : "Show"} {localReplies.length}{" "}
+              {localReplies.length === 1 ? "reply" : "replies"}
+            </button>
+            {showReplies && (
+              <div className="cmt-replies">
+                {localReplies.map((r) => (
+                  <CommentCard
+                    key={r.id}
+                    comment={r}
+                    postId={postId}
+                    postIsOwner={postIsOwner}
+                    currentUserId={currentUserId}
+                    isLoggedIn={isLoggedIn}
+                    depth={depth + 1}
+                    onDelete={(id) =>
+                      setLocalReplies((prev) => prev.filter((x) => x.id !== id))
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   slug: string;
 }
@@ -220,9 +486,9 @@ export function BlogPost({ slug }: Props) {
   const [likeCount, setLikeCount] = useState(0);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
-  const [commentName, setCommentName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
   const progressRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -259,6 +525,17 @@ export function BlogPost({ slug }: Props) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const sortedComments = useMemo(() => {
+    const tree = buildCommentTree(comments);
+    if (sortBy === "top") {
+      return [...tree].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
+    }
+    return [...tree].sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [comments, sortBy]);
 
   async function toggleLike() {
     if (!post) return;
@@ -302,23 +579,22 @@ export function BlogPost({ slug }: Props) {
   }
 
   async function submitComment() {
-    if (!post || !commentText.trim() || submitting) return;
+    if (!post || !user || !commentText.trim() || submitting) return;
     setSubmitting(true);
     const r = await fetch(`/api/blog/posts/${post.id}/comments`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: commentText,
-        author_name: commentName,
-      }),
+      body: JSON.stringify({ content: commentText }),
     });
     setSubmitting(false);
     if (r.ok) {
       const c = await r.json();
-      setComments((prev) => [...prev, c]);
+      setComments((prev) => [
+        ...prev,
+        { ...c, likes: c.likes ?? 0, dislikes: c.dislikes ?? 0, parent_id: null, replies: [] },
+      ]);
       setCommentText("");
-      setCommentName("");
     }
   }
 
@@ -512,83 +788,94 @@ export function BlogPost({ slug }: Props) {
 
       {/* Comments */}
       <div className="comments-wrap">
-        <h3 className="comments-title">Discussion</h3>
-        <div className="comment-form">
-          <textarea
-            className="comment-textarea"
-            placeholder="Share your thoughts, questions, or feedback…"
-            rows={3}
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-          />
-          <div className="comment-form-row">
-            {!user && (
-              <input
-                type="text"
-                className="comment-name-input"
-                placeholder="Your name (optional)"
-                value={commentName}
-                onChange={(e) => setCommentName(e.target.value)}
-              />
+        <div className="cmt-header">
+          <div className="cmt-header-left">
+            <h3 className="cmt-title">Discussion</h3>
+            {comments.length > 0 && (
+              <span className="cmt-count">{comments.length}</span>
             )}
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={submitComment}
-              disabled={submitting || !commentText.trim()}
-              style={{ flexShrink: 0 }}
-            >
-              {submitting ? "Posting…" : "Post comment"}
-            </button>
           </div>
+          {comments.length > 1 && (
+            <select
+              className="cmt-sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "newest" | "top")}
+            >
+              <option value="newest">Newest</option>
+              <option value="top">Top rated</option>
+            </select>
+          )}
         </div>
 
-        {comments.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "32px",
-              color: "var(--fg-soft)",
-              fontSize: 14,
-            }}
-          >
-            No comments yet — be the first!
-          </div>
-        ) : (
-          comments.map((c) => (
-            <div key={c.id} className="comment-item">
-              <img
-                className="comment-avatar"
-                src={commentAvatar(c)}
-                alt={commentDisplayName(c)}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = avatarFallback(
-                    commentDisplayName(c)
-                  );
-                }}
+        {user ? (
+          <div className="cmt-compose">
+            <img
+              className="cmt-compose-avatar"
+              src={user.avatar || avatarFallback(user.display_name || user.username)}
+              alt={user.display_name || user.username}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = avatarFallback(
+                  user.display_name || user.username
+                );
+              }}
+            />
+            <div className="cmt-compose-inner">
+              <textarea
+                className="cmt-compose-textarea"
+                placeholder="Share your thoughts…"
+                rows={3}
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
               />
-              <div className="comment-bubble">
-                <div className="comment-header">
-                  <span className="comment-author">
-                    {commentDisplayName(c)}
-                  </span>
-                  <span className="comment-date">
-                    {fmtDate(c.created_at)}
-                  </span>
-                  {(user?.id === c.user_id || post.is_owner) && (
-                    <button
-                      className="comment-delete"
-                      onClick={() => deleteComment(c.id)}
-                    >
-                      delete
-                    </button>
-                  )}
-                </div>
-                <div className="comment-text">{c.content}</div>
+              <div className="cmt-compose-footer">
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={submitComment}
+                  disabled={submitting || !commentText.trim()}
+                >
+                  {submitting ? "Posting…" : "Post"}
+                </button>
               </div>
             </div>
-          ))
+          </div>
+        ) : (
+          <div className="cmt-login-gate">
+            <span>Sign in to join the discussion</span>
+            <Link href="/login" className="btn btn-primary btn-sm">Sign in</Link>
+          </div>
+        )}
+
+        {sortedComments.length === 0 ? (
+          <div className="cmt-empty">
+            No comments yet — be the first to share your thoughts.
+          </div>
+        ) : (
+          <div className="cmt-list">
+            {sortedComments.map((c) => (
+              <CommentCard
+                key={c.id}
+                comment={c}
+                postId={post.id}
+                postIsOwner={post.is_owner}
+                currentUserId={user?.id}
+                isLoggedIn={!!user}
+                depth={0}
+                onDelete={(id) =>
+                  setComments((prev) => prev.filter((x) => x.id !== id))
+                }
+              />
+            ))}
+          </div>
         )}
       </div>
+
+      <PublicFooter
+        links={[
+          { label: "Home", href: "/" },
+          { label: "Explore", href: "/explore" },
+          { label: "Privacy", href: "#" },
+        ]}
+      />
     </div>
   );
 }

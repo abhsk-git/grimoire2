@@ -36,12 +36,25 @@ CREATE TABLE IF NOT EXISTS blog_likes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS blog_comments (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  post_id      INT NOT NULL,
-  user_id      INT NULL,
-  author_name  VARCHAR(100) DEFAULT 'Anonymous',
-  content      TEXT NOT NULL,
-  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id)      ON DELETE SET NULL
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  post_id     INT NOT NULL,
+  parent_id   INT NULL,
+  user_id     INT NULL,
+  author_name VARCHAR(100) DEFAULT 'Anonymous',
+  content     TEXT NOT NULL,
+  likes       INT UNSIGNED DEFAULT 0,
+  dislikes    INT UNSIGNED DEFAULT 0,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id)   REFERENCES blog_posts(id)    ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES blog_comments(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)   REFERENCES users(id)         ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS comment_votes (
+  comment_id  INT         NOT NULL,
+  session_key VARCHAR(64) NOT NULL,
+  vote        TINYINT     NOT NULL,
+  created_at  TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (comment_id, session_key),
+  FOREIGN KEY (comment_id) REFERENCES blog_comments(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
