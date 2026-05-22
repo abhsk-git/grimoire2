@@ -6,11 +6,13 @@ import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { Icon } from "./icons";
 import { useTheme } from "@/lib/theme";
+import { ImageCropModal } from "./image-crop-modal";
 
-type Tab = "profile" | "editor" | "appearance" | "publishing" | "privacy" | "notifications" | "account";
+type Tab = "profile" | "social" | "editor" | "appearance" | "publishing" | "privacy" | "notifications" | "account";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "profile",       label: "Profile",       icon: "user"    },
+  { id: "social",        label: "Social links",  icon: "link"    },
   { id: "editor",        label: "Editor",         icon: "feather" },
   { id: "appearance",    label: "Appearance",     icon: "sun"     },
   { id: "publishing",    label: "Publishing",     icon: "rss"     },
@@ -116,11 +118,13 @@ function ProfileTab() {
   const [bannerUrl,     setBannerUrl]     = useState(user?.banner ?? "");
   const [avatarInput,   setAvatarInput]   = useState("");
   const [bannerInput,   setBannerInput]   = useState("");
-  const [showBannerUrl, setShowBannerUrl] = useState(false);
-  const [showAvatarUrl, setShowAvatarUrl] = useState(false);
-  const [saving,        setSaving]        = useState(false);
-  const [uploading,     setUploading]     = useState<"avatar" | "banner" | null>(null);
-  const [msg,           setMsg]           = useState("");
+  const [showBannerUrl,    setShowBannerUrl]    = useState(false);
+  const [showAvatarUrl,    setShowAvatarUrl]    = useState(false);
+  const [saving,           setSaving]           = useState(false);
+  const [uploading,        setUploading]        = useState<"avatar" | "banner" | null>(null);
+  const [msg,              setMsg]              = useState("");
+  const [pendingBannerFile, setPendingBannerFile] = useState<File | null>(null);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
@@ -190,130 +194,205 @@ function ProfileTab() {
 
   return (
     <>
-      {/* One card: banner strip → avatar row → fields */}
-      <Section title="Public profile">
-        {/* Banner strip — lives at the very top of the card */}
-        <div
-          className="sett-banner-strip"
-          onClick={() => !showBannerUrl && bannerFileRef.current?.click()}
-        >
-          {bannerUrl ? <img src={bannerUrl} alt="Banner" /> : null}
-          <div className="sett-banner-overlay">
-            <div className="sett-banner-actions">
-              <button className="sett-banner-btn" onClick={e => { e.stopPropagation(); bannerFileRef.current?.click(); }}>
-                <Icon name="upload" size={12} />
-                {uploading === "banner" ? "Uploading…" : "Upload"}
-              </button>
-              <button className="sett-banner-btn" onClick={e => { e.stopPropagation(); setShowBannerUrl(v => !v); }}>
-                <Icon name="link" size={12} /> URL
-              </button>
-              {bannerUrl && (
-                <button className="sett-banner-btn sett-banner-remove" onClick={e => { e.stopPropagation(); setBannerUrl(""); setBannerInput(""); setShowBannerUrl(false); }}>
-                  Remove
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-        <input ref={bannerFileRef} type="file" accept="image/*" style={{ display: "none" }}
-          onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f, "banner"); }} />
-        {showBannerUrl && (
-          <div className="sett-inline-url-row">
-            <input className="sett-input" placeholder="https://example.com/banner.jpg" value={bannerInput} onChange={e => setBannerInput(e.target.value)} />
-            <button className="btn btn-primary btn-sm" onClick={() => { setBannerUrl(bannerInput.trim()); setShowBannerUrl(false); }}>Set</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowBannerUrl(false)}>Cancel</button>
-          </div>
-        )}
+    <div className="sett-section">
+      <div className="sett-section-title">Public profile</div>
+      <div className="sett-profile-grid">
 
-        {/* Avatar row — original style, now clickable */}
-        <div className="sett-avatar-row">
-          <div className="sett-avatar-clickable" onClick={() => avatarFileRef.current?.click()} title="Change avatar">
-            {avatarUrl
-              ? <img className="sett-avatar sett-avatar-photo" src={avatarUrl} alt={initials} />
-              : <div className="sett-avatar" style={{ background: "linear-gradient(135deg,var(--accent),var(--accent-3))" }}>{initials}</div>
-            }
-            <div className="sett-avatar-hover">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                <circle cx="12" cy="13" r="4"/>
-              </svg>
+        {/* Banner — full width */}
+        <div className="sett-card sett-profile-banner">
+          <div
+            className="sett-banner-strip"
+            onClick={() => !showBannerUrl && bannerFileRef.current?.click()}
+          >
+            {bannerUrl ? <img src={bannerUrl} alt="Banner" /> : null}
+            <div className="sett-banner-overlay">
+              <div className="sett-banner-actions">
+                <button className="sett-banner-btn" onClick={e => { e.stopPropagation(); bannerFileRef.current?.click(); }}>
+                  <Icon name="upload" size={12} />
+                  {uploading === "banner" ? "Uploading…" : "Upload"}
+                </button>
+                <button className="sett-banner-btn" onClick={e => { e.stopPropagation(); setShowBannerUrl(v => !v); }}>
+                  <Icon name="link" size={12} /> URL
+                </button>
+                {bannerUrl && (
+                  <button className="sett-banner-btn sett-banner-remove" onClick={e => { e.stopPropagation(); setBannerUrl(""); setBannerInput(""); setShowBannerUrl(false); }}>
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-          <input ref={avatarFileRef} type="file" accept="image/*" style={{ display: "none" }}
-            onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f, "avatar"); }} />
-          <div className="sett-avatar-info">
+          <input ref={bannerFileRef} type="file" accept="image/*" style={{ display: "none" }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) { setPendingBannerFile(f); if (bannerFileRef.current) bannerFileRef.current.value = ""; } }} />
+          {showBannerUrl && (
+            <div className="sett-inline-url-row">
+              <input className="sett-input" placeholder="https://example.com/banner.jpg" value={bannerInput} onChange={e => setBannerInput(e.target.value)} />
+              <button className="btn btn-primary btn-sm" onClick={() => { setBannerUrl(bannerInput.trim()); setShowBannerUrl(false); }}>Set</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowBannerUrl(false)}>Cancel</button>
+            </div>
+          )}
+        </div>
+
+        {/* Identity card — left col */}
+        <div className="sett-card sett-profile-identity">
+          <div className="sett-identity-inner">
+            <div className="sett-avatar-clickable" onClick={() => avatarFileRef.current?.click()} title="Change avatar">
+              {avatarUrl
+                ? <img className="sett-avatar sett-avatar-photo" src={avatarUrl} alt={initials} />
+                : <div className="sett-avatar" style={{ background: "linear-gradient(135deg,var(--accent),var(--accent-3))" }}>{initials}</div>
+              }
+              <div className="sett-avatar-hover">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </div>
+            </div>
+            <input ref={avatarFileRef} type="file" accept="image/*" style={{ display: "none" }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) { setPendingAvatarFile(f); if (avatarFileRef.current) avatarFileRef.current.value = ""; } }} />
             <span className="sett-avatar-name">{user?.username}</span>
             <span className="sett-avatar-email">{user?.email}</span>
             <button className="sett-link-btn" onClick={() => setShowAvatarUrl(v => !v)}>
               {uploading === "avatar" ? "Uploading…" : "Paste image URL"}
             </button>
           </div>
-        </div>
-        {showAvatarUrl && (
-          <div className="sett-inline-url-row">
-            <input className="sett-input" placeholder="https://example.com/avatar.jpg" value={avatarInput} onChange={e => setAvatarInput(e.target.value)} />
-            <button className="btn btn-primary btn-sm" onClick={() => { setAvatarUrl(avatarInput.trim()); setShowAvatarUrl(false); }}>Set</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowAvatarUrl(false)}>Cancel</button>
-          </div>
-        )}
-
-        <div className="sett-field">
-          <label className="sett-label">Display name</label>
-          <input className="sett-input" value={name} onChange={e => setName(e.target.value)} maxLength={100} />
-        </div>
-
-        <div className="sett-field">
-          <label className="sett-label">Handle <span className="sett-label-soft">(your public URL)</span></label>
-          <div className="sett-handle-wrap">
-            <span className="sett-handle-prefix">grimoire.sysnode.in/user/</span>
-            <input className="sett-handle-input" value={handle} onChange={e => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} placeholder="yourhandle" />
-          </div>
-          <span className="sett-handle-hint">2–30 chars · lowercase letters, numbers, hyphens</span>
-        </div>
-
-        <div className="sett-field">
-          <label className="sett-label">Bio <span className="sett-label-soft">(shown on your profile)</span></label>
-          <textarea className="sett-input sett-textarea" value={bio} onChange={e => setBio(e.target.value)} maxLength={300} rows={3} placeholder="A sentence or two about yourself…" />
-          <span className="sett-char-count">{bio.length}/300</span>
-        </div>
-
-        <div className="sett-field">
-          <label className="sett-label">Website</label>
-          <div className="sett-handle-wrap">
-            <span className="sett-handle-prefix"><Icon name="globe" size={13} /></span>
-            <input className="sett-handle-input" value={website} onChange={e => setWebsite(e.target.value)} maxLength={300} placeholder="https://yoursite.com" />
-          </div>
-        </div>
-
-        <div className="sett-save-row">
-          <SaveMsg msg={msg} />
-          <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>
-            {saving ? "Saving…" : "Save changes"}
-          </button>
-        </div>
-      </Section>
-
-      {/* Social links — separate card below */}
-      <Section title="Social links">
-        <div className="sett-socials-list">
-          {SOCIAL_PLATFORMS.map(p => (
-            <div key={p.key} className="sett-social-row">
-              <div className="sett-social-icon" style={{ background: `color-mix(in oklab, ${p.color} 12%, var(--bg-soft))`, color: p.color === "#000" ? "var(--fg)" : p.color }}>
-                {p.icon}
-              </div>
-              <span className="sett-social-prefix">{p.prefix}</span>
-              <input className="sett-social-input" placeholder={p.placeholder} value={socials[p.key] ?? ""} onChange={e => setSocials(prev => ({ ...prev, [p.key]: e.target.value }))} maxLength={100} />
+          {showAvatarUrl && (
+            <div className="sett-identity-url-row">
+              <input className="sett-input" placeholder="https://example.com/avatar.jpg" value={avatarInput} onChange={e => setAvatarInput(e.target.value)} />
+              <button className="btn btn-primary btn-sm" onClick={() => { setAvatarUrl(avatarInput.trim()); setShowAvatarUrl(false); }}>Set</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowAvatarUrl(false)}>Cancel</button>
             </div>
-          ))}
+          )}
         </div>
-        <div className="sett-save-row">
-          <SaveMsg msg={msg} />
-          <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>
-            {saving ? "Saving…" : "Save links"}
-          </button>
+
+        {/* Fields card — right col */}
+        <div className="sett-card sett-profile-fields">
+          <div className="sett-field">
+            <label className="sett-label">Display name</label>
+            <input className="sett-input" value={name} onChange={e => setName(e.target.value)} maxLength={100} />
+          </div>
+          <div className="sett-field">
+            <label className="sett-label">Handle <span className="sett-label-soft">(public URL)</span></label>
+            <div className="sett-handle-wrap">
+              <span className="sett-handle-prefix">grimoire.sysnode.in/user/</span>
+              <input className="sett-handle-input" value={handle} onChange={e => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} placeholder="yourhandle" />
+            </div>
+            <span className="sett-handle-hint">2–30 chars · lowercase · hyphens ok</span>
+          </div>
+          <div className="sett-field">
+            <label className="sett-label">Bio <span className="sett-label-soft">(shown on profile)</span></label>
+            <textarea className="sett-input sett-textarea" value={bio} onChange={e => setBio(e.target.value)} maxLength={300} rows={2} placeholder="A short bio…" />
+            <span className="sett-char-count">{bio.length}/300</span>
+          </div>
+          <div className="sett-field" style={{ borderBottom: "none" }}>
+            <label className="sett-label">Website</label>
+            <div className="sett-handle-wrap">
+              <span className="sett-handle-prefix"><Icon name="globe" size={13} /></span>
+              <input className="sett-handle-input" value={website} onChange={e => setWebsite(e.target.value)} maxLength={300} placeholder="https://yoursite.com" />
+            </div>
+          </div>
+          <div className="sett-save-row">
+            <SaveMsg msg={msg} />
+            <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>
+              {saving ? "Saving…" : "Save changes"}
+            </button>
+          </div>
         </div>
-      </Section>
+
+      </div>
+    </div>
+
+    {pendingBannerFile && (
+      <ImageCropModal
+        file={pendingBannerFile}
+        aspectRatio={4.5}
+        label="Adjust banner"
+        outputWidth={1400}
+        onCancel={() => setPendingBannerFile(null)}
+        onConfirm={blob => {
+          setPendingBannerFile(null);
+          uploadFile(new File([blob], "banner.jpg", { type: "image/jpeg" }), "banner");
+        }}
+      />
+    )}
+    {pendingAvatarFile && (
+      <ImageCropModal
+        file={pendingAvatarFile}
+        aspectRatio={1}
+        label="Adjust profile photo"
+        outputWidth={400}
+        onCancel={() => setPendingAvatarFile(null)}
+        onConfirm={blob => {
+          setPendingAvatarFile(null);
+          uploadFile(new File([blob], "avatar.jpg", { type: "image/jpeg" }), "avatar");
+        }}
+      />
+    )}
     </>
+  );
+}
+
+// ── Social Links Tab ──────────────────────────────────────────────────────────
+
+function SocialLinksTab() {
+  const { user, refetch } = useAuth();
+  const [socials, setSocials] = useState<Record<string, string>>(user?.social_links ?? {});
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    if (user) setSocials(user.social_links ?? {});
+  }, [user]);
+
+  async function save() {
+    setSaving(true); setMsg("");
+    try {
+      const r = await fetch("/api/profile", {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:         user?.username ?? "",
+          bio:          user?.bio ?? "",
+          handle:       user?.handle ?? "",
+          website:      user?.website ?? "",
+          social_links: socials,
+          avatar:       user?.avatar ?? "",
+          banner:       user?.banner ?? "",
+        }),
+      });
+      const d = await r.json();
+      if (r.ok) { setMsg("Saved"); refetch(); }
+      else       { setMsg(d.error ?? "Failed to save"); }
+    } catch { setMsg("Failed to save"); }
+    finally   { setSaving(false); }
+  }
+
+  return (
+    <Section title="Social links">
+      <div className="sett-socials-list">
+        {SOCIAL_PLATFORMS.map(p => (
+          <div key={p.key} className="sett-social-row">
+            <div className="sett-social-icon" style={{ background: `color-mix(in oklab, ${p.color} 12%, var(--bg-soft))`, color: p.color === "#000" ? "var(--fg)" : p.color }}>
+              {p.icon}
+            </div>
+            <span className="sett-social-prefix">{p.prefix}</span>
+            <input
+              className="sett-social-input"
+              placeholder={p.placeholder}
+              value={socials[p.key] ?? ""}
+              onChange={e => setSocials(prev => ({ ...prev, [p.key]: e.target.value }))}
+              maxLength={100}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="sett-save-row">
+        <SaveMsg msg={msg} />
+        <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>
+          {saving ? "Saving…" : "Save links"}
+        </button>
+      </div>
+    </Section>
   );
 }
 
@@ -470,8 +549,8 @@ function PublishingTab() {
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  const rssHandle = user?.handle ?? user?.username ?? "";
-  const rssUrl    = rssHandle ? `grimoire.sysnode.in/api/feed/${rssHandle}` : "—";
+  const rssHandle = user?.handle ?? "";
+  const rssUrl    = rssHandle ? `grimoire.sysnode.in/api/user/${rssHandle}/rss.xml` : "—";
 
   function copyRss() {
     navigator.clipboard.writeText(`https://${rssUrl}`).then(() => {
@@ -833,6 +912,7 @@ export function SettingsShell() {
 
           <div className="sett-content">
             {tab === "profile"       && <ProfileTab />}
+            {tab === "social"        && <SocialLinksTab />}
             {tab === "editor"        && <EditorTab />}
             {tab === "appearance"    && <AppearanceTab />}
             {tab === "publishing"    && <PublishingTab />}

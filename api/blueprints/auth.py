@@ -22,6 +22,17 @@ def _save_upload(f, subfolder):
     f.save(dest)
     return f"/static/uploads/{subfolder}/{fname}"
 
+def _delete_local_upload(url):
+    """Delete a previously uploaded local file if the URL points to our static folder."""
+    if not url or not url.startswith('/static/uploads/'):
+        return
+    path = os.path.join(_here, '..', url.lstrip('/'))
+    try:
+        if os.path.isfile(path):
+            os.remove(path)
+    except OSError:
+        pass
+
 bp = Blueprint('auth', __name__)
 
 
@@ -258,8 +269,12 @@ def upload_avatar():
     url = _save_upload(f, 'avatars')
     db  = get_db(); cur = db.cursor()
     try:
+        cur.execute('SELECT avatar FROM users WHERE id=%s', (request.user_id,))
+        row = cur.fetchone()
+        old_url = row[0] if row else None
         cur.execute('UPDATE users SET avatar=%s WHERE id=%s', (url, request.user_id))
         db.commit()
+        _delete_local_upload(old_url)
     finally:
         db.close()
     return jsonify({'url': url})
@@ -279,8 +294,12 @@ def upload_banner():
     url = _save_upload(f, 'banners')
     db  = get_db(); cur = db.cursor()
     try:
+        cur.execute('SELECT banner FROM users WHERE id=%s', (request.user_id,))
+        row = cur.fetchone()
+        old_url = row[0] if row else None
         cur.execute('UPDATE users SET banner=%s WHERE id=%s', (url, request.user_id))
         db.commit()
+        _delete_local_upload(old_url)
     finally:
         db.close()
     return jsonify({'url': url})

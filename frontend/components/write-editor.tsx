@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { Icon } from "./icons";
+import { ImageCropModal } from "./image-crop-modal";
 
 declare global {
   interface Window {
@@ -475,6 +476,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
   const [slashMenu, setSlashMenu] = useState<{
     open: boolean;
     query: string;
@@ -916,11 +918,24 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         {/* Cover zone */}
         <CoverZone
           coverUrl={coverUrl}
-          onUploadFile={handleCoverFile}
+          onUploadFile={f => setPendingCoverFile(f)}
           onUrlChange={setCoverUrl}
           onRemove={() => setCoverUrl("")}
           uploading={coverUploading}
         />
+        {pendingCoverFile && (
+          <ImageCropModal
+            file={pendingCoverFile}
+            aspectRatio={3.4}
+            label="Adjust cover image"
+            outputWidth={1400}
+            onCancel={() => setPendingCoverFile(null)}
+            onConfirm={blob => {
+              setPendingCoverFile(null);
+              handleCoverFile(new File([blob], "cover.jpg", { type: "image/jpeg" }));
+            }}
+          />
+        )}
 
         {/* Title */}
         <div className="write-canvas-inner">

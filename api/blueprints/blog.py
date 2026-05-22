@@ -6,8 +6,36 @@ bp = Blueprint('blog', __name__)
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
+
+def _delete_local_file(url):
+    """Delete a local upload file given its URL. Ignores external URLs."""
+    if not url or not url.startswith('/static/uploads/'):
+        return
+    path = os.path.join(_HERE, '..', url.lstrip('/'))
+    try:
+        if os.path.isfile(path):
+            os.remove(path)
+    except OSError:
+        pass
+
+
+def _extract_content_urls(content):
+    """Return all local image URLs embedded in EditorJS content JSON."""
+    urls = []
+    try:
+        blocks = (json.loads(content) if isinstance(content, str) else content).get('blocks', [])
+        for block in blocks:
+            if block.get('type') == 'image':
+                url = (block.get('data') or {}).get('file', {}).get('url', '')
+                if url.startswith('/static/uploads/'):
+                    urls.append(url)
+    except Exception:
+        pass
+    return urls
 
 def _generate_slug(title):
     s = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')
@@ -327,7 +355,8 @@ def get_post_by_slug(slug):
     cur = db.cursor(dictionary=True)
     try:
         cur.execute('''
-            SELECT p.*, u.name as author_name, u.avatar as author_avatar, u.bio as author_bio
+            SELECT p.*, u.name as author_name, u.avatar as author_avatar,
+                   u.bio as author_bio, u.handle as author_handle
             FROM blog_posts p JOIN users u ON p.user_id=u.id
             WHERE p.slug=%s AND (p.status='published' OR p.user_id=%s)
         ''', (slug, request.user_id or -1))
@@ -377,10 +406,12 @@ def update_post(post_id):
     db   = get_db()
     cur  = db.cursor(dictionary=True)
     try:
-        cur.execute('SELECT id,slug FROM blog_posts WHERE id=%s AND user_id=%s', (post_id, request.user_id))
+        cur.execute('SELECT id,slug,cover_image FROM blog_posts WHERE id=%s AND user_id=%s', (post_id, request.user_id))
         row = cur.fetchone()
         if not row:
             return jsonify({'error': 'Not found'}), 404
+
+        old_cover = row.get('cover_image') or ''
 
         title   = (data.get('title') or 'Untitled').strip()[:500]
         content = data.get('content', '{}')
@@ -402,6 +433,10 @@ def update_post(post_id):
             WHERE id=%s AND user_id=%s
         ''', (title, slug, excerpt, content, cover, tags, rtime, post_id, request.user_id))
         db.commit()
+
+        if old_cover and old_cover != cover:
+            _delete_local_file(old_cover)
+
         return jsonify({'success': True, 'slug': slug})
     except Exception:
         return jsonify({'error': 'Failed to update post'}), 500
@@ -413,10 +448,19 @@ def update_post(post_id):
 @login_required
 def delete_post(post_id):
     db  = get_db()
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     try:
+        cur.execute('SELECT cover_image, content FROM blog_posts WHERE id=%s AND user_id=%s', (post_id, request.user_id))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'error': 'Not found'}), 404
+
         cur.execute('DELETE FROM blog_posts WHERE id=%s AND user_id=%s', (post_id, request.user_id))
         db.commit()
+
+        _delete_local_file(row.get('cover_image') or '')
+        for url in _extract_content_urls(row.get('content') or '{}'):
+            _delete_local_file(url)
     finally:
         db.close()
     return jsonify({'success': True})
@@ -610,13 +654,19 @@ def add_comment(post_id):
 @login_required
 def delete_comment(comment_id):
     db  = get_db()
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     try:
         cur.execute('''
-            DELETE c FROM blog_comments c
+            SELECT c.id FROM blog_comments c
             LEFT JOIN blog_posts p ON c.post_id=p.id
             WHERE c.id=%s AND (c.user_id=%s OR p.user_id=%s)
         ''', (comment_id, request.user_id, request.user_id))
+        if not cur.fetchone():
+            return jsonify({'error': 'Not found'}), 404
+        cur.execute(
+            'DELETE FROM blog_comments WHERE id=%s OR parent_id=%s',
+            (comment_id, comment_id)
+        )
         db.commit()
     finally:
         db.close()
