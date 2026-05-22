@@ -14,6 +14,23 @@ DEFAULTS = {
     },
     "appearance": {
         "theme": "dark",
+        "readingMode": "spacious",
+    },
+    "publishing": {
+        "defaultVisibility": "draft",
+        "defaultTags": "",
+        "rssEnabled": True,
+        "aboutAuthor": "",
+    },
+    "privacy": {
+        "hideFromExplore": False,
+        "disableComments": False,
+        "allowAnonymousVotes": True,
+    },
+    "notifications": {
+        "onComment": True,
+        "onReply": True,
+        "weeklyDigest": False,
     },
 }
 

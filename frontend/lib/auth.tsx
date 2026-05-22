@@ -8,6 +8,12 @@ interface User {
   email: string;
   display_name: string;
   avatar?: string;
+  banner?: string;
+  handle?: string;
+  website?: string;
+  social_links?: Record<string, string>;
+  bio?: string;
+  has_password?: boolean;
 }
 
 interface AuthContextValue {
@@ -32,11 +38,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUser({
-          id: data.id,
-          username: data.name,
+          id:           data.id,
+          username:     data.name,
           display_name: data.name,
-          email: data.email,
-          avatar: data.avatar,
+          email:        data.email,
+          avatar:       data.avatar,
+          banner:       data.banner,
+          handle:       data.handle,
+          website:      data.website,
+          social_links: data.social_links,
+          bio:          data.bio,
+          has_password: data.has_password,
         });
       } else {
         setUser(null);

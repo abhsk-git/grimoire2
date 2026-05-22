@@ -6,18 +6,41 @@ import { useTheme } from "./theme";
 export interface EditorSettings {
   slashMenu:         boolean;
   autosave:          boolean;
-  autosaveInterval:  number;   // seconds
+  autosaveInterval:  number;
   wordCount:         boolean;
   readingTime:       boolean;
 }
 
 export interface AppearanceSettings {
-  theme: string;
+  theme:       string;
+  readingMode: "compact" | "spacious" | "serif";
+}
+
+export interface PublishingSettings {
+  defaultVisibility: "draft" | "published";
+  defaultTags:       string;
+  rssEnabled:        boolean;
+  aboutAuthor:       string;
+}
+
+export interface PrivacySettings {
+  hideFromExplore:     boolean;
+  disableComments:     boolean;
+  allowAnonymousVotes: boolean;
+}
+
+export interface NotificationSettings {
+  onComment:    boolean;
+  onReply:      boolean;
+  weeklyDigest: boolean;
 }
 
 export interface UserSettings {
-  editor:     EditorSettings;
-  appearance: AppearanceSettings;
+  editor:        EditorSettings;
+  appearance:    AppearanceSettings;
+  publishing:    PublishingSettings;
+  privacy:       PrivacySettings;
+  notifications: NotificationSettings;
 }
 
 const DEFAULTS: UserSettings = {
@@ -29,14 +52,31 @@ const DEFAULTS: UserSettings = {
     readingTime:      true,
   },
   appearance: {
-    theme: "dark",
+    theme:       "dark",
+    readingMode: "spacious",
+  },
+  publishing: {
+    defaultVisibility: "draft",
+    defaultTags:       "",
+    rssEnabled:        true,
+    aboutAuthor:       "",
+  },
+  privacy: {
+    hideFromExplore:     false,
+    disableComments:     false,
+    allowAnonymousVotes: true,
+  },
+  notifications: {
+    onComment:    true,
+    onReply:      true,
+    weeklyDigest: false,
   },
 };
 
 interface SettingsContextValue {
-  settings:  UserSettings;
-  loaded:    boolean;
-  update:    (patch: DeepPartial<UserSettings>) => Promise<void>;
+  settings: UserSettings;
+  loaded:   boolean;
+  update:   (patch: DeepPartial<UserSettings>) => Promise<void>;
 }
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
@@ -57,9 +97,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.settings) {
-          const s = data.settings as UserSettings;
+          const s = { ...DEFAULTS, ...data.settings } as UserSettings;
+          for (const key of Object.keys(DEFAULTS) as (keyof UserSettings)[]) {
+            (s as any)[key] = { ...(DEFAULTS as any)[key], ...((data.settings as any)[key] ?? {}) };
+          }
           setSettings(s);
-          // Sync theme from account settings (cross-device)
           if (s.appearance?.theme) setTheme(s.appearance.theme as any);
         }
       })
@@ -69,7 +111,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const update = useCallback(async (patch: DeepPartial<UserSettings>) => {
-    // Optimistic update
     setSettings(prev => {
       const next = { ...prev };
       for (const key of Object.keys(patch) as (keyof UserSettings)[]) {
@@ -88,7 +129,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         const saved = await res.json();
-        setSettings(saved as UserSettings);
+        setSettings(prev => {
+          const merged = { ...prev };
+          for (const key of Object.keys(DEFAULTS) as (keyof UserSettings)[]) {
+            (merged as any)[key] = { ...(DEFAULTS as any)[key], ...(saved as any)[key] };
+          }
+          return merged;
+        });
       }
     } catch {}
   }, []);
