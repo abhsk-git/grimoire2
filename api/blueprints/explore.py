@@ -58,18 +58,25 @@ def explore_links():
 
 @bp.route('/api/user/<handle>', methods=['GET'])
 def user_profile(handle):
+    import json as _json
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        # Lookup by name slug (spaces → hyphens) or fall back to numeric ID
-        name_from_handle = handle.replace('-', ' ')
-        cur.execute('SELECT id, name, avatar, bio FROM users WHERE LOWER(name) = LOWER(%s)', (name_from_handle,))
+        # Look up by actual handle column first, then name slug, then numeric ID
+        cur.execute('SELECT id, name, avatar, bio, banner, website, social_links, handle FROM users WHERE handle=%s', (handle,))
         user = cur.fetchone()
+        if not user:
+            name_from_handle = handle.replace('-', ' ')
+            cur.execute('SELECT id, name, avatar, bio, banner, website, social_links, handle FROM users WHERE LOWER(name) = LOWER(%s)', (name_from_handle,))
+            user = cur.fetchone()
         if not user and handle.isdigit():
-            cur.execute('SELECT id, name, avatar, bio FROM users WHERE id = %s', (int(handle),))
+            cur.execute('SELECT id, name, avatar, bio, banner, website, social_links, handle FROM users WHERE id = %s', (int(handle),))
             user = cur.fetchone()
         if not user:
             return jsonify({'error': 'Not found'}), 404
+        if user.get('social_links') and isinstance(user['social_links'], str):
+            try: user['social_links'] = _json.loads(user['social_links'])
+            except Exception: user['social_links'] = {}
 
         uid = user['id']
         cur.execute('''
