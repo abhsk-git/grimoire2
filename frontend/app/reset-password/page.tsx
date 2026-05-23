@@ -4,32 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BrandMark, Icon } from "@/components/icons";
-
-function PasswordStrength({ password }: { password: string }) {
-  const score = [
-    password.length >= 8,
-    /[A-Z]/.test(password),
-    /[0-9]/.test(password),
-    /[^a-zA-Z0-9]/.test(password),
-  ].filter(Boolean).length;
-  const labels = ["", "Weak", "Fair", "Strong", "Very strong"];
-  return (
-    <div>
-      <div className="password-strength">
-        <span className={score >= 1 ? "on" : ""} />
-        <span className={score >= 2 ? "on" : ""} />
-        <span className={score >= 3 ? "on" : ""} />
-        <span className={score >= 4 ? "on" : ""} />
-      </div>
-      {password && (
-        <div className="hint" style={{ marginTop: 4 }}>
-          {labels[score]}
-          {score < 3 ? " — add more variety" : ""}
-        </div>
-      )}
-    </div>
-  );
-}
+import { PasswordInput, PasswordStrength } from "@/components/auth-forms";
 
 function ResetContent() {
   const params = useSearchParams();
@@ -135,8 +110,7 @@ function ResetContent() {
 
         <div className="field">
           <label>New password</label>
-          <input
-            type="password"
+          <PasswordInput
             placeholder="••••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -147,8 +121,7 @@ function ResetContent() {
         </div>
         <div className="field">
           <label>Confirm password</label>
-          <input
-            type="password"
+          <PasswordInput
             placeholder="••••••••••"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}

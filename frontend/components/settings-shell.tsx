@@ -7,6 +7,7 @@ import { useSettings } from "@/lib/settings";
 import { Icon } from "./icons";
 import { useTheme } from "@/lib/theme";
 import { ImageCropModal } from "./image-crop-modal";
+import { PasswordInput } from "./auth-forms";
 
 type Tab = "profile" | "social" | "editor" | "appearance" | "publishing" | "privacy" | "notifications" | "account";
 
@@ -781,8 +782,7 @@ function AccountTab() {
         {user?.has_password && (
           <div className="sett-field">
             <label className="sett-label">Current password <span className="sett-label-soft">(to confirm)</span></label>
-            <input
-              type="password" className="sett-input"
+            <PasswordInput className="sett-input"
               value={emailPw} onChange={e => setEmailPw(e.target.value)}
               autoComplete="current-password"
             />
@@ -801,11 +801,11 @@ function AccountTab() {
         <Section title="Change password">
           <div className="sett-field">
             <label className="sett-label">Current password</label>
-            <input type="password" className="sett-input" value={oldPw} onChange={e => setOldPw(e.target.value)} autoComplete="current-password" />
+            <PasswordInput className="sett-input" value={oldPw} onChange={e => setOldPw(e.target.value)} autoComplete="current-password" />
           </div>
           <div className="sett-field">
             <label className="sett-label">New password <span className="sett-label-soft">(min 8 chars)</span></label>
-            <input type="password" className="sett-input" value={newPw} onChange={e => setNewPw(e.target.value)} autoComplete="new-password" />
+            <PasswordInput className="sett-input" value={newPw} onChange={e => setNewPw(e.target.value)} autoComplete="new-password" />
           </div>
           <div className="sett-save-row">
             <SaveMsg msg={pwMsg} />
@@ -845,8 +845,7 @@ function AccountTab() {
             {user?.has_password && (
               <div className="sett-field" style={{ padding: 0, borderBottom: "none" }}>
                 <label className="sett-label">Password</label>
-                <input
-                  type="password" className="sett-input"
+                <PasswordInput className="sett-input"
                   value={delPw} onChange={e => setDelPw(e.target.value)}
                   autoComplete="current-password"
                 />

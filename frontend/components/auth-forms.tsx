@@ -3,6 +3,46 @@
 import { useState } from "react";
 import { BrandMark, Icon } from "./icons";
 
+export function PasswordInput({
+  className,
+  style,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement>) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        {...props}
+        type={show ? "text" : "password"}
+        className={className}
+        style={{ paddingRight: 38, ...style }}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={show ? "Hide password" : "Show password"}
+        onClick={() => setShow((v) => !v)}
+        style={{
+          position: "absolute",
+          right: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          color: "var(--fg-soft)",
+          display: "flex",
+          alignItems: "center",
+          lineHeight: 1,
+        }}
+      >
+        <Icon name={show ? "eye-off" : "eye"} size={15} />
+      </button>
+    </div>
+  );
+}
+
 type FormView = "signin" | "signup" | "forgot";
 
 function GoogleIcon() {
@@ -85,7 +125,7 @@ export function AuthArt() {
   );
 }
 
-function PasswordStrength({ password }: { password: string }) {
+export function PasswordStrength({ password }: { password: string }) {
   const len = password.length;
   const hasUpper = /[A-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
@@ -180,8 +220,7 @@ export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
             Password
             <a onClick={() => switchTo("forgot")}>Forgot?</a>
           </label>
-          <input
-            type="password"
+          <PasswordInput
             placeholder="••••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -293,8 +332,7 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         </div>
         <div className="field">
           <label>Password</label>
-          <input
-            type="password"
+          <PasswordInput
             placeholder="At least 6 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
