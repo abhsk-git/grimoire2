@@ -2,8 +2,11 @@ from flask import Blueprint, request, jsonify, redirect, url_for
 import bcrypt, secrets, datetime, json, os, time, re, smtplib, logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from extensions import limiter
 
 logger = logging.getLogger(__name__)
+
+_SECURE_COOKIE = os.environ.get('APP_URL', '').startswith('https')
 
 
 def _send_reset_email(to_email: str, reset_url: str, name: str = '') -> bool:
@@ -15,7 +18,7 @@ def _send_reset_email(to_email: str, reset_url: str, name: str = '') -> bool:
     app_url = os.environ.get('APP_URL', 'https://grimoire.sysnode.in')
 
     if not user or not pw:
-        logger.warning('SMTP not configured — reset URL for %s: %s', to_email, reset_url)
+        logger.warning('SMTP not configured — password reset email could not be sent to %s', to_email)
         return False
 
     greeting = f'Hi {name},' if name else 'Hi there,'
@@ -199,12 +202,27 @@ _HANDLE_RE   = re.compile(r'^[a-z0-9][a-z0-9\-]{0,28}[a-z0-9]$')
 _RESERVED    = {'api', 'admin', 'static', 'login', 'register', 'explore',
                 'dashboard', 'settings', 'write', 'blog', 'user', 'feed'}
 
+_IMG_MAGIC = {
+    b'\xff\xd8\xff': 'jpg',
+    b'\x89PNG':      'png',
+    b'GIF8':         'gif',
+    b'RIFF':         'webp',
+}
+
 def _allowed_img(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in _ALLOWED_IMG
 
+def _check_img_magic(data: bytes, ext: str) -> bool:
+    """Return True if file magic bytes match the declared extension."""
+    for sig, sig_ext in _IMG_MAGIC.items():
+        if data[:len(sig)] == sig:
+            return ext in (sig_ext, 'jpg', 'jpeg') if sig_ext == 'jpg' else ext == sig_ext
+    return False
+
 def _save_upload(f, subfolder):
+    import uuid as _uuid
     ext = f.filename.rsplit('.', 1)[1].lower()
-    fname = f"{int(time.time() * 1000)}.{ext}"
+    fname = f"{_uuid.uuid4().hex}.{ext}"
     dest = os.path.join(_UPLOAD_BASE, subfolder, fname)
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     f.save(dest)
@@ -230,10 +248,18 @@ def _validate_password(pw):
         return 'Password cannot be empty or whitespace'
     if len(pw) < 8:
         return 'Password must be at least 8 characters'
+    if len(pw) > 128:
+        return 'Password must not exceed 128 characters'
+    has_upper   = any(c.isupper() for c in pw)
+    has_lower   = any(c.islower() for c in pw)
+    has_digit   = any(c.isdigit() for c in pw)
+    if not (has_upper and has_lower and has_digit):
+        return 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
     return None
 
 
 @bp.route('/api/auth/register', methods=['POST'])
+@limiter.limit('10 per hour; 3 per minute')
 def register():
     data     = request.json or {}
     name     = data.get('name', '').strip()
@@ -242,6 +268,9 @@ def register():
 
     if not name or not email or not password:
         return jsonify({'error': 'All fields required'}), 400
+
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        return jsonify({'error': 'Invalid email address'}), 400
 
     pw_error = _validate_password(password)
     if pw_error:
@@ -265,7 +294,8 @@ def register():
         user_id = cur.lastrowid
         token   = create_token(user_id)
         resp    = jsonify({'success': True, 'user': {'id': user_id, 'name': name, 'email': email}})
-        resp.set_cookie('token', token, httponly=True, samesite='Lax', max_age=30*24*3600)
+        resp.set_cookie('token', token, httponly=True, samesite='Lax',
+                        max_age=30*24*3600, secure=_SECURE_COOKIE)
         return resp
     except Exception:
         return jsonify({'error': 'Registration failed. Please try again.'}), 500
@@ -274,6 +304,7 @@ def register():
 
 
 @bp.route('/api/auth/login', methods=['POST'])
+@limiter.limit('20 per hour; 5 per minute')
 def login():
     data     = request.json or {}
     email    = data.get('email', '').strip().lower()
@@ -301,7 +332,8 @@ def login():
                 'avatar': user['avatar'],
             }
         })
-        resp.set_cookie('token', token, httponly=True, samesite='Lax', max_age=30*24*3600)
+        resp.set_cookie('token', token, httponly=True, samesite='Lax',
+                        max_age=30*24*3600, secure=_SECURE_COOKIE)
         return resp
     finally:
         db.close()
@@ -350,7 +382,8 @@ def google_callback():
 
         jwt_token = create_token(user_id)
         resp = redirect('/')
-        resp.set_cookie('token', jwt_token, httponly=True, samesite='Lax', max_age=30*24*3600)
+        resp.set_cookie('token', jwt_token, httponly=True, samesite='Lax',
+                        max_age=30*24*3600, secure=_SECURE_COOKIE)
         return resp
     except Exception as e:
         from urllib.parse import quote_plus
@@ -451,9 +484,15 @@ def upload_avatar():
     f = request.files['file']
     if not f.filename or not _allowed_img(f.filename):
         return jsonify({'error': 'Invalid file type. Use JPG, PNG, GIF, or WebP'}), 400
-    f.seek(0, 2); size = f.tell(); f.seek(0)
-    if size > 8 * 1024 * 1024:
+    ext = f.filename.rsplit('.', 1)[1].lower()
+    data = f.read(8 * 1024 * 1024 + 1)
+    if len(data) > 8 * 1024 * 1024:
         return jsonify({'error': 'File too large (max 8 MB)'}), 400
+    if ext not in ('webp', 'gif') and not _check_img_magic(data, ext):
+        return jsonify({'error': 'File content does not match declared image type'}), 400
+    import io
+    f.stream = io.BytesIO(data)
+    f.seek(0)
     url = _save_upload(f, 'avatars')
     db  = get_db(); cur = db.cursor()
     try:
@@ -476,9 +515,15 @@ def upload_banner():
     f = request.files['file']
     if not f.filename or not _allowed_img(f.filename):
         return jsonify({'error': 'Invalid file type. Use JPG, PNG, GIF, or WebP'}), 400
-    f.seek(0, 2); size = f.tell(); f.seek(0)
-    if size > 15 * 1024 * 1024:
+    ext = f.filename.rsplit('.', 1)[1].lower()
+    data = f.read(15 * 1024 * 1024 + 1)
+    if len(data) > 15 * 1024 * 1024:
         return jsonify({'error': 'File too large (max 15 MB)'}), 400
+    if ext not in ('webp', 'gif') and not _check_img_magic(data, ext):
+        return jsonify({'error': 'File content does not match declared image type'}), 400
+    import io
+    f.stream = io.BytesIO(data)
+    f.seek(0)
     url = _save_upload(f, 'banners')
     db  = get_db(); cur = db.cursor()
     try:
@@ -573,6 +618,7 @@ def change_password():
 
 
 @bp.route('/api/auth/forgot-password', methods=['POST'])
+@limiter.limit('5 per hour; 2 per minute')
 def forgot_password():
     data  = request.json or {}
     email = data.get('email', '').strip().lower()
@@ -586,6 +632,11 @@ def forgot_password():
         user = cur.fetchone()
         # Always return success to avoid email enumeration
         if user:
+            # Invalidate all previous unused reset tokens for this user
+            cur.execute(
+                'UPDATE password_resets SET used=1 WHERE user_id=%s AND used=0',
+                (user['id'],)
+            )
             token      = secrets.token_urlsafe(48)
             expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
             cur.execute(
@@ -605,6 +656,7 @@ def forgot_password():
 
 
 @bp.route('/api/auth/reset-password', methods=['POST'])
+@limiter.limit('10 per hour; 3 per minute')
 def reset_password():
     data     = request.json or {}
     token    = data.get('token', '').strip()
@@ -635,7 +687,8 @@ def reset_password():
 
         hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
         cur.execute('UPDATE users SET password_hash=%s WHERE id=%s', (hashed, row['user_id']))
-        cur.execute('UPDATE password_resets SET used=1 WHERE id=%s', (row['id'],))
+        # Invalidate ALL reset tokens for this user (not just the one used)
+        cur.execute('UPDATE password_resets SET used=1 WHERE user_id=%s', (row['user_id'],))
         db.commit()
         return jsonify({'success': True, 'message': 'Password updated. You can now sign in.'})
     except Exception:
