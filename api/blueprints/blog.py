@@ -860,6 +860,35 @@ def upload_image():
     return jsonify({'success': 1, 'file': {'url': f'/static/uploads/blog/{fname}'}})
 
 
+@bp.route('/api/search', methods=['GET'])
+def search():
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 2:
+        return jsonify([])
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        like = f'%{q}%'
+        cur.execute('''
+            SELECT p.id, p.title, p.slug, p.excerpt, p.cover_image,
+                   p.reading_time, p.published_at, p.tags,
+                   u.name AS author_name, u.avatar AS author_avatar, u.handle AS author_handle
+            FROM blog_posts p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.status = 'published'
+              AND (p.title LIKE %s OR p.excerpt LIKE %s OR p.tags LIKE %s)
+            ORDER BY p.published_at DESC
+            LIMIT 12
+        ''', (like, like, like))
+        results = cur.fetchall()
+    finally:
+        db.close()
+    for r in results:
+        if r.get('published_at'):
+            r['published_at'] = r['published_at'].isoformat()
+    return jsonify(results)
+
+
 @bp.route('/api/blog/rss.xml', methods=['GET'])
 def rss_feed():
     import html as _e

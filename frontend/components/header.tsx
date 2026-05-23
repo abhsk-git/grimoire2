@@ -9,9 +9,10 @@ interface HeaderProps {
   username?: string;
   onSignIn?: () => void;
   onSignOut?: () => void;
+  onSearchOpen?: () => void;
 }
 
-export function Header({ loggedIn, username, onSignIn, onSignOut }: HeaderProps) {
+export function Header({ loggedIn, username, onSignIn, onSignOut, onSearchOpen }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const initials = username
     ? username.slice(0, 2).toUpperCase()
@@ -42,14 +43,14 @@ export function Header({ loggedIn, username, onSignIn, onSignOut }: HeaderProps)
         <div className="header-right">
           {loggedIn ? (
             <>
-              <div className="search-input">
+              <div className="search-input" onClick={onSearchOpen} style={{ cursor: "pointer" }}>
                 <Icon name="search" size={14} />
-                <input placeholder="Search your grimoire…" />
+                <input placeholder="Search your grimoire…" readOnly style={{ cursor: "pointer" }} onClick={onSearchOpen} />
                 <span className="kbd">⌘K</span>
               </div>
-              <button className="btn btn-primary btn-sm">
+              <a href="/write" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
                 <Icon name="pen" size={14} /> New post
-              </button>
+              </a>
               <button
                 className="avatar"
                 onClick={onSignOut}

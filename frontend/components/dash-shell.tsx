@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
 import { useTheme } from "@/lib/theme";
+import { SearchModal, useSearchModal } from "./search-modal";
 
 export type DashView = "posts" | "all" | "public" | "private" | "starred";
 
@@ -152,6 +153,7 @@ interface HeaderProps {
 
 export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps) {
   const { theme, setTheme } = useTheme();
+  const { open, setOpen } = useSearchModal();
 
   function toggleTheme() {
     const themes = ["light", "dark", "midnight", "geek"] as const;
@@ -161,6 +163,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps)
 
   return (
     <>
+      {open && <SearchModal onClose={() => setOpen(false)} />}
       {/* Mobile topbar */}
       <div className="mobile-topbar">
         <button className="hamburger" onClick={onMenu} aria-label="Open menu">
@@ -175,7 +178,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps)
           Grimoire
         </div>
         <div style={{ flex: 1 }} />
-        <button className="icon-btn" aria-label="Search" style={{ width: 36, height: 36 }}>
+        <button className="icon-btn" aria-label="Search" style={{ width: 36, height: 36 }} onClick={() => setOpen(true)}>
           <Icon name="search" size={15} />
         </button>
         <Link href="/write" className="btn btn-primary btn-sm" style={{ padding: "0 12px" }}>
@@ -185,9 +188,9 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps)
 
       {/* Desktop header */}
       <div className="main-header">
-        <div className="main-search">
+        <div className="main-search" onClick={() => setOpen(true)} style={{ cursor: "pointer" }}>
           <Icon name="search" size={15} />
-          <input placeholder="Search links, tags, notes…" />
+          <input placeholder="Search posts, links, tags…" readOnly style={{ cursor: "pointer" }} />
           <span className="kbd">⌘K</span>
         </div>
 

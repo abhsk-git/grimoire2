@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { HeroLoggedOut } from "@/components/hero-logged-out";
 import { HeroLoggedIn } from "@/components/hero-logged-in";
+import { SearchModal, useSearchModal } from "@/components/search-modal";
 import {
   HowItWorks,
   Features,
@@ -14,6 +15,7 @@ import {
 
 function LandingContent() {
   const { user, loading } = useAuth();
+  const { open, setOpen } = useSearchModal();
 
   async function handleSignOut() {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
@@ -27,14 +29,17 @@ function LandingContent() {
         username={user?.username}
         onSignIn={() => (window.location.href = "/login")}
         onSignOut={handleSignOut}
+        onSearchOpen={() => setOpen(true)}
       />
+
+      {open && <SearchModal onClose={() => setOpen(false)} />}
 
       {loading ? (
         <div style={{ height: "60vh", display: "grid", placeItems: "center" }}>
           <span style={{ color: "var(--fg-soft)", fontSize: 14 }}>Loading…</span>
         </div>
       ) : user ? (
-        <HeroLoggedIn username={user.username} displayName={user.display_name} />
+        <HeroLoggedIn username={user.username} displayName={user.display_name} onSearchOpen={() => setOpen(true)} />
       ) : (
         <HeroLoggedOut onSignIn={() => (window.location.href = "/login")} />
       )}
@@ -50,10 +55,8 @@ function LandingContent() {
 
 export default function Page() {
   return (
-
-      <AuthProvider>
-        <LandingContent />
-      </AuthProvider>
-
+    <AuthProvider>
+      <LandingContent />
+    </AuthProvider>
   );
 }
