@@ -36,10 +36,10 @@ def create_app():
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data: https:; "
+            "img-src 'self' data: blob: https:; "
             "frame-src https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com "
             "https://player.vimeo.com https://twitter.com https://www.instagram.com; "
             "connect-src 'self'"

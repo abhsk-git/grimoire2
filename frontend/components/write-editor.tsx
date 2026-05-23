@@ -776,7 +776,11 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       });
       if (r.ok) {
         const d = await r.json();
-        if (d.success && d.file?.url) setCoverUrl(d.file.url);
+        if (d.success && d.file?.url) {
+          setCoverUrl(d.file.url);
+          setSaveStatus("unsaved");
+          scheduleAutoSave();
+        }
       }
     } finally {
       setCoverUploading(false);
@@ -919,8 +923,8 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         <CoverZone
           coverUrl={coverUrl}
           onUploadFile={f => setPendingCoverFile(f)}
-          onUrlChange={setCoverUrl}
-          onRemove={() => setCoverUrl("")}
+          onUrlChange={url => { setCoverUrl(url); setSaveStatus("unsaved"); scheduleAutoSave(); }}
+          onRemove={() => { setCoverUrl(""); setSaveStatus("unsaved"); scheduleAutoSave(); }}
           uploading={coverUploading}
         />
         {pendingCoverFile && (
