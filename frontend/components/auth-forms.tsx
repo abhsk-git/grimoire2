@@ -423,7 +423,7 @@ export function ForgotForm({ switchTo }: { switchTo: (v: FormView) => void }) {
             <div className="text">
               <div className="t">Check your inbox</div>
               <div className="d">
-                Link expires in 15 minutes.{" "}
+                Link expires in 1 hour.{" "}
                 <a
                   style={{ color: "var(--accent)", fontWeight: 600, cursor: "pointer" }}
                   onClick={() => setSent(false)}

@@ -1,5 +1,193 @@
 from flask import Blueprint, request, jsonify, redirect, url_for
-import bcrypt, secrets, datetime, json, os, time, re
+import bcrypt, secrets, datetime, json, os, time, re, smtplib, logging
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+logger = logging.getLogger(__name__)
+
+
+def _send_reset_email(to_email: str, reset_url: str, name: str = '') -> bool:
+    host  = os.environ.get('SMTP_HOST', 'localhost')
+    port  = int(os.environ.get('SMTP_PORT', 587))
+    user  = os.environ.get('SMTP_USER', '')
+    pw    = os.environ.get('SMTP_PASS', '')
+    from_ = os.environ.get('SMTP_FROM', f'Grimoire <{user}>')
+    app_url = os.environ.get('APP_URL', 'https://grimoire.sysnode.in')
+
+    if not user or not pw:
+        logger.warning('SMTP not configured — reset URL for %s: %s', to_email, reset_url)
+        return False
+
+    greeting = f'Hi {name},' if name else 'Hi there,'
+    year     = datetime.datetime.utcnow().year
+
+    text = f"""{greeting}
+
+We received a request to reset the password for your Grimoire account ({to_email}).
+
+Reset your password here (expires in 1 hour):
+{reset_url}
+
+If you didn't request this, your account is safe — simply ignore this email and your password will remain unchanged. No action is needed.
+
+Security tips:
+- Never share this link with anyone, including Grimoire support.
+- This link can only be used once.
+- It expires in 1 hour.
+
+— The Grimoire Team
+{app_url}
+"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reset your Grimoire password</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5;padding:40px 0;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+      <!-- Header -->
+      <tr><td align="center" style="padding-bottom:24px;">
+        <table cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="background:#6366f1;width:36px;height:36px;border-radius:10px;text-align:center;vertical-align:middle;">
+              <span style="color:#fff;font-size:18px;font-weight:800;line-height:36px;display:block;">G</span>
+            </td>
+            <td style="padding-left:10px;font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:-0.5px;">Grimoire</td>
+          </tr>
+        </table>
+      </td></tr>
+
+      <!-- Card -->
+      <tr><td style="background:#ffffff;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden;">
+
+        <!-- Purple top bar -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td style="background:#6366f1;height:4px;font-size:0;">&nbsp;</td></tr>
+        </table>
+
+        <!-- Body -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td style="padding:40px 48px 32px;">
+
+            <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#6366f1;text-transform:uppercase;letter-spacing:0.8px;">Password Reset</p>
+            <h1 style="margin:0 0 16px;font-size:26px;font-weight:800;color:#0f0f0f;letter-spacing:-0.5px;line-height:1.2;">Reset your password</h1>
+            <p style="margin:0 0 8px;font-size:15px;color:#444;line-height:1.6;">{greeting}</p>
+            <p style="margin:0 0 28px;font-size:15px;color:#444;line-height:1.6;">
+              We received a request to reset the password for the Grimoire account associated with <strong>{to_email}</strong>.
+              Click the button below to set a new password. This link is valid for <strong>1 hour</strong>.
+            </p>
+
+            <!-- CTA Button -->
+            <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+              <tr>
+                <td style="background:#6366f1;border-radius:10px;">
+                  <a href="{reset_url}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-0.2px;">
+                    Reset my password &rarr;
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Expiry row -->
+            <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;background:#f8f8ff;border:1px solid #e0e0ff;border-radius:8px;width:100%;">
+              <tr>
+                <td style="padding:12px 16px;">
+                  <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                      <td style="width:20px;vertical-align:top;padding-right:10px;font-size:16px;">⏱</td>
+                      <td style="font-size:13px;color:#555;line-height:1.5;">
+                        <strong style="color:#0f0f0f;">Link expires in 1 hour.</strong>
+                        If it expires, go back to the sign-in page and request a new reset link.
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Fallback URL -->
+            <p style="margin:0 0 6px;font-size:12px;color:#888;">Button not working? Copy and paste this link into your browser:</p>
+            <p style="margin:0 0 32px;font-size:11px;color:#6366f1;word-break:break-all;">{reset_url}</p>
+
+            <!-- Divider -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+              <tr><td style="border-top:1px solid #ebebeb;height:1px;font-size:0;">&nbsp;</td></tr>
+            </table>
+
+            <!-- Security notice -->
+            <table cellpadding="0" cellspacing="0" border="0" style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;width:100%;margin-bottom:16px;">
+              <tr>
+                <td style="padding:14px 16px;">
+                  <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                      <td style="width:20px;vertical-align:top;padding-right:10px;font-size:16px;">⚠️</td>
+                      <td>
+                        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e;">Didn't request this?</p>
+                        <p style="margin:0;font-size:13px;color:#78350f;line-height:1.5;">
+                          Your account is safe. Simply ignore this email — your password will not change.
+                          If you're concerned someone else requested this, consider changing your password after signing in.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Security tips -->
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
+              <tr><td style="padding:4px 0;">
+                <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.6px;">Security reminders</p>
+                <table cellpadding="0" cellspacing="0" border="0">
+                  <tr><td style="font-size:13px;color:#666;line-height:1.7;">
+                    &bull;&nbsp; Never share this link with anyone, including Grimoire support.<br>
+                    &bull;&nbsp; This link works only once and expires in 1 hour.<br>
+                    &bull;&nbsp; Grimoire will never ask for your password via email.
+                  </td></tr>
+                </table>
+              </td></tr>
+            </table>
+
+          </td></tr>
+        </table>
+      </td></tr>
+
+      <!-- Footer -->
+      <tr><td style="padding:24px 0 8px;" align="center">
+        <p style="margin:0 0 6px;font-size:12px;color:#999;">This is an automated email — please do not reply.</p>
+        <p style="margin:0 0 6px;font-size:12px;color:#bbb;">
+          &copy; {year} Grimoire &nbsp;&middot;&nbsp;
+          <a href="{app_url}" style="color:#6366f1;text-decoration:none;">{app_url.replace('https://','')}</a>
+        </p>
+        <p style="margin:0;font-size:11px;color:#ccc;">You're receiving this because a reset was requested for {to_email}.</p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
+
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = 'Reset your Grimoire password'
+    msg['From']    = from_
+    msg['To']      = to_email
+
+    msg.attach(MIMEText(text, 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+
+    try:
+        with smtplib.SMTP(host, port, timeout=10) as s:
+            s.ehlo()
+            s.starttls()
+            s.login(user, pw)
+            s.sendmail(from_, to_email, msg.as_string())
+        return True
+    except Exception:
+        logger.exception('Failed to send reset email to %s', to_email)
+        return False
 from werkzeug.utils import secure_filename
 from utils import get_db, create_token, verify_token, login_required
 from extensions import oauth
@@ -394,7 +582,7 @@ def forgot_password():
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        cur.execute('SELECT id FROM users WHERE email=%s', (email,))
+        cur.execute('SELECT id, name FROM users WHERE email=%s', (email,))
         user = cur.fetchone()
         # Always return success to avoid email enumeration
         if user:
@@ -405,12 +593,9 @@ def forgot_password():
                 (user['id'], token, expires_at)
             )
             db.commit()
-            # Without email service configured, log the reset URL server-side
-            # (integrate with your email provider to send this to the user)
-            import logging
-            logging.getLogger(__name__).info(
-                'Password reset token for user %s: %s', user['id'], token
-            )
+            app_url   = os.environ.get('APP_URL', 'http://localhost:3001')
+            reset_url = f"{app_url}/reset-password?token={token}"
+            _send_reset_email(email, reset_url, name=user.get('name', ''))
     except Exception:
         pass  # silently fail — don't reveal DB errors
     finally:
