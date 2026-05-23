@@ -141,7 +141,24 @@ function toHtml(contentJson: string): string {
         )}" loading="lazy">${capHtml}</figure>`
       );
     } else if (bt === "embed") {
-      const embed = esc(bd.embed || "");
+      const rawEmbed: string = bd.embed || "";
+      const SAFE_EMBED_HOSTS = new Set([
+        "www.youtube.com", "youtube.com", "www.youtube-nocookie.com",
+        "player.vimeo.com", "vimeo.com",
+        "twitter.com", "www.twitter.com",
+        "www.instagram.com", "open.spotify.com",
+        "soundcloud.com", "codepen.io",
+      ]);
+      let embedAllowed = false;
+      try {
+        const u = new URL(rawEmbed);
+        if ((u.protocol === "https:" || u.protocol === "http:") &&
+            SAFE_EMBED_HOSTS.has(u.hostname)) {
+          embedAllowed = true;
+        }
+      } catch { /* invalid URL — skip */ }
+      if (!embedAllowed) break;
+      const embed = esc(rawEmbed);
       const cap: string = bd.caption || "";
       const capHtml = cap
         ? `<figcaption>${sanitize(cap)}</figcaption>`
