@@ -34,11 +34,18 @@ export function Header({ loggedIn, username, onSignIn, onSignOut, onSearchOpen }
           <span>Grimoire</span>
         </Link>
 
-        <nav className="nav-links">
-          <a href="#features">Writing</a>
-          <a href="#discover">Read</a>
-          <a href="#features">References</a>
-        </nav>
+        {loggedIn ? (
+          <nav className="nav-links">
+            <a href="/write">Write</a>
+            <a href="/explore">Explore</a>
+          </nav>
+        ) : (
+          <nav className="nav-links">
+            <a href="#features">Writing</a>
+            <a href="#discover">Read</a>
+            <a href="#features">References</a>
+          </nav>
+        )}
 
         <div className="header-right">
           {loggedIn ? (
@@ -48,8 +55,8 @@ export function Header({ loggedIn, username, onSignIn, onSignOut, onSearchOpen }
                 <input placeholder="Search your grimoire…" readOnly style={{ cursor: "pointer" }} onClick={onSearchOpen} />
                 <span className="kbd">⌘K</span>
               </div>
-              <a href="/write" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
-                <Icon name="pen" size={14} /> New post
+              <a href="/dashboard" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
+                <Icon name="layout-grid" size={14} /> Dashboard
               </a>
               <button
                 className="avatar"

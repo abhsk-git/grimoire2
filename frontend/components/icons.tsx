@@ -210,6 +210,15 @@ export function Icon({ name, size = 18, strokeWidth = 2, ...rest }: IconProps) {
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
       );
+    case "layout-grid":
+      return (
+        <svg {...common}>
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      );
     default:
       return null;
   }

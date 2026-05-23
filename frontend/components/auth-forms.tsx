@@ -134,7 +134,7 @@ export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         setError(data.error || "Sign in failed. Please try again.");
         return;
       }
-      window.location.href = "/dashboard";
+      window.location.href = "/";
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -241,7 +241,7 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         setError(data.error || "Registration failed. Please try again.");
         return;
       }
-      window.location.href = "/dashboard";
+      window.location.href = "/";
     } catch {
       setError("Network error. Please try again.");
     } finally {

@@ -161,7 +161,7 @@ def google_callback():
             db.close()
 
         jwt_token = create_token(user_id)
-        resp = redirect('/dashboard')
+        resp = redirect('/')
         resp.set_cookie('token', jwt_token, httponly=True, samesite='Lax', max_age=30*24*3600)
         return resp
     except Exception as e:

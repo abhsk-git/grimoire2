@@ -41,14 +41,15 @@ function LandingContent() {
       ) : user ? (
         <HeroLoggedIn username={user.username} displayName={user.display_name} onSearchOpen={() => setOpen(true)} />
       ) : (
-        <HeroLoggedOut onSignIn={() => (window.location.href = "/login")} />
+        <>
+          <HeroLoggedOut onSignIn={() => (window.location.href = "/login")} />
+          <HowItWorks />
+          <Features />
+          <Discover />
+          <CTAStrip onSignIn={() => (window.location.href = "/login")} />
+          <Footer />
+        </>
       )}
-
-      <HowItWorks />
-      <Features />
-      <Discover />
-      <CTAStrip onSignIn={() => (window.location.href = "/login")} />
-      <Footer />
     </div>
   );
 }
