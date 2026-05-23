@@ -269,7 +269,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 /* avatar */
 .avatar {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 9px;
   background: linear-gradient(135deg, var(--accent), var(--accent-3));
   color: white; display: grid; place-items: center;
   font-weight: 700; font-size: 13px;
@@ -699,7 +699,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .public-card .body .meta .au { display: flex; align-items: center; gap: 6px; }
 .public-card .body .meta .av {
-  width: 20px; height: 20px; border-radius: 50%;
+  width: 22px; height: 22px; border-radius: 5px;
   background: linear-gradient(135deg, var(--accent), var(--accent-3));
   color: white; font-size: 10px; font-weight: 700;
   display: grid; place-items: center;
@@ -2363,7 +2363,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 40px;
 }
 .post-byline img {
-  width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  width: 48px; height: 48px; border-radius: 11px; object-fit: cover; flex-shrink: 0;
   border: 2px solid var(--border);
 }
 .byline-author { font-size: 14px; font-weight: 700; color: var(--fg); }
@@ -2492,7 +2492,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .comment-name-input:focus { border-color: var(--accent); }
 .comment-item { display: flex; gap: 14px; padding: 18px 0; border-bottom: 1px solid var(--border); }
-.comment-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.comment-avatar { width: 40px; height: 40px; border-radius: 9px; object-fit: cover; flex-shrink: 0; }
 .comment-bubble { flex: 1; }
 .comment-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .comment-author { font-size: 14px; font-weight: 700; }
@@ -2527,7 +2527,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 /* ── Compose box (logged in) ────────────────────────────────────────────────── */
 .cmt-compose { display: flex; gap: 12px; margin-bottom: 28px; align-items: flex-start; }
 .cmt-compose-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 9px;
   object-fit: cover; flex-shrink: 0; margin-top: 2px;
 }
 .cmt-compose-inner { flex: 1; }
@@ -2564,7 +2564,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .cmt-row:last-child { border-bottom: none; }
 .cmt-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 9px;
   object-fit: cover; flex-shrink: 0; margin-top: 1px;
 }
 .cmt-body { flex: 1; min-width: 0; }
@@ -2637,7 +2637,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .cmt-replies { padding-left: 16px; border-left: 2px solid var(--border); }
 .cmt-reply { padding: 12px 0; border-bottom: 1px solid var(--border); }
 .cmt-replies .cmt-reply:last-child { border-bottom: none; }
-.cmt-reply .cmt-avatar { width: 28px; height: 28px; }
+.cmt-reply .cmt-avatar { width: 30px; height: 30px; border-radius: 7px; }
 .cmt-reply .cmt-text   { font-size: 13.5px; }
 
 @media (max-width: 768px) {
@@ -2718,11 +2718,11 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   box-shadow: var(--shadow);
 }
 .profile-head .av {
-  width: 96px; height: 96px; border-radius: 50%;
+  width: 108px; height: 108px; border-radius: 20px;
   border: 4px solid var(--bg-elev);
   margin-top: -64px;
   display: grid; place-items: center;
-  font-weight: 700; font-size: 34px; color: white;
+  font-weight: 700; font-size: 36px; color: white;
   font-family: var(--font-display); letter-spacing: -0.02em;
 }
 .profile-head .meta { min-width: 0; }
@@ -2839,7 +2839,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .about-card .item:last-child { border-bottom: 0; }
 .about-card .item .av {
-  width: 28px; height: 28px; border-radius: 50%;
+  width: 30px; height: 30px; border-radius: 7px;
   display: grid; place-items: center;
   font-size: 11px; font-weight: 700; color: white;
   flex-shrink: 0;
@@ -2852,7 +2852,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .profile-shell { padding: 0 16px 60px; margin-top: -48px; }
   .profile-cover { height: 160px; }
   .profile-head { grid-template-columns: 1fr; padding: 20px; gap: 14px; }
-  .profile-head .av { width: 72px; height: 72px; font-size: 26px; margin-top: -56px; }
+  .profile-head .av { width: 82px; height: 82px; border-radius: 16px; font-size: 28px; margin-top: -56px; }
   .profile-head h1 { font-size: 22px; }
   .profile-head .actions { flex-direction: row; align-items: stretch; width: 100%; }
   .profile-head .actions .btn { flex: 1; }
@@ -3154,7 +3154,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   border-bottom: 1px solid var(--border);
 }
 .sett-avatar {
-  width: 52px; height: 52px; border-radius: 50%;
+  width: 56px; height: 56px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; font-weight: 700; color: #fff;
   flex-shrink: 0; overflow: hidden;
@@ -3166,13 +3166,13 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 /* ── Avatar clickable overlay ────────────────────────────────────────────────── */
 .sett-avatar-clickable {
   position: relative; cursor: pointer; flex-shrink: 0;
-  width: 52px; height: 52px; border-radius: 50%;
+  width: 56px; height: 56px; border-radius: 12px;
 }
 .sett-avatar-photo {
-  width: 52px; height: 52px; border-radius: 50%; object-fit: cover; display: block;
+  width: 56px; height: 56px; border-radius: 12px; object-fit: cover; display: block;
 }
 .sett-avatar-hover {
-  position: absolute; inset: 0; border-radius: 50%;
+  position: absolute; inset: 0; border-radius: 12px;
   background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center;
   color: white; opacity: 0;
   transition: background .15s, opacity .15s;
@@ -3205,11 +3205,11 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .sett-avatar-wrap { position: relative; flex-shrink: 0; width: 64px; height: 64px; }
 .sett-avatar-img {
-  width: 64px; height: 64px; border-radius: 50%;
+  width: 64px; height: 64px; border-radius: 14px;
   border: 3px solid var(--bg-elev); object-fit: cover; display: block;
 }
 .sett-avatar-initials {
-  width: 64px; height: 64px; border-radius: 50%;
+  width: 64px; height: 64px; border-radius: 14px;
   border: 3px solid var(--bg-elev);
   display: flex; align-items: center; justify-content: center;
   font-size: 22px; font-weight: 700; color: #fff;

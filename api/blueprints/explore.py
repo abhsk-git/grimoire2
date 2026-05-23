@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from utils import get_db, optional_auth
 
 bp = Blueprint('explore', __name__)
@@ -103,6 +103,50 @@ def user_profile(handle):
         if p.get('published_at'): p['published_at'] = p['published_at'].isoformat()
 
     return jsonify({'user': user, 'links': links, 'posts': posts})
+
+
+@bp.route('/api/user/<handle>/rss.xml', methods=['GET'])
+def user_rss(handle):
+    import html as _e
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('SELECT id, name FROM users WHERE handle=%s', (handle,))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'error': 'Not found'}), 404
+        cur.execute('''
+            SELECT title, slug, excerpt, published_at
+            FROM blog_posts
+            WHERE user_id=%s AND status='published'
+            ORDER BY published_at DESC LIMIT 20
+        ''', (user['id'],))
+        posts = cur.fetchall()
+    finally:
+        db.close()
+    host  = request.host_url.rstrip('/')
+    items = ''
+    for p in posts:
+        dt = p['published_at'].strftime('%a, %d %b %Y %H:%M:%S +0000') if p.get('published_at') else ''
+        items += f'''
+        <item>
+          <title><![CDATA[{p["title"]}]]></title>
+          <link>{host}/blog/{p["slug"]}</link>
+          <description><![CDATA[{p.get("excerpt","") or ""}]]></description>
+          <author>{_e.escape(user["name"])}</author>
+          <pubDate>{dt}</pubDate>
+          <guid>{host}/blog/{p["slug"]}</guid>
+        </item>'''
+    xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>{_e.escape(user["name"])} on Grimoire</title>
+    <link>{host}/user/{_e.escape(handle)}</link>
+    <description>Posts by {_e.escape(user["name"])} on Grimoire</description>
+    {items}
+  </channel>
+</rss>'''
+    return Response(xml, mimetype='application/rss+xml')
 
 
 @bp.route('/api/explore/trending-tags', methods=['GET'])

@@ -309,7 +309,7 @@ export function UserProfile({ handle }: { handle: string }) {
                               />
                             )}
                             <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {new URL(l.url).hostname.replace(/^www\./, "")}
+                              {(() => { try { return new URL(l.url).hostname.replace(/^www\./, ""); } catch { return l.url; } })()}
                             </span>
                             <span>{l.created_at ? new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</span>
                           </div>

@@ -21,6 +21,7 @@ interface Post {
   author_name: string;
   author_avatar: string;
   author_bio: string;
+  author_handle?: string;
   user_id: number;
   is_owner: boolean;
 }
@@ -598,16 +599,6 @@ export function BlogPost({ slug }: Props) {
     }
   }
 
-  async function deleteComment(commentId: number) {
-    const r = await fetch(`/api/blog/comments/${commentId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (r.ok) {
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-    }
-  }
-
   function commentDisplayName(c: Comment): string {
     return c.display_name || c.author_name || "Anonymous";
   }
@@ -718,7 +709,7 @@ export function BlogPost({ slug }: Props) {
 
         <h1 className="post-title">{post.title}</h1>
 
-        <Link href={`/user/${post.author_name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none", color: "inherit" }}>
+        <Link href={`/user/${post.author_handle ?? post.author_name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none", color: "inherit" }}>
           <div className="post-byline">
             <img
               src={post.author_avatar || avatarFallback(post.author_name)}
@@ -861,7 +852,7 @@ export function BlogPost({ slug }: Props) {
                 isLoggedIn={!!user}
                 depth={0}
                 onDelete={(id) =>
-                  setComments((prev) => prev.filter((x) => x.id !== id))
+                  setComments((prev) => prev.filter((x) => x.id !== id && x.parent_id !== id))
                 }
               />
             ))}

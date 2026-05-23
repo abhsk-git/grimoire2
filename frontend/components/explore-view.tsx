@@ -248,7 +248,7 @@ export function ExploreView() {
                                   className="avatar"
                                   src={p.author_avatar || avatarFallback(p.author_name)}
                                   onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                                  style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "none" }}
+                                  style={{ width: 28, height: 28, borderRadius: "7px", objectFit: "cover", border: "none" }}
                                   alt={p.author_name}
                                 />
                                 <div className="name">{p.author_name}</div>
@@ -301,7 +301,7 @@ export function ExploreView() {
                                 <img
                                   src={p.author_avatar || avatarFallback(p.author_name)}
                                   onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                                  style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                                  style={{ width: 20, height: 20, borderRadius: "5px", objectFit: "cover", flexShrink: 0 }}
                                   alt={p.author_name}
                                 />
                                 {p.author_name}
@@ -358,7 +358,7 @@ export function ExploreView() {
                     <img
                       src={w.avatar || avatarFallback(w.name)}
                       onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
-                      style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                      style={{ width: 48, height: 48, borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
                       alt={w.name}
                     />
                     <div className="info">
