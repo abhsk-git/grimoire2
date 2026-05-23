@@ -1,10 +1,37 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, abort, Response
-import json, re, unicodedata, os, datetime
+import json, re, unicodedata, os, datetime, ipaddress, socket
+from urllib.parse import urlparse
 from utils import get_db, login_required, optional_auth, verify_token
 
 bp = Blueprint('blog', __name__)
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
+
+_SAFE_EMBED_HOSTS = {
+    'www.youtube.com', 'youtube.com', 'www.youtube-nocookie.com',
+    'player.vimeo.com', 'vimeo.com',
+    'twitter.com', 'www.twitter.com',
+    'www.instagram.com',
+    'open.spotify.com',
+    'soundcloud.com',
+    'codepen.io',
+}
+
+def _is_safe_external_url(url: str) -> bool:
+    """SSRF prevention: reject private/loopback IPs."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+        host = parsed.hostname
+        if not host:
+            return False
+        ip = ipaddress.ip_address(socket.getaddrinfo(host, None)[0][4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            return False
+        return True
+    except Exception:
+        return False
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -164,7 +191,13 @@ def _to_html(content_json):
             )
 
         elif bt == 'embed':
-            embed    = _e.escape(bd.get('embed', ''))
+            raw_embed = bd.get('embed', '') or ''
+            parsed_embed = urlparse(raw_embed)
+            embed_host   = (parsed_embed.hostname or '').lstrip('www.')
+            safe_embed_hosts = {h.lstrip('www.') for h in _SAFE_EMBED_HOSTS}
+            if parsed_embed.scheme not in ('http', 'https') or embed_host not in safe_embed_hosts:
+                continue  # drop untrusted embed blocks entirely
+            embed    = _e.escape(raw_embed)
             cap_raw  = bd.get('caption', '')
             cap_html = f'<figcaption>{_sanitize_inline(cap_raw)}</figcaption>' if cap_raw else ''
             parts.append(
@@ -799,6 +832,8 @@ def upload_image():
             return jsonify({'success': 0, 'message': 'No URL provided'}), 400
         if not url.startswith(('http://', 'https://')):
             return jsonify({'success': 0, 'message': 'Invalid URL'}), 400
+        if not _is_safe_external_url(url):
+            return jsonify({'success': 0, 'message': 'URL not allowed'}), 400
         try:
             r = http_requests.get(url, timeout=10, stream=True,
                                   headers={'User-Agent': 'Mozilla/5.0 (compatible; Grimoire/1.0)'})
