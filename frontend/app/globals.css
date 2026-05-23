@@ -1207,6 +1207,36 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
 
+/* password input wrapper — border lives here, input inside is bare */
+.pw-wrap {
+  display: flex; align-items: center;
+  border-radius: 10px; background: var(--bg); border: 1px solid var(--border);
+  transition: border-color .12s, box-shadow .12s;
+}
+.pw-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+.pw-wrap input {
+  flex: 1; min-width: 0;
+  border: none; background: transparent; outline: none;
+  padding: 10px 12px; font-size: 14px; color: var(--fg); font-family: inherit;
+}
+.pw-wrap input::placeholder { color: var(--fg-soft); }
+.pw-wrap .pw-eye {
+  padding: 0 10px; flex-shrink: 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--fg-soft); display: flex; align-items: center;
+}
+.pw-wrap .pw-eye:hover { color: var(--fg); }
+
+/* settings variant */
+.pw-wrap.pw-sett {
+  border-radius: var(--radius-sm); background: var(--bg-soft); width: 100%;
+}
+.pw-wrap.pw-sett:focus-within { box-shadow: none; }
+.pw-wrap.pw-sett input { padding: 8px 12px; }
+
 .toggle-row {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 14px; border-radius: 12px;

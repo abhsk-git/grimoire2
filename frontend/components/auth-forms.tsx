@@ -5,37 +5,18 @@ import { BrandMark, Icon } from "./icons";
 
 export function PasswordInput({
   className,
-  style,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement>) {
   const [show, setShow] = useState(false);
+  const isSett = className?.includes("sett-input");
   return (
-    <div style={{ position: "relative" }}>
-      <input
-        {...props}
-        type={show ? "text" : "password"}
-        className={className}
-        style={{ paddingRight: 38, ...style }}
-      />
+    <div className={`pw-wrap${isSett ? " pw-sett" : ""}`}>
+      <input {...props} type={show ? "text" : "password"} />
       <button
         type="button"
-        tabIndex={-1}
+        className="pw-eye"
         aria-label={show ? "Hide password" : "Show password"}
         onClick={() => setShow((v) => !v)}
-        style={{
-          position: "absolute",
-          right: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          background: "none",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          color: "var(--fg-soft)",
-          display: "flex",
-          alignItems: "center",
-          lineHeight: 1,
-        }}
       >
         <Icon name={show ? "eye-off" : "eye"} size={15} />
       </button>
