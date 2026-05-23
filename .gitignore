@@ -11,6 +11,9 @@ api/config/.env
 frontend/.next/
 frontend/node_modules/
 
+# Audit reports
+SECURITY_AUDIT.md
+
 # Uploads (symlinked, not tracked)
 static/
 api/static/uploads/
