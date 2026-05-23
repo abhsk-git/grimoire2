@@ -1217,11 +1217,17 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
 }
-.pw-wrap input {
+.pw-wrap input,
+.field .pw-wrap input,
+.sett-field .pw-wrap input {
   flex: 1; min-width: 0;
   border: none; background: transparent; outline: none;
+  box-shadow: none; border-radius: 0;
   padding: 10px 12px; font-size: 14px; color: var(--fg); font-family: inherit;
 }
+.pw-wrap input:focus,
+.field .pw-wrap input:focus,
+.sett-field .pw-wrap input:focus { border: none; box-shadow: none; outline: none; }
 .pw-wrap input::placeholder { color: var(--fg-soft); }
 .pw-wrap .pw-eye {
   padding: 0 10px; flex-shrink: 0;
@@ -1235,7 +1241,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   border-radius: var(--radius-sm); background: var(--bg-soft); width: 100%;
 }
 .pw-wrap.pw-sett:focus-within { box-shadow: none; }
-.pw-wrap.pw-sett input { padding: 8px 12px; }
+.pw-wrap.pw-sett input,
+.sett-field .pw-wrap.pw-sett input { padding: 8px 12px; }
 
 .toggle-row {
   display: flex; align-items: center; gap: 12px;
