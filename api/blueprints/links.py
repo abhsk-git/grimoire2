@@ -2,9 +2,28 @@ from flask import Blueprint, request, jsonify
 import requests as http_requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+import ipaddress, socket
 from utils import get_db, login_required
 
 bp = Blueprint('links', __name__)
+
+
+def _is_safe_url(url: str) -> bool:
+    """Return False if the URL targets private/internal networks (SSRF prevention)."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+        host = parsed.hostname
+        if not host:
+            return False
+        # Resolve to IP and reject private/loopback/link-local ranges
+        ip = ipaddress.ip_address(socket.getaddrinfo(host, None)[0][4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            return False
+        return True
+    except Exception:
+        return False
 
 
 # ─── URL Metadata ──────────────────────────────────────────────────────────────
@@ -13,6 +32,13 @@ def _do_fetch_meta(url):
     """Fetch OG / twitter metadata for a URL. Returns a dict."""
     if not url.startswith('http'):
         url = 'https://' + url
+    if not _is_safe_url(url):
+        parsed = urlparse(url)
+        return {
+            'title': '', 'description': '', 'image': '',
+            'favicon': f"https://www.google.com/s2/favicons?domain={parsed.netloc}&sz=64",
+            'url': url,
+        }
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (compatible; Grimoire/1.0)'}
         r       = http_requests.get(url, headers=headers, timeout=8, allow_redirects=True)
