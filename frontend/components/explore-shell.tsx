@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
-import { avatarColor, isRealAvatar } from "@/lib/avatar";
 interface PublicHeaderProps {
   loggedIn?: boolean;
   username?: string;
@@ -11,8 +10,7 @@ interface PublicHeaderProps {
 }
 
 export function PublicHeader({ loggedIn, username, avatar }: PublicHeaderProps) {
-  const initials  = username ? username.slice(0, 2).toUpperCase() : "ME";
-  const realPhoto = isRealAvatar(avatar);
+  const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
   const searchRef = useRef<HTMLInputElement>(null);
 
   function handleSearch(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -49,10 +47,10 @@ export function PublicHeader({ loggedIn, username, avatar }: PublicHeaderProps) 
               </Link>
               <Link
                 href={`/user/${username ? username.toLowerCase().replace(/\s+/g, '-') : ''}`}
-                className={`avatar${realPhoto ? " has-photo" : ""}`}
-                style={realPhoto ? { textDecoration: "none" } : { background: avatarColor(username || "ME"), textDecoration: "none" }}
+                className={`avatar${avatar ? " has-photo" : ""}`}
+                style={avatar ? { textDecoration: "none" } : { background: "linear-gradient(135deg,#5b54d6,#8e8df0)", textDecoration: "none" }}
               >
-                {realPhoto ? <img src={avatar!} alt={username} /> : initials}
+                {avatar ? <img src={avatar} alt={username} /> : initials}
               </Link>
             </>
           ) : (

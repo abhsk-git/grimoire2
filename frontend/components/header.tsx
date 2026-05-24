@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
-import { avatarColor, isRealAvatar } from "@/lib/avatar";
 interface HeaderProps {
   loggedIn?: boolean;
   username?: string;
@@ -18,8 +17,7 @@ interface HeaderProps {
 export function Header({ loggedIn, username, handle, avatar, onSignIn, onSignUp, onSignOut, onSearchOpen }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const initials  = username ? username.slice(0, 2).toUpperCase() : "ME";
-  const realPhoto = isRealAvatar(avatar);
+  const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
   const profileHref = `/user/${handle ?? username?.toLowerCase().replace(/\s+/g, "-") ?? "me"}`;
 
   useEffect(() => {
@@ -63,13 +61,8 @@ export function Header({ loggedIn, username, handle, avatar, onSignIn, onSignUp,
                 <Icon name="layout-grid" size={14} /> Dashboard
               </a>
               <div ref={menuRef} style={{ position: "relative" }}>
-                <button
-                  className={`avatar${realPhoto ? " has-photo" : ""}`}
-                  style={realPhoto ? undefined : { background: avatarColor(username || "ME") }}
-                  onClick={() => setMenuOpen(v => !v)}
-                  title="Account menu"
-                >
-                  {realPhoto ? <img src={avatar!} alt={username} /> : initials}
+                <button className={`avatar${avatar ? " has-photo" : ""}`} onClick={() => setMenuOpen(v => !v)} title="Account menu">
+                  {avatar ? <img src={avatar} alt={username} /> : initials}
                 </button>
                 {menuOpen && (
                   <div className="user-dropdown">
