@@ -132,7 +132,7 @@ export function PasswordStrength({ password }: { password: string }) {
   );
 }
 
-export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
+export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => void; banner?: { type: "success" | "error"; msg: string } | null }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keepSignedIn, setKeepSignedIn] = useState(false);
@@ -185,6 +185,9 @@ export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
           </span>
           <span>Grimoire</span>
         </div>
+        {banner && (
+          <div className={`auth-banner auth-banner-${banner.type}`}>{banner.msg}</div>
+        )}
         <h1>Welcome back.</h1>
         <p className="sub">Sign in to open your grimoire.</p>
 

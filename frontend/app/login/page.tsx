@@ -19,24 +19,9 @@ function LoginContent() {
   return (
     <div className="auth-shell">
       <AuthArt />
-      <div style={{ width: "100%", maxWidth: 420 }}>
-        {banner && (
-          <div style={{
-            margin: "0 0 16px",
-            padding: "12px 16px",
-            borderRadius: 8,
-            fontSize: 13,
-            background: banner.type === "success" ? "color-mix(in oklab,var(--accent) 15%,transparent)" : "color-mix(in oklab,#ef4444 15%,transparent)",
-            color: banner.type === "success" ? "var(--accent)" : "#ef4444",
-            border: `1px solid ${banner.type === "success" ? "color-mix(in oklab,var(--accent) 30%,transparent)" : "color-mix(in oklab,#ef4444 30%,transparent)"}`,
-          }}>
-            {banner.msg}
-          </div>
-        )}
-        {view === "signin" && <SignInForm switchTo={setView} />}
-        {view === "signup" && <SignUpForm switchTo={setView} />}
-        {view === "forgot" && <ForgotForm switchTo={setView} />}
-      </div>
+      {view === "signin" && <SignInForm switchTo={setView} banner={banner} />}
+      {view === "signup" && <SignUpForm switchTo={setView} />}
+      {view === "forgot" && <ForgotForm switchTo={setView} />}
     </div>
   );
 }
