@@ -2989,6 +2989,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .about-col-l p {
   margin: 0 0 1em;
   font-size: 15px; line-height: 1.65; color: var(--fg);
+  overflow-wrap: break-word; word-break: break-word;
 }
 .about-side { display: flex; flex-direction: column; gap: 14px; }
 .about-card {
@@ -3011,12 +3012,12 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   font-size: 11px; font-weight: 700; color: white;
   flex-shrink: 0;
 }
-.about-card .item .text { flex: 1; min-width: 0; }
+.about-card .item .text { flex: 1; min-width: 0; overflow: hidden; }
 .about-card .item .text .n { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.about-card .item .text .s { font-size: 11px; color: var(--fg-soft); }
+.about-card .item .text .s { font-size: 11px; color: var(--fg-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 720px) {
-  .profile-shell { padding: 0 16px 60px; margin-top: -48px; }
+  .profile-shell { padding: 0 16px 60px; margin-top: -48px; overflow-x: hidden; }
   .profile-cover { height: 160px; }
   .profile-head { grid-template-columns: 1fr; padding: 20px; gap: 14px; }
   .profile-head .av { width: 82px; height: 82px; border-radius: 16px; font-size: 28px; margin-top: -56px; }
