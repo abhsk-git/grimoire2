@@ -297,6 +297,7 @@ export function ExploreView() {
                                   onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
                                   style={{ width: 28, height: 28, borderRadius: "7px", objectFit: "cover", border: "none" }}
                                   alt={p.author_name}
+                                  loading="lazy"
                                 />
                                 <div className="name">{p.author_name}</div>
                               </div>
@@ -359,6 +360,7 @@ export function ExploreView() {
                                   onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
                                   style={{ width: 20, height: 20, borderRadius: "5px", objectFit: "cover", flexShrink: 0 }}
                                   alt={p.author_name}
+                                  loading="lazy"
                                 />
                                 {p.author_name}
                               </Link>
@@ -423,6 +425,7 @@ export function ExploreView() {
                       onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
                       style={{ width: 48, height: 48, borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
                       alt={w.name}
+                      loading="lazy"
                     />
                     <div className="info">
                       <div className="name">{w.name}</div>

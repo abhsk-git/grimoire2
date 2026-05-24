@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, Response
-from utils import get_db, optional_auth
+from utils import get_db, optional_auth, cache_get, cache_set
 
 bp = Blueprint('explore', __name__)
 
@@ -15,6 +15,12 @@ def explore_links():
     except (ValueError, TypeError):
         page, per_page = 1, 24
     offset = (page - 1) * per_page
+
+    cache_key = f'explore:{q}:{tag}:{page}:{per_page}'
+    if not q and not tag and page == 1:
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return jsonify(cached)
 
     db  = get_db()
     cur = db.cursor(dictionary=True)
@@ -59,7 +65,10 @@ def explore_links():
     for lnk in links:
         if lnk.get('created_at'): lnk['created_at'] = lnk['created_at'].isoformat()
 
-    return jsonify({'links': links, 'total': total, 'page': page, 'per_page': per_page})
+    result = {'links': links, 'total': total, 'page': page, 'per_page': per_page}
+    if not q and not tag and page == 1:
+        cache_set(cache_key, result, ttl=30)
+    return jsonify(result)
 
 
 @bp.route('/api/user/<handle>', methods=['GET'])

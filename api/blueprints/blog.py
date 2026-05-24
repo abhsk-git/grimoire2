@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, abort, Response
 import json, re, unicodedata, os, datetime, ipaddress, socket
 from urllib.parse import urlparse
-from utils import get_db, login_required, optional_auth, verify_token
+from utils import get_db, login_required, optional_auth, verify_token, cache_get, cache_set, cache_delete_prefix
 
 bp = Blueprint('blog', __name__)
 
@@ -311,6 +311,13 @@ def list_posts():
         page, per_page = 1, 12
     offset = (page - 1) * per_page
 
+    # Cache unfiltered first-page requests (the common explore load)
+    cache_key = f'blog_posts:{q}:{tag}:{page}:{per_page}'
+    if not q and not tag and page == 1:
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return jsonify(cached)
+
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -344,7 +351,10 @@ def list_posts():
             p['pub_date']     = _fmt_date(p['published_at'])
             p['published_at'] = p['published_at'].isoformat()
 
-    return jsonify({'posts': posts, 'total': total, 'page': page, 'per_page': per_page})
+    result = {'posts': posts, 'total': total, 'page': page, 'per_page': per_page}
+    if not q and not tag and page == 1:
+        cache_set(cache_key, result, ttl=30)
+    return jsonify(result)
 
 
 @bp.route('/api/blog/posts', methods=['POST'])
