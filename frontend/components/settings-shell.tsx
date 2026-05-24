@@ -800,56 +800,58 @@ function AccountTab() {
 
   return (
     <>
-      {/* Email */}
-      <Section title="Email address">
-        <div className="sett-field">
-          <label className="sett-label">Current email</label>
-          <input className="sett-input" value={user?.email ?? ""} readOnly style={{ opacity: 0.6 }} />
-        </div>
-        <div className="sett-field">
-          <label className="sett-label">New email</label>
-          <input
-            type="email" className="sett-input"
-            value={newEmail} onChange={e => setNewEmail(e.target.value)}
-            placeholder="new@email.com"
-          />
-        </div>
-        {user?.has_password && (
+      <div className={user?.has_password ? "sett-account-grid" : ""}>
+        {/* Email */}
+        <Section title="Email address">
           <div className="sett-field">
-            <label className="sett-label">Current password <span className="sett-label-soft">(to confirm)</span></label>
-            <PasswordInput className="sett-input"
-              value={emailPw} onChange={e => setEmailPw(e.target.value)}
-              autoComplete="current-password"
+            <label className="sett-label">Current email</label>
+            <input className="sett-input" value={user?.email ?? ""} readOnly style={{ opacity: 0.6 }} />
+          </div>
+          <div className="sett-field">
+            <label className="sett-label">New email</label>
+            <input
+              type="email" className="sett-input"
+              value={newEmail} onChange={e => setNewEmail(e.target.value)}
+              placeholder="new@email.com"
             />
           </div>
-        )}
-        <div className="sett-save-row">
-          <SaveMsg msg={emailMsg} />
-          <button className="btn btn-primary btn-sm" onClick={changeEmail} disabled={emailSaving}>
-            {emailSaving ? "Updating…" : "Update email"}
-          </button>
-        </div>
-      </Section>
-
-      {/* Password — only for non-OAuth accounts */}
-      {user?.has_password && (
-        <Section title="Change password">
-          <div className="sett-field">
-            <label className="sett-label">Current password</label>
-            <PasswordInput className="sett-input" value={oldPw} onChange={e => setOldPw(e.target.value)} autoComplete="current-password" />
-          </div>
-          <div className="sett-field">
-            <label className="sett-label">New password <span className="sett-label-soft">(min 8 chars)</span></label>
-            <PasswordInput className="sett-input" value={newPw} onChange={e => setNewPw(e.target.value)} autoComplete="new-password" />
-          </div>
+          {user?.has_password && (
+            <div className="sett-field">
+              <label className="sett-label">Current password <span className="sett-label-soft">(to confirm)</span></label>
+              <PasswordInput className="sett-input"
+                value={emailPw} onChange={e => setEmailPw(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+          )}
           <div className="sett-save-row">
-            <SaveMsg msg={pwMsg} />
-            <button className="btn btn-primary btn-sm" onClick={changePassword} disabled={pwSaving}>
-              {pwSaving ? "Saving…" : "Update password"}
+            <SaveMsg msg={emailMsg} />
+            <button className="btn btn-primary btn-sm" onClick={changeEmail} disabled={emailSaving}>
+              {emailSaving ? "Updating…" : "Update email"}
             </button>
           </div>
         </Section>
-      )}
+
+        {/* Password — only for non-OAuth accounts */}
+        {user?.has_password && (
+          <Section title="Change password">
+            <div className="sett-field">
+              <label className="sett-label">Current password</label>
+              <PasswordInput className="sett-input" value={oldPw} onChange={e => setOldPw(e.target.value)} autoComplete="current-password" />
+            </div>
+            <div className="sett-field">
+              <label className="sett-label">New password <span className="sett-label-soft">(min 8 chars)</span></label>
+              <PasswordInput className="sett-input" value={newPw} onChange={e => setNewPw(e.target.value)} autoComplete="new-password" />
+            </div>
+            <div className="sett-save-row">
+              <SaveMsg msg={pwMsg} />
+              <button className="btn btn-primary btn-sm" onClick={changePassword} disabled={pwSaving}>
+                {pwSaving ? "Saving…" : "Update password"}
+              </button>
+            </div>
+          </Section>
+        )}
+      </div>
 
       {/* Danger zone */}
       <div className="sett-section">
