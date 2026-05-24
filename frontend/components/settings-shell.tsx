@@ -727,50 +727,8 @@ function NotificationsTab() {
 
 // ── Account Tab ───────────────────────────────────────────────────────────────
 
-const ACC_RANKS = [
-  { name: "Apprentice", min: 0,    max: 50,       color: "#6b7280", stars: 1 },
-  { name: "Scribe",     min: 50,   max: 150,      color: "#22c55e", stars: 2 },
-  { name: "Arcanist",   min: 150,  max: 350,      color: "#6366f1", stars: 3 },
-  { name: "Sorcerer",   min: 350,  max: 700,      color: "#a855f7", stars: 4 },
-  { name: "Archmage",   min: 700,  max: 1200,     color: "#f59e0b", stars: 5 },
-  { name: "Sage",       min: 1200, max: Infinity,  color: "#ef4444", stars: 6 },
-];
-const ACC_AV_COLORS = [
-  "linear-gradient(135deg,#5b54d6,#8e8df0)",
-  "linear-gradient(135deg,#14613a,#6abf85)",
-  "linear-gradient(135deg,#d04f63,#f08197)",
-  "linear-gradient(135deg,#b46a2a,#f4b860)",
-  "linear-gradient(135deg,#1b3a6b,#5563d0)",
-  "linear-gradient(135deg,#2f7d4d,#a8e0bd)",
-];
-
 function AccountTab() {
   const { user, refetch } = useAuth();
-
-  const [xp, setXp] = useState(0);
-
-  useEffect(() => {
-    const h = user?.handle;
-    if (!h) return;
-    fetch(`/api/user/${encodeURIComponent(h)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (!data) return;
-        const posts = data.posts ?? [];
-        const links = data.links ?? [];
-        const reads = posts.reduce((s: number, p: any) => s + (p.views || 0), 0);
-        const likes = posts.reduce((s: number, p: any) => s + (p.likes || 0), 0);
-        setXp(Math.round(posts.length * 10 + links.length * 2 + reads * 0.1 + likes * 0.5));
-      })
-      .catch(() => {});
-  }, [user?.handle]);
-
-  const rank      = (() => { for (let i = ACC_RANKS.length - 1; i >= 0; i--) if (xp >= ACC_RANKS[i].min) return ACC_RANKS[i]; return ACC_RANKS[0]; })();
-  const nextRank  = ACC_RANKS[ACC_RANKS.indexOf(rank) + 1];
-  const pct       = rank.max === Infinity ? 100 : Math.min(100, ((xp - rank.min) / (rank.max - rank.min)) * 100);
-  const xpToNext  = nextRank ? nextRank.min - xp : 0;
-  const initials  = (user?.username ?? "ME").slice(0, 2).toUpperCase();
-  const avatarBg  = ACC_AV_COLORS[(user?.id ?? 0) % ACC_AV_COLORS.length];
 
   // Password
   const [oldPw,   setOldPw]   = useState("");
@@ -842,49 +800,6 @@ function AccountTab() {
 
   return (
     <>
-      {/* Profile preview card */}
-      <div className="sett-account-preview">
-        <div
-          className="sett-account-cover"
-          style={user?.banner ? { backgroundImage: `url(${user.banner})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
-        />
-        <div className="sett-account-body">
-          <div className="sett-acc-left">
-            {user?.avatar ? (
-              <img
-                src={user.avatar}
-                alt={initials}
-                className="sett-acc-av"
-                style={{ objectFit: "cover" }}
-                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
-            ) : (
-              <div className="sett-acc-av" style={{ background: avatarBg }}>{initials}</div>
-            )}
-            <div>
-              <div className="sett-acc-name">{user?.username}</div>
-              <div className="sett-acc-handle">@{user?.handle ?? user?.username?.toLowerCase().replace(/\s+/g, "")}</div>
-            </div>
-          </div>
-          <div className="xp-bar-wrap" style={{ marginTop: 12 }}>
-            <div className="xp-bar-label">
-              <span style={{ color: rank.color, fontWeight: 700 }}>
-                {"✦".repeat(Math.min(rank.stars, 5))}{rank.stars > 5 ? "★" : ""} {rank.name}
-              </span>
-              <span style={{ fontSize: 11, color: "var(--fg-muted)" }}>
-                {nextRank
-                  ? <>{xpToNext} XP to <strong style={{ color: nextRank.color }}>{nextRank.name}</strong></>
-                  : <span style={{ color: rank.color, fontWeight: 700 }}>Max Rank</span>
-                }
-              </span>
-            </div>
-            <div className="xp-bar-track">
-              <div className="xp-bar-fill" style={{ width: `${pct}%`, background: rank.color }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Email */}
       <Section title="Email address">
         <div className="sett-field">
