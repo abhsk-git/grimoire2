@@ -88,6 +88,11 @@ export function ExploreView() {
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
 
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setSearch(q);
+  }, []);
+
   // postId → saved linkId (undefined = not bookmarked)
   const [bookmarked, setBookmarked] = useState<Map<number, number>>(new Map());
   const [bookmarking, setBookmarking] = useState<Set<number>>(new Set());

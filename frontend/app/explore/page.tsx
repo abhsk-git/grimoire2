@@ -24,14 +24,7 @@ function ExploreContent() {
         </div>
       </main>
 
-      <PublicFooter
-        links={[
-          { label: "About", href: "#" },
-          { label: "Manifesto", href: "#" },
-          { label: "Privacy", href: "#" },
-          { label: "RSS", href: "#" },
-        ]}
-      />
+      <PublicFooter />
     </div>
   );
 }

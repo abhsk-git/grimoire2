@@ -295,7 +295,7 @@ def register():
         token   = create_token(user_id)
         resp    = jsonify({'success': True, 'user': {'id': user_id, 'name': name, 'email': email}})
         resp.set_cookie('token', token, httponly=True, samesite='Lax',
-                        max_age=30*24*3600, secure=_SECURE_COOKIE)
+                        max_age=None, secure=_SECURE_COOKIE)
         return resp
     except Exception:
         return jsonify({'error': 'Registration failed. Please try again.'}), 500

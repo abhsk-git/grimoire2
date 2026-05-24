@@ -664,8 +664,7 @@ export function Footer() {
 // ── Compact footer for inner pages (explore, blog, user) ─────────────────────
 export function PublicFooter({
   links = [
-    { label: "About", href: "#" },
-    { label: "Privacy", href: "#" },
+    { label: "About", href: "/#features" },
     { label: "Explore", href: "/explore" },
   ],
 }: {
