@@ -3501,7 +3501,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 /* ── RSS box ─────────────────────────────────────────────────────────────────── */
 .sett-rss-box { display: flex; align-items: center; gap: 8px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; font-family: var(--font-mono); color: var(--fg-muted); overflow: hidden; }
-.sett-rss-url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sett-rss-url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .sett-rss-copy { flex-shrink: 0; padding: 4px 10px; border-radius: 6px; background: var(--bg-elev); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--fg-muted); transition: all .12s; cursor: pointer; font-family: var(--font-sans); }
 .sett-rss-copy:hover { color: var(--fg); border-color: var(--border-strong); }
 .sett-rss-copy.copied { color: var(--accent); border-color: var(--accent); }
