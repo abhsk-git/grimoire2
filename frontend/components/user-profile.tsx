@@ -187,6 +187,10 @@ export function UserProfile({ handle }: { handle: string }) {
             >
               {initials(user.name)}
             </div>
+
+          </div>
+
+          <div className="meta">
             <h1>{user.name}</h1>
             <div className="handle">
               <span>@{user.handle ?? user.name.toLowerCase().replace(/\s+/g, "")}</span>
