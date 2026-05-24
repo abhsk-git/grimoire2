@@ -634,16 +634,20 @@ function PublishingTab() {
           <Toggle checked={pub.rssEnabled} onChange={v => update({ publishing: { rssEnabled: v } })} />
         </SettRow>
         {pub.rssEnabled && (
-          <div className="sett-field">
-            <label className="sett-label">Your RSS URL</label>
-            <div className="sett-rss-box">
-              <span className="sett-rss-url">{rssUrl}</span>
-              <button className={`sett-rss-copy${copied ? " copied" : ""}`} onClick={copyRss}>
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            {!rssHandle && (
-              <span className="sett-handle-hint">Set a handle in Profile to get a stable RSS URL.</span>
+          <div className="sett-field" style={{ borderBottom: "none" }}>
+            {rssHandle ? (
+              <div className="sett-rss-info">
+                <div className="sett-rss-info-text">
+                  <Icon name="rss" size={13} />
+                  <span>Your feed is live. Share the link so readers can subscribe in any RSS app.</span>
+                </div>
+                <button className={`sett-rss-copy${copied ? " copied" : ""}`} onClick={copyRss}>
+                  <Icon name="link" size={12} />
+                  {copied ? "Copied!" : "Copy feed URL"}
+                </button>
+              </div>
+            ) : (
+              <span className="sett-handle-hint">Set a handle in Profile to activate your RSS feed URL.</span>
             )}
           </div>
         )}

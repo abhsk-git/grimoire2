@@ -3273,8 +3273,6 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .sett-profile-banner .sett-banner-strip { border-bottom: 1px solid var(--border); }
   .sett-identity-inner { flex-direction: row; text-align: left; padding: 14px 16px; gap: 14px; }
   .sett-identity-inner .sett-avatar-clickable { flex-shrink: 0; }
-  .sett-rss-box { font-size: 11px; }
-  .sett-rss-url { white-space: normal; word-break: break-all; text-overflow: clip; }
 }
 
 /* ── Banner strip (inside-card, at top) ─────────────────────────────────────── */
@@ -3502,11 +3500,12 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .sett-vis-pill.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 
 /* ── RSS box ─────────────────────────────────────────────────────────────────── */
-.sett-rss-box { display: flex; align-items: center; gap: 8px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; font-family: var(--font-mono); color: var(--fg-muted); overflow: hidden; }
-.sett-rss-url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.sett-rss-copy { flex-shrink: 0; padding: 4px 10px; border-radius: 6px; background: var(--bg-elev); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--fg-muted); transition: all .12s; cursor: pointer; font-family: var(--font-sans); }
-.sett-rss-copy:hover { color: var(--fg); border-color: var(--border-strong); }
-.sett-rss-copy.copied { color: var(--accent); border-color: var(--accent); }
+.sett-rss-info { display: flex; flex-direction: column; gap: 10px; }
+.sett-rss-info-text { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--fg-soft); line-height: 1.5; }
+.sett-rss-info-text svg { flex-shrink: 0; margin-top: 2px; color: var(--accent); }
+.sett-rss-copy { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-pill); background: var(--bg-soft); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--fg-muted); transition: all .12s; cursor: pointer; font-family: var(--font-sans); }
+.sett-rss-copy:hover { color: var(--fg); border-color: var(--border-strong); background: var(--bg-elev); }
+.sett-rss-copy.copied { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 
 /* ── Account tab 2-col grid (email + password side by side) ─────────────────── */
 @media (min-width: 641px) {
