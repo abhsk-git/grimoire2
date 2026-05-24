@@ -51,7 +51,8 @@ def explore_links():
         cur.execute(f'''
             SELECT l.id, l.url, l.title, l.description, l.image, l.favicon,
                    l.tags, l.visit_count, l.created_at,
-                   u.id as author_id, u.name as author_name, u.avatar as author_avatar
+                   u.id as author_id, u.name as author_name, u.avatar as author_avatar,
+                   u.handle as author_handle
             FROM links l
             JOIN users u ON l.user_id = u.id
             WHERE {where} AND {privacy_filter}

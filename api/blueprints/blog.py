@@ -336,7 +336,8 @@ def list_posts():
         cur.execute(f'''
             SELECT p.id, p.title, p.slug, p.excerpt, p.cover_image, p.tags,
                    p.reading_time, p.views, p.likes, p.published_at, p.featured,
-                   u.id as author_id, u.name as author_name, u.avatar as author_avatar
+                   u.id as author_id, u.name as author_name, u.avatar as author_avatar,
+                   u.handle as author_handle
             FROM blog_posts p JOIN users u ON p.user_id=u.id
             WHERE {where}
             ORDER BY p.featured DESC, p.published_at DESC
@@ -408,13 +409,14 @@ def get_post_by_slug(slug):
         db.close()
     if not post:
         return jsonify({'error': 'Not found'}), 404
-    db2  = get_db()
-    cur2 = db2.cursor()
-    try:
-        cur2.execute('UPDATE blog_posts SET views=views+1 WHERE id=%s', (post['id'],))
-        db2.commit()
-    finally:
-        db2.close()
+    if request.user_id != post['user_id']:
+        db2  = get_db()
+        cur2 = db2.cursor()
+        try:
+            cur2.execute('UPDATE blog_posts SET views=views+1 WHERE id=%s', (post['id'],))
+            db2.commit()
+        finally:
+            db2.close()
     for f in ('created_at', 'updated_at', 'published_at'):
         if post.get(f): post[f] = post[f].isoformat()
     post['is_owner'] = (request.user_id == post['user_id'])
@@ -558,6 +560,13 @@ def like_post(post_id):
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
+        cur.execute('SELECT user_id FROM blog_posts WHERE id=%s', (post_id,))
+        post_row = cur.fetchone()
+        if not post_row:
+            return jsonify({'error': 'Not found'}), 404
+        if request.user_id and request.user_id == post_row['user_id']:
+            return jsonify({'error': 'Cannot like your own post'}), 403
+
         if request.user_id:
             cur.execute('SELECT id FROM blog_likes WHERE post_id=%s AND user_id=%s', (post_id, request.user_id))
             if cur.fetchone():
@@ -979,7 +988,7 @@ def blog_writers():
     cur = db.cursor(dictionary=True)
     try:
         cur.execute('''
-            SELECT u.id, u.name, u.avatar,
+            SELECT u.id, u.name, u.avatar, u.handle,
                    COUNT(p.id)  AS post_count,
                    SUM(p.views) AS total_views,
                    SUM(p.likes) AS total_likes
