@@ -3503,6 +3503,49 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .sett-rss-copy:hover { color: var(--fg); border-color: var(--border-strong); }
 .sett-rss-copy.copied { color: var(--accent); border-color: var(--accent); }
 
+/* ── Account tab profile preview card ───────────────────────────────────────── */
+.sett-account-preview {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+.sett-account-cover {
+  height: 80px;
+  background: linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 30%, var(--accent-3)));
+  position: relative;
+  overflow: hidden;
+}
+.sett-account-cover::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(600px 200px at 80% 20%, rgba(255,255,255,0.16), transparent 60%);
+}
+.sett-account-body {
+  padding: 0 20px 18px;
+}
+.sett-acc-left {
+  display: flex; align-items: flex-end; gap: 14px;
+}
+.sett-acc-av {
+  width: 68px; height: 68px; border-radius: 14px;
+  border: 3px solid var(--bg-elev);
+  margin-top: -34px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 24px; color: white;
+  font-family: var(--font-display); letter-spacing: -0.02em;
+}
+.sett-acc-name {
+  font-size: 18px; font-weight: 700;
+  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  line-height: 1.2; padding-bottom: 2px;
+}
+.sett-acc-handle {
+  font-size: 12px; color: var(--fg-soft); margin-top: 1px;
+}
+
 /* ── Notification badge ──────────────────────────────────────────────────────── */
 .sett-notif-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 7px; border-radius: var(--radius-pill); background: color-mix(in oklab, var(--accent-2) 16%, var(--bg)); color: var(--accent-2); border: 1px solid color-mix(in oklab, var(--accent-2) 35%, transparent); }
 
