@@ -155,6 +155,7 @@ export function UserProfile({ handle }: { handle: string }) {
   const { user: authUser } = useAuth();
   const isOwner = authUser && (authUser.id === user.id);
   const avatarBg = avatarColor(user.id);
+  const bannerBg = COVER_GRADIENTS[user.id % COVER_GRADIENTS.length];
   const xp = computeXP(posts, links);
   const rank = getRank(xp);
   const pct = xpProgress(xp, rank);
@@ -163,10 +164,16 @@ export function UserProfile({ handle }: { handle: string }) {
 
   return (
     <div className="profile-page">
-      <div
-        className="profile-cover"
-        style={user.banner ? { backgroundImage: `url(${user.banner})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
-      />
+      <div className="profile-cover" style={{ background: bannerBg }}>
+        {user.banner && (
+          <img
+            src={user.banner}
+            alt=""
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
+      </div>
 
       <div className="profile-shell">
         <div className="profile-head">
@@ -180,7 +187,7 @@ export function UserProfile({ handle }: { handle: string }) {
                 onError={(e) => {
                   const el = e.target as HTMLImageElement;
                   el.style.display = "none";
-                  el.nextElementSibling?.removeAttribute("style");
+                  (el.nextElementSibling as HTMLElement | null)?.style.setProperty("display", "");
                 }}
               />
             ) : null}
