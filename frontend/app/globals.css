@@ -3258,7 +3258,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 
 @media (max-width: 640px) {
-  .sett-page { height: auto; overflow: visible; padding: 16px 16px 60px; }
+  .sett-page { height: auto; overflow-x: hidden; padding: 16px 16px 60px; }
   .sett-layout { grid-template-columns: 1fr; flex: unset; overflow: visible; }
   .sett-nav {
     flex-direction: row; flex-wrap: wrap;
