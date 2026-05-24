@@ -220,13 +220,29 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
         <button className="icon-btn" aria-label="Search" style={{ width: 36, height: 36 }} onClick={() => setOpen(true)}>
           <Icon name="search" size={15} />
         </button>
-        <button
-          className="avatar"
-          style={{ width: 34, height: 34, fontSize: 12, borderRadius: 8 }}
-          onClick={() => setUserMenuOpen(v => !v)}
-        >
-          {initials}
-        </button>
+        <div ref={menuRef} style={{ position: "relative" }}>
+          <button
+            className="avatar"
+            style={{ width: 34, height: 34, fontSize: 12, borderRadius: 8 }}
+            onClick={() => setUserMenuOpen(v => !v)}
+          >
+            {initials}
+          </button>
+          {userMenuOpen && (
+            <div className="user-dropdown">
+              <Link href={profileHref} className="user-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                <Icon name="users" size={13} /> Profile
+              </Link>
+              <Link href="/settings" className="user-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                <Icon name="settings" size={13} /> Settings
+              </Link>
+              <div className="user-dropdown-sep" />
+              <button className="user-dropdown-item user-dropdown-signout" onClick={() => { setUserMenuOpen(false); onSignOut(); }}>
+                <Icon name="arrow-right" size={13} /> Sign out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Desktop header */}
@@ -273,7 +289,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
           <Icon name="bookmark" size={15} />
         </button>
 
-        <div ref={menuRef} style={{ position: "relative" }}>
+        <div style={{ position: "relative" }}>
           <button className="dash-user-pill" onClick={() => setUserMenuOpen(v => !v)}>
             <span className="avatar" style={{ width: 26, height: 26, fontSize: 11, borderRadius: 6, flexShrink: 0 }}>{initials}</span>
             <span>{username}</span>
@@ -282,9 +298,6 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
             <div className="user-dropdown">
               <Link href={profileHref} className="user-dropdown-item" onClick={() => setUserMenuOpen(false)}>
                 <Icon name="users" size={13} /> Profile
-              </Link>
-              <Link href="/write" className="user-dropdown-item" onClick={() => setUserMenuOpen(false)}>
-                <Icon name="pen" size={13} /> New post
               </Link>
               <Link href="/settings" className="user-dropdown-item" onClick={() => setUserMenuOpen(false)}>
                 <Icon name="settings" size={13} /> Settings
