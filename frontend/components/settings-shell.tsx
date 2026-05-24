@@ -252,11 +252,13 @@ function ProfileTab() {
             </div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{ display: "none" }}
               onChange={e => { const f = e.target.files?.[0]; if (f) { setPendingAvatarFile(f); if (avatarFileRef.current) avatarFileRef.current.value = ""; } }} />
-            <span className="sett-avatar-name">{user?.username}</span>
-            <span className="sett-avatar-email">{user?.email}</span>
-            <button className="sett-link-btn" onClick={() => setShowAvatarUrl(v => !v)}>
-              {uploading === "avatar" ? "Uploading…" : "Paste image URL"}
-            </button>
+            <div className="sett-identity-right">
+              <span className="sett-avatar-name">{user?.username}</span>
+              <span className="sett-avatar-email">{user?.email}</span>
+              <button className="sett-link-btn" onClick={() => setShowAvatarUrl(v => !v)}>
+                {uploading === "avatar" ? "Uploading…" : "Paste image URL"}
+              </button>
+            </div>
           </div>
           {showAvatarUrl && (
             <div className="sett-identity-url-row">
