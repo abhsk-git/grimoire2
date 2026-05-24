@@ -2755,14 +2755,13 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 28px;
-  display: grid; grid-template-columns: 180px 1fr; gap: 28px;
+  display: flex; flex-direction: column;
   align-items: flex-start;
   box-shadow: var(--shadow);
   position: relative;
 }
 .profile-left {
-  display: flex; flex-direction: column; gap: 12px;
-  align-items: flex-start;
+  display: flex; flex-direction: column; align-items: flex-start;
 }
 .profile-head .av {
   width: 108px; height: 108px; border-radius: 20px;
@@ -2774,7 +2773,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .profile-head .meta { min-width: 0; }
 .profile-head h1 {
-  margin: 0; font-size: 28px; font-weight: 700;
+  margin: 8px 0 0; font-size: 28px; font-weight: 700;
   letter-spacing: -0.025em;
   font-family: var(--font-display);
 }
@@ -2835,8 +2834,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 
 .xp-bar-wrap {
-  grid-column: 1 / -1;
+  align-self: stretch;
   display: flex; flex-direction: column; gap: 7px;
+  margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
