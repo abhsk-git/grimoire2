@@ -155,7 +155,6 @@ export function UserProfile({ handle }: { handle: string }) {
 
   const isOwner = authUser && (authUser.id === user.id);
   const avatarBg = avatarColor(user.id);
-  const bannerBg = COVER_GRADIENTS[user.id % COVER_GRADIENTS.length];
   const xp = computeXP(posts, links);
   const rank = getRank(xp);
   const pct = xpProgress(xp, rank);
@@ -164,7 +163,7 @@ export function UserProfile({ handle }: { handle: string }) {
 
   return (
     <div className="profile-page">
-      <div className="profile-cover" style={{ background: bannerBg }}>
+      <div className="profile-cover">
         {user.banner && (
           <img
             src={user.banner}
@@ -211,7 +210,12 @@ export function UserProfile({ handle }: { handle: string }) {
                 <Icon name="settings" size={14} />
               </Link>
             )}
-            <button className="btn btn-ghost btn-sm" title="Share profile" style={{ padding: "0 10px" }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              title="Copy profile link"
+              style={{ padding: "0 10px" }}
+              onClick={() => navigator.clipboard.writeText(window.location.href)}
+            >
               <Icon name="link" size={14} />
             </button>
           </div>

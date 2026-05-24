@@ -6,10 +6,11 @@ import { BrandMark, Icon } from "./icons";
 interface PublicHeaderProps {
   loggedIn?: boolean;
   username?: string;
+  handle?: string;
   avatar?: string;
 }
 
-export function PublicHeader({ loggedIn, username, avatar }: PublicHeaderProps) {
+export function PublicHeader({ loggedIn, username, handle, avatar }: PublicHeaderProps) {
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +47,7 @@ export function PublicHeader({ loggedIn, username, avatar }: PublicHeaderProps) 
                 <Icon name="pen" size={13} /> Write
               </Link>
               <Link
-                href={`/user/${username ? username.toLowerCase().replace(/\s+/g, '-') : ''}`}
+                href={`/user/${handle ?? (username ? username.toLowerCase().replace(/\s+/g, '-') : '')}`}
                 className={`avatar${avatar ? " has-photo" : ""}`}
                 style={avatar ? { textDecoration: "none" } : { background: "linear-gradient(135deg,#5b54d6,#8e8df0)", textDecoration: "none" }}
               >
