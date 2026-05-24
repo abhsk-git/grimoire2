@@ -11,7 +11,10 @@ function DashContent() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [totalLinks, setTotalLinks] = useState(0);
-  const [publicLinks, setPublicLinks] = useState(0);
+  const [linksVersion, setLinksVersion] = useState(0);
+  const [selectedCollection, setSelectedCollection] = useState<number | null>(null);
+  const [selectedCollectionName, setSelectedCollectionName] = useState<string | null>(null);
+  const [collectionsKey, setCollectionsKey] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -39,7 +42,12 @@ function DashContent() {
         username={user.username}
         email={user.email}
         totalLinks={totalLinks}
-        publicLinks={publicLinks}
+        selectedCollection={selectedCollection}
+        onSelectCollection={(id, name) => {
+          setSelectedCollection(id);
+          setSelectedCollectionName(name);
+        }}
+        collectionsKey={collectionsKey}
       />
       {drawerOpen && (
         <div
@@ -53,17 +61,21 @@ function DashContent() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           onMenu={() => setDrawerOpen(true)}
+        onBookmarkSaved={() => setLinksVersion(v => v + 1)}
         />
         <div className="main-body">
           {view === "posts" && <MyPostsView viewMode={viewMode} />}
-          {(view === "all" || view === "public" || view === "private" || view === "starred") && (
+          {view === "all" && (
             <AllLinksView
               viewMode={viewMode}
               filter={view}
+              version={linksVersion}
               onStatsLoaded={(s) => {
                 setTotalLinks(s.total);
-                setPublicLinks(s.public_count);
               }}
+              collectionId={selectedCollection}
+              collectionName={selectedCollectionName}
+              onCollectionCreated={() => setCollectionsKey(k => k + 1)}
             />
           )}
         </div>

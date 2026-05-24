@@ -122,7 +122,6 @@ def get_links():
     q          = request.args.get('q', '')
     tag        = request.args.get('tag', '')
     collection = request.args.get('collection', '')
-    is_public  = request.args.get('public', '')
     starred    = request.args.get('starred', '')
     try:
         page     = max(1, int(request.args.get('page', 1)))
@@ -149,10 +148,6 @@ def get_links():
         if collection:
             conditions.append('l.collection_id = %s')
             params.append(collection)
-        if is_public == '1':
-            conditions.append('l.is_public = 1')
-        elif is_public == '0':
-            conditions.append('l.is_public = 0')
         if starred == '1':
             conditions.append('l.is_starred = 1')
 
@@ -195,7 +190,7 @@ def create_link():
         cur.execute('''
             INSERT INTO links (user_id, url, title, description, image, favicon, tags,
                                collection_id, is_public, notes)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,1,%s)
         ''', (
             request.user_id, url,
             data.get('title', '')[:255],
@@ -204,7 +199,6 @@ def create_link():
             data.get('favicon', '')[:255],
             data.get('tags', '')[:255],
             data.get('collection_id') or None,
-            1 if data.get('is_public') else 0,
             data.get('notes', '')[:2000],
         ))
         db.commit()
@@ -231,14 +225,13 @@ def update_link(link_id):
             return jsonify({'error': 'Not found'}), 404
         cur.execute('''
             UPDATE links SET title=%s, description=%s, tags=%s, collection_id=%s,
-            is_public=%s, notes=%s, image=%s, updated_at=NOW()
+            notes=%s, image=%s, updated_at=NOW()
             WHERE id=%s AND user_id=%s
         ''', (
             data.get('title', '')[:255],
             data.get('description', '')[:500],
             data.get('tags', '')[:255],
             data.get('collection_id') or None,
-            1 if data.get('is_public') else 0,
             data.get('notes', '')[:2000],
             data.get('image', '')[:500],
             link_id, request.user_id,
@@ -394,8 +387,8 @@ def get_stats():
     cur = db.cursor(dictionary=True)
     try:
         cur.execute(
-            'SELECT COUNT(*) as total, SUM(is_public) as public_count,'
-            ' SUM(visit_count) as total_visits FROM links WHERE user_id=%s',
+            'SELECT COUNT(*) as total, SUM(visit_count) as total_visits'
+            ' FROM links WHERE user_id=%s',
             (request.user_id,)
         )
         stats = cur.fetchone()
@@ -409,6 +402,6 @@ def get_stats():
         stats['top_links'] = cur.fetchall()
     finally:
         db.close()
-    for k in ['total', 'public_count', 'total_visits', 'collections']:
+    for k in ['total', 'total_visits', 'collections']:
         stats[k] = int(stats[k] or 0)
     return jsonify(stats)

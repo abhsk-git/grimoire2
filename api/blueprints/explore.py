@@ -19,7 +19,7 @@ def explore_links():
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        conditions = ['l.is_public = 1']
+        conditions = ['1=1']
         params     = []
 
         if q:
@@ -82,7 +82,7 @@ def user_profile(handle):
         cur.execute('''
             SELECT l.id, l.url, l.title, l.description, l.favicon, l.tags, l.created_at
             FROM links l
-            WHERE l.user_id = %s AND l.is_public = 1
+            WHERE l.user_id = %s
             ORDER BY l.created_at DESC LIMIT 50
         ''', (uid,))
         links = cur.fetchall()
@@ -154,7 +154,7 @@ def trending_tags():
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        cur.execute('SELECT tags FROM links WHERE is_public=1 AND tags != ""')
+        cur.execute('SELECT tags FROM links WHERE tags != ""')
         rows = cur.fetchall()
     finally:
         db.close()

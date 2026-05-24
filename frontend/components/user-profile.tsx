@@ -259,7 +259,7 @@ export function UserProfile({ handle }: { handle: string }) {
                           <p className="post-excerpt">{p.excerpt}</p>
                         )}
                         <div className="post-meta">
-                          <span className="meta-stat"><Icon name="star" size={11} /> {p.likes}</span>
+                          <span className="meta-stat"><Icon name="zap" size={11} /> {p.likes}</span>
                           <span className="meta-stat"><Icon name="users" size={11} /> {p.views}</span>
                         </div>
                       </div>

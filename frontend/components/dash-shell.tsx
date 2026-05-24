@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
 import { useTheme } from "@/lib/theme";
 import { SearchModal, useSearchModal } from "./search-modal";
+import { BookmarkModal, useBookmarkModal } from "./bookmark-modal";
+import { NewCollectionModal } from "./collection-modal";
 
-export type DashView = "posts" | "all" | "public" | "private" | "starred";
+export type DashView = "posts" | "all";
 
 interface Collection {
   id: number;
@@ -28,37 +31,46 @@ interface SidebarProps {
   username: string;
   email: string;
   totalLinks: number;
-  publicLinks: number;
+  selectedCollection: number | null;
+  onSelectCollection: (id: number | null, name: string | null) => void;
+  collectionsKey?: number;
 }
 
 const NAV: { id: DashView; label: string; ico: string }[] = [
-  { id: "posts",   label: "My Posts",  ico: "feather"  },
-  { id: "all",     label: "Saved",     ico: "bookmark" },
-  { id: "public",  label: "Public",    ico: "globe"    },
-  { id: "private", label: "Private",   ico: "lock"     },
-  { id: "starred", label: "Starred",   ico: "star"     },
+  { id: "posts", label: "My Posts",  ico: "feather"  },
+  { id: "all",   label: "Bookmarks", ico: "bookmark" },
 ];
 
-export function DashSidebar({ view, setView, open, onClose, username, email, totalLinks, publicLinks }: SidebarProps) {
+export function DashSidebar({ view, setView, open, onClose, username, email, totalLinks, selectedCollection, onSelectCollection, collectionsKey = 0 }: SidebarProps) {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [collVersion, setCollVersion] = useState(0);
+  const [newCollOpen, setNewCollOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/collections", { credentials: "include" })
       .then((r) => r.ok ? r.json() : [])
       .then((data) => setCollections(Array.isArray(data) ? data : []));
+  }, [collVersion, collectionsKey]);
 
+  useEffect(() => {
     fetch("/api/tags", { credentials: "include" })
       .then((r) => r.ok ? r.json() : [])
       .then((data) => setTags(Array.isArray(data) ? data.slice(0, 12) : []));
   }, []);
 
+  async function deleteCollection(id: number) {
+    if (!window.confirm("Delete this collection? Links inside will not be deleted.")) return;
+    const r = await fetch(`/api/collections/${id}`, { method: "DELETE", credentials: "include" });
+    if (r.ok) {
+      setCollections(prev => prev.filter(c => c.id !== id));
+      if (selectedCollection === id) onSelectCollection(null, null);
+    }
+  }
+
   const counts: Record<DashView, number | null> = {
-    posts:   null,
-    all:     totalLinks,
-    public:  publicLinks,
-    private: totalLinks - publicLinks,
-    starred: null,
+    posts: null,
+    all:   totalLinks,
   };
 
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
@@ -74,8 +86,8 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
         {NAV.map((n) => (
           <div
             key={n.id}
-            className={`side-item ${view === n.id ? "active" : ""}`}
-            onClick={() => { setView(n.id); onClose(); }}
+            className={`side-item ${view === n.id && !selectedCollection ? "active" : ""}`}
+            onClick={() => { setView(n.id); onSelectCollection(null, null); onClose(); }}
           >
             <Icon name={n.ico} size={16} />
             <span>{n.label}</span>
@@ -86,22 +98,43 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
         ))}
       </div>
 
-      {collections.length > 0 && (
-        <>
-          <div className="side-heading">
-            <span>Collections</span>
-            <button title="New collection"><Icon name="plus" size={13} /></button>
-          </div>
+      <>
+        <div className="side-heading">
+          <span>Collections</span>
+          <button title="New collection" onClick={() => setNewCollOpen(true)}>
+            <Icon name="plus" size={13} />
+          </button>
+        </div>
+        {collections.length > 0 && (
           <div>
             {collections.map((c) => (
-              <div key={c.id} className="side-coll">
+              <div
+                key={c.id}
+                className={`side-coll ${selectedCollection === c.id ? "active" : ""}`}
+                onClick={() => { setView("all"); onSelectCollection(c.id, c.name); onClose(); }}
+              >
                 <span className="swatch" style={{ background: c.color }} />
-                <span>{c.name}</span>
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
                 <span className="count">{c.link_count}</span>
+                <button
+                  className="del-btn"
+                  title="Delete collection"
+                  onClick={e => { e.stopPropagation(); deleteCollection(c.id); }}
+                >
+                  <Icon name="trash" size={12} />
+                </button>
               </div>
             ))}
           </div>
-        </>
+        )}
+      </>
+
+      {newCollOpen && createPortal(
+        <NewCollectionModal
+          onClose={() => setNewCollOpen(false)}
+          onCreated={() => setCollVersion((v) => v + 1)}
+        />,
+        document.body
       )}
 
       {tags.length > 0 && (
@@ -149,11 +182,13 @@ interface HeaderProps {
   viewMode: "grid" | "list";
   setViewMode: (m: "grid" | "list") => void;
   onMenu: () => void;
+  onBookmarkSaved?: () => void;
 }
 
-export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps) {
+export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSaved }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { open, setOpen } = useSearchModal();
+  const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
 
   function toggleTheme() {
     const themes = ["light", "dark", "midnight", "geek"] as const;
@@ -164,6 +199,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps)
   return (
     <>
       {open && <SearchModal onClose={() => setOpen(false)} />}
+      {bmOpen && <BookmarkModal onClose={() => setBmOpen(false)} onSaved={() => { onBookmarkSaved?.(); }} />}
       {/* Mobile topbar */}
       <div className="mobile-topbar">
         <button className="hamburger" onClick={onMenu} aria-label="Open menu">
@@ -226,7 +262,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu }: HeaderProps)
             </button>
         </div>
 
-        <button className="icon-btn" title="Save a reference (⌘S)">
+        <button className="icon-btn" title="Save bookmark (⌘S)" onClick={() => setBmOpen(true)}>
           <Icon name="bookmark" size={15} />
         </button>
 

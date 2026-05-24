@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Icon } from "./icons";
+import { useAuth } from "@/lib/auth";
 
 type Tab = "stories" | "writers" | "references";
 
@@ -82,9 +83,50 @@ function getDomain(url: string): string {
 }
 
 export function ExploreView() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("stories");
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
+
+  // postId → saved linkId (undefined = not bookmarked)
+  const [bookmarked, setBookmarked] = useState<Map<number, number>>(new Map());
+  const [bookmarking, setBookmarking] = useState<Set<number>>(new Set());
+
+  async function toggleBookmark(e: React.MouseEvent, post: Post) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { window.location.href = "/login"; return; }
+
+    const linkId = bookmarked.get(post.id);
+    setBookmarking(prev => new Set(prev).add(post.id));
+
+    if (linkId !== undefined) {
+      const r = await fetch(`/api/links/${linkId}`, { method: "DELETE", credentials: "include" });
+      if (r.ok) setBookmarked(prev => { const m = new Map(prev); m.delete(post.id); return m; });
+    } else {
+      const postUrl = window.location.origin + "/blog/" + post.slug;
+      const r = await fetch("/api/links", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: postUrl,
+          title: post.title,
+          description: post.excerpt || "",
+          image: post.cover_image || "",
+          favicon: "",
+          tags: post.tags || "",
+          is_public: false,
+        }),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        setBookmarked(prev => new Map(prev).set(post.id, data.id));
+      }
+    }
+
+    setBookmarking(prev => { const s = new Set(prev); s.delete(post.id); return s; });
+  }
 
   // Stories
   const [posts, setPosts] = useState<Post[]>([]);
@@ -260,8 +302,17 @@ export function ExploreView() {
                                 {p.excerpt.slice(0, 140)}{p.excerpt.length > 140 ? "…" : ""}
                               </p>
                             )}
-                            <div className="stats">
-                              {p.pub_date} · {p.reading_time} min · {fmtViews(p.views)} views · {p.likes} likes
+                            <div className="stats" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span>{p.pub_date} · {p.reading_time} min · {fmtViews(p.views)} views</span>
+                              <span style={{ flex: 1 }} />
+                              <button
+                                onClick={(e) => toggleBookmark(e, p)}
+                                disabled={bookmarking.has(p.id)}
+                                title={bookmarked.has(p.id) ? "Remove from bookmarks" : "Save to bookmarks"}
+                                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", display: "flex", alignItems: "center", color: bookmarked.has(p.id) ? "var(--accent)" : "rgba(255,255,255,0.6)" }}
+                              >
+                                <Icon name="bookmark" size={14} fill={bookmarked.has(p.id) ? "currentColor" : "none"} />
+                              </button>
                             </div>
                           </div>
                         </article>
@@ -309,7 +360,14 @@ export function ExploreView() {
                               <span className="meta-dot">·</span>
                               <span>{p.pub_date}</span>
                               <span style={{ flex: 1 }} />
-                              <span className="meta-stat"><Icon name="star" size={11} /> {p.likes}</span>
+                              <button
+                                onClick={(e) => toggleBookmark(e, p)}
+                                disabled={bookmarking.has(p.id)}
+                                title={bookmarked.has(p.id) ? "Remove from bookmarks" : "Save to bookmarks"}
+                                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", display: "flex", alignItems: "center", color: bookmarked.has(p.id) ? "var(--accent)" : "var(--fg-soft)" }}
+                              >
+                                <Icon name="bookmark" size={13} fill={bookmarked.has(p.id) ? "currentColor" : "none"} />
+                              </button>
                             </div>
                           </div>
                         </article>

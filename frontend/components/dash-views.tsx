@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Icon } from "./icons";
 import type { DashView } from "./dash-shell";
+import { NewCollectionModal } from "./collection-modal";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -14,7 +15,6 @@ interface ApiLink {
   image?: string;
   favicon?: string;
   tags: string;
-  is_public: number;
   is_starred: number;
   notes?: string;
   created_at: string;
@@ -41,7 +41,6 @@ interface ApiPost {
 
 interface ApiStats {
   total: number;
-  public_count: number;
   total_visits: number;
   collections: number;
 }
@@ -150,17 +149,7 @@ function LinkCard({
         )}
         <div className="lc-foot">
           <span>{formatDate(link.created_at)}</span>
-          <span>·</span>
-          <span><Icon name={link.is_public ? "globe" : "lock"} size={11} /></span>
           <span style={{ flex: 1 }} />
-          <button
-            className="star"
-            title={link.is_starred ? "Unstar" : "Star"}
-            style={{ color: link.is_starred ? "#f4b860" : undefined, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-            onClick={(e) => { e.stopPropagation(); onStar(link.id); }}
-          >
-            <Icon name="star" size={13} />
-          </button>
           <button
             title="Delete"
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--fg-muted)" }}
@@ -220,21 +209,6 @@ function ListRow({
       </div>
       <span className="when">{formatDate(link.created_at)}</span>
       <button
-        style={{
-          color: link.is_starred ? "#f4b860" : "var(--fg-soft)",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          padding: "0 4px",
-          display: "flex",
-          alignItems: "center",
-        }}
-        title={link.is_starred ? "Unstar" : "Star"}
-        onClick={(e) => { e.stopPropagation(); onStar(link.id); }}
-      >
-        <Icon name="star" size={14} />
-      </button>
-      <button
         title="Delete"
         style={{ background: "none", border: "none", cursor: "pointer", padding: "0 4px", color: "var(--fg-muted)", display: "flex", alignItems: "center" }}
         onClick={(e) => { e.stopPropagation(); onDelete(link.id); }}
@@ -250,7 +224,6 @@ function ListRow({
 function StatStrip({ stats }: { stats: ApiStats | null }) {
   const items = [
     { l: "References", n: stats?.total ?? "—", ico: "bookmark" },
-    { l: "Public", n: stats?.public_count ?? "—", ico: "globe" },
     { l: "Collections", n: stats?.collections ?? "—", ico: "folder" },
     { l: "Total visits", n: stats?.total_visits ?? "—", ico: "zap" },
   ];
@@ -272,150 +245,26 @@ function StatStrip({ stats }: { stats: ApiStats | null }) {
   );
 }
 
-// ─── New Collection modal ────────────────────────────────────────────────────
-
-const COLLECTION_COLORS = [
-  "#6366f1", "#14613a", "#b46a2a", "#d04f63", "#2f7d4d",
-  "#7c3aed", "#1f6fd9", "#e11d48", "#0891b2", "#65a30d",
-];
-
-function NewCollectionModal({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const [name, setName] = useState("");
-  const [color, setColor] = useState("#6366f1");
-  const [icon, setIcon] = useState("📁");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setLoading(true);
-    setError("");
-    try {
-      const r = await fetch("/api/collections", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), color, icon }),
-      });
-      if (r.ok) {
-        onCreated();
-        onClose();
-      } else {
-        const d = await r.json();
-        setError(d.error || "Failed to create collection");
-      }
-    } catch {
-      setError("Network error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.5)",
-        zIndex: 200,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      onClick={onClose}
-    >
-      <form
-        className="auth-form"
-        style={{ maxWidth: 360, width: "100%", padding: 24 }}
-        onSubmit={handleSubmit}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 style={{ marginBottom: 16, fontSize: 18 }}>New collection</h2>
-        {error && (
-          <div className="auth-error" style={{ marginBottom: 12 }}>
-            {error}
-          </div>
-        )}
-        <div className="field">
-          <label>Name</label>
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Design resources"
-            required
-          />
-        </div>
-        <div className="field">
-          <label>Icon</label>
-          <input
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            placeholder="📁"
-            maxLength={4}
-          />
-        </div>
-        <div className="field">
-          <label>Color</label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-            {COLLECTION_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setColor(c)}
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: "50%",
-                  background: c,
-                  border: color === c ? "2px solid var(--fg)" : "2px solid transparent",
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <button
-            className="btn btn-primary btn-sm"
-            style={{ flex: 1 }}
-            disabled={loading || !name.trim()}
-          >
-            {loading ? "Creating…" : "Create"}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 // ─── all links view ───────────────────────────────────────────────────────────
 
 interface AllLinksViewProps {
   viewMode: "grid" | "list";
   filter: DashView;
+  version?: number;
   onStatsLoaded?: (stats: ApiStats) => void;
+  collectionId?: number | null;
+  collectionName?: string | null;
+  onCollectionCreated?: () => void;
 }
 
 export function AllLinksView({
   viewMode,
   filter,
+  version = 0,
   onStatsLoaded,
+  collectionId,
+  collectionName,
+  onCollectionCreated,
 }: AllLinksViewProps) {
   const [links, setLinks] = useState<ApiLink[]>([]);
   const [total, setTotal] = useState(0);
@@ -426,20 +275,15 @@ export function AllLinksView({
   const [collectionsVersion, setCollectionsVersion] = useState(0);
 
   const titles: Record<DashView, string> = {
-    all: "Saved · references",
-    public: "Public references",
-    private: "Private references",
-    starred: "Starred",
+    all:   "Bookmarks",
     posts: "My Posts",
   };
 
   const fetchLinks = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams({ per_page: "50" });
-    if (filter === "public") params.set("public", "1");
-    if (filter === "private") params.set("public", "0");
-    if (filter === "starred") params.set("starred", "1");
     if (activeTag) params.set("tag", activeTag);
+    if (collectionId) params.set("collection", String(collectionId));
 
     fetch(`/api/links?${params}`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : { links: [], total: 0 }))
@@ -448,7 +292,7 @@ export function AllLinksView({
         setTotal(data.total ?? 0);
       })
       .finally(() => setLoading(false));
-  }, [filter, activeTag]);
+  }, [filter, activeTag, version, collectionId]);
 
   useEffect(() => {
     fetchLinks();
@@ -464,7 +308,7 @@ export function AllLinksView({
           onStatsLoaded?.(data);
         }
       });
-  }, [filter]);
+  }, [filter, version]);
 
   async function toggleStar(linkId: number) {
     const r = await fetch(`/api/links/${linkId}/star`, {
@@ -478,10 +322,6 @@ export function AllLinksView({
           l.id === linkId ? { ...l, is_starred: data.starred ? 1 : 0 } : l
         )
       );
-      if (filter === "starred" && !data.starred) {
-        setLinks((prev) => prev.filter((l) => l.id !== linkId));
-        setTotal((t) => Math.max(0, t - 1));
-      }
     }
   }
 
@@ -501,7 +341,7 @@ export function AllLinksView({
     <div>
       <div className="page-title">
         <h1>
-          {titles[filter]}
+          {collectionId && collectionName ? collectionName : titles[filter]}
           <span className="meta">{total} saved</span>
         </h1>
         <div className="actions">
@@ -562,11 +402,7 @@ export function AllLinksView({
             <Icon name="bookmark" size={26} />
           </div>
           <h3>Nothing here yet</h3>
-          <p>
-            {filter === "starred"
-              ? "Star the links you keep coming back to — they'll show up here."
-              : "Save your first link to get started."}
-          </p>
+          <p>Save your first link to get started.</p>
         </div>
       ) : viewMode === "grid" ? (
         <div className="cards">
@@ -585,7 +421,7 @@ export function AllLinksView({
       {collectionModalOpen && (
         <NewCollectionModal
           onClose={() => setCollectionModalOpen(false)}
-          onCreated={() => setCollectionsVersion((v) => v + 1)}
+          onCreated={() => { setCollectionsVersion((v) => v + 1); onCollectionCreated?.(); }}
         />
       )}
     </div>
@@ -639,11 +475,8 @@ function PostCard({ post, onDelete }: { post: ApiPost; onDelete: (id: number) =>
           <div className="post-excerpt">{post.excerpt}</div>
         )}
         <div className="post-meta">
-          <span><Icon name="feather" size={11} />{formatDate(post.updated_at)}</span>
-          {post.reading_time > 0 && <><span>·</span><span>{formatReadTime(post.reading_time)}</span></>}
+          <span>{formatDate(post.updated_at)}</span>
           <span style={{ flex: 1 }} />
-          {post.views > 0 && <span><Icon name="users" size={11} />{post.views.toLocaleString()}</span>}
-          {post.likes > 0 && <span><Icon name="star" size={11} />{post.likes}</span>}
           <button
             title="Delete"
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--fg-muted)" }}
@@ -767,7 +600,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
         </div>
         <div className="stat">
           <div className="ico">
-            <Icon name="star" size={16} />
+            <Icon name="zap" size={16} />
           </div>
           <div>
             <div className="n">
@@ -822,42 +655,15 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
                 <div className="t">{p.title || "Untitled"}</div>
                 <div className="m">
                   <span>{formatDate(p.updated_at)}</span>
-                  <span>·</span>
-                  {p.reading_time > 0 && (
-                    <span>{formatReadTime(p.reading_time)}</span>
-                  )}
-                  {p.views > 0 && (
-                    <span>{p.views.toLocaleString()} views</span>
-                  )}
-                  {p.likes > 0 && <span>{p.likes} likes</span>}
                 </div>
               </div>
-              <span className={`pill ${p.status === "published" ? "live" : "draft"}`}>
-                {p.status === "published" ? "PUBLISHED" : "DRAFT"}
-              </span>
-              <div className="icons" onClick={(e) => e.stopPropagation()}>
-                <button
-                  title="Edit"
-                  onClick={() => { window.location.href = `/write/${p.id}`; }}
-                >
-                  <Icon name="pen" size={14} />
-                </button>
-                {p.status === "published" && (
-                  <button
-                    title="View"
-                    onClick={() => window.open(`/blog/${p.slug}`, "_blank")}
-                  >
-                    <Icon name="globe" size={14} />
-                  </button>
-                )}
-                <button
-                  title="Delete"
-                  style={{ color: "var(--fg-muted)" }}
-                  onClick={() => deletePost(p.id)}
-                >
-                  <Icon name="trash" size={14} />
-                </button>
-              </div>
+              <button
+                title="Delete"
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 4px", color: "var(--fg-muted)", display: "flex", alignItems: "center" }}
+                onClick={(e) => { e.stopPropagation(); deletePost(p.id); }}
+              >
+                <Icon name="trash" size={14} />
+              </button>
             </div>
           ))}
         </div>
