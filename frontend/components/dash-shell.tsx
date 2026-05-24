@@ -179,6 +179,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
   const { open, setOpen } = useSearchModal();
   const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
@@ -238,6 +239,28 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
             </div>
           )}
         </div>
+      </div>
+
+      {/* Mobile speed-dial FAB */}
+      {fabOpen && <div className="fab-backdrop" onClick={() => setFabOpen(false)} />}
+      <div className="fab-root">
+        <div className={`fab-options${fabOpen ? " open" : ""}`}>
+          <a href="/write" className="fab-option" onClick={() => setFabOpen(false)}>
+            <Icon name="feather" size={14} />
+            <span>New Post</span>
+          </a>
+          <button className="fab-option" onClick={() => { setFabOpen(false); setBmOpen(true); }}>
+            <Icon name="bookmark" size={14} />
+            <span>Save Bookmark</span>
+          </button>
+        </div>
+        <button
+          className={`fab-btn${fabOpen ? " open" : ""}`}
+          onClick={() => setFabOpen(v => !v)}
+          aria-label="Quick actions"
+        >
+          <Icon name="plus" size={22} />
+        </button>
       </div>
 
       {/* Desktop header */}

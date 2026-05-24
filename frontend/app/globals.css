@@ -1492,6 +1492,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   animation: fadein 0.15s ease-out;
 }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.fab-root { display: none; }
+.fab-backdrop { display: none; }
+
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }
   .side {
@@ -1506,6 +1509,45 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .drawer-backdrop.open { display: block; }
   .main-header { display: none !important; }
   .main-body { padding: 18px; }
+  .new-post-btn { display: none !important; }
+  .fab-backdrop {
+    display: block;
+    position: fixed; inset: 0; z-index: 34;
+    background: rgba(0,0,0,0.25);
+  }
+  .fab-root {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    position: fixed; bottom: 24px; right: 20px; z-index: 35;
+  }
+  .fab-options {
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+    pointer-events: none;
+  }
+  .fab-options.open { pointer-events: auto; }
+  .fab-option {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-elev); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 50px;
+    padding: 10px 16px 10px 14px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+    box-shadow: var(--shadow);
+    opacity: 0; transform: translateY(10px) scale(0.92);
+    transition: opacity .15s, transform .15s;
+  }
+  .fab-options.open .fab-option { opacity: 1; transform: none; }
+  .fab-options.open .fab-option:nth-child(1) { transition-delay: .07s; }
+  .fab-options.open .fab-option:nth-child(2) { transition-delay: .02s; }
+  .fab-btn {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-fg);
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px color-mix(in oklab, var(--accent) 40%, transparent);
+    cursor: pointer; transition: transform .2s; flex-shrink: 0;
+  }
+  .fab-btn.open { transform: rotate(45deg); }
+  .fab-btn:not(.open):active { transform: scale(0.92); }
 }
 .side-brand {
   display: flex; align-items: center; gap: 10px;

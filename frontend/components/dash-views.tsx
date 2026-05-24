@@ -561,7 +561,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
               </button>
             ))}
           </div>
-          <a href="/write" className="btn btn-primary btn-sm">
+          <a href="/write" className="btn btn-primary btn-sm new-post-btn">
             <Icon name="pen" size={13} /> New Post
           </a>
         </div>
