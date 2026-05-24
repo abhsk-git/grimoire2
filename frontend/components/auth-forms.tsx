@@ -135,7 +135,7 @@ export function PasswordStrength({ password }: { password: string }) {
 export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [keepSignedIn, setKeepSignedIn] = useState(true);
+  const [keepSignedIn, setKeepSignedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -148,7 +148,7 @@ export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, keep_signed_in: keepSignedIn }),
       });
       const data = await res.json();
       if (!res.ok) {

@@ -306,9 +306,10 @@ def register():
 @bp.route('/api/auth/login', methods=['POST'])
 @limiter.limit('20 per hour; 5 per minute')
 def login():
-    data     = request.json or {}
-    email    = data.get('email', '').strip().lower()
-    password = data.get('password', '')
+    data          = request.json or {}
+    email         = data.get('email', '').strip().lower()
+    password      = data.get('password', '')
+    keep_signed_in = bool(data.get('keep_signed_in', False))
 
     if not email or not password:
         return jsonify({'error': 'Email and password are required'}), 400
@@ -332,8 +333,9 @@ def login():
                 'avatar': user['avatar'],
             }
         })
+        max_age = 30 * 24 * 3600 if keep_signed_in else None
         resp.set_cookie('token', token, httponly=True, samesite='Lax',
-                        max_age=30*24*3600, secure=_SECURE_COOKIE)
+                        max_age=max_age, secure=_SECURE_COOKIE)
         return resp
     finally:
         db.close()
