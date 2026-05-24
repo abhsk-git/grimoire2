@@ -191,6 +191,86 @@ Security tips:
     except Exception:
         logger.exception('Failed to send reset email to %s', to_email)
         return False
+
+
+def _send_verify_email(to_email: str, verify_url: str, name: str = '') -> bool:
+    host  = os.environ.get('SMTP_HOST', 'localhost')
+    port  = int(os.environ.get('SMTP_PORT', 587))
+    user  = os.environ.get('SMTP_USER', '')
+    pw    = os.environ.get('SMTP_PASS', '')
+    from_ = os.environ.get('SMTP_FROM', f'Grimoire <{user}>')
+    app_url = os.environ.get('APP_URL', 'https://grimoire.sysnode.in')
+
+    if not user or not pw:
+        logger.warning('SMTP not configured — verification email could not be sent to %s', to_email)
+        return False
+
+    greeting = f'Hi {name},' if name else 'Hi there,'
+    year     = datetime.datetime.utcnow().year
+
+    text = f"""{greeting}
+
+Welcome to Grimoire! Please verify your email address to activate your account.
+
+Verify your email here (expires in 24 hours):
+{verify_url}
+
+If you didn't create a Grimoire account, simply ignore this email.
+
+— The Grimoire Team
+{app_url}
+"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verify your Grimoire email</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5;padding:40px 0;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <tr><td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:32px 40px;text-align:center;">
+        <span style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">Grimoire</span>
+      </td></tr>
+      <tr><td style="padding:40px;">
+        <p style="margin:0 0 16px;font-size:16px;color:#374151;">{greeting}</p>
+        <p style="margin:0 0 24px;font-size:15px;color:#6b7280;line-height:1.6;">
+          Welcome to Grimoire! One last step — verify your email address to activate your account.
+        </p>
+        <div style="text-align:center;margin:32px 0;">
+          <a href="{verify_url}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:700;color:#ffffff;background:linear-gradient(135deg,#6366f1,#8b5cf6);text-decoration:none;border-radius:8px;letter-spacing:-0.2px;">
+            Verify Email Address
+          </a>
+        </div>
+        <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;line-height:1.6;">
+          This link expires in 24 hours. If you didn't create a Grimoire account, simply ignore this email.
+        </p>
+        <p style="margin:12px 0 0;font-size:11px;color:#6366f1;word-break:break-all;">{verify_url}</p>
+      </td></tr>
+      <tr><td style="padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#9ca3af;">© {year} Grimoire · <a href="{app_url}" style="color:#6366f1;text-decoration:none;">{app_url}</a></p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
+
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Verify your Grimoire email address'
+        msg['From']    = from_
+        msg['To']      = to_email
+        msg.attach(MIMEText(text, 'plain'))
+        msg.attach(MIMEText(html, 'html'))
+        with smtplib.SMTP(host, port) as s:
+            s.ehlo(); s.starttls(); s.login(user, pw)
+            s.sendmail(from_, to_email, msg.as_string())
+        return True
+    except Exception:
+        logger.exception('Failed to send verification email to %s', to_email)
+        return False
+
+
 from werkzeug.utils import secure_filename
 from utils import get_db, create_token, verify_token, login_required
 from extensions import oauth
@@ -286,17 +366,18 @@ def register():
         cur.execute('SELECT id FROM users WHERE email=%s', (email,))
         if cur.fetchone():
             return jsonify({'error': 'Email already registered'}), 400
+        verify_token_str = secrets.token_urlsafe(32)
+        expires = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
         cur.execute(
-            'INSERT INTO users (name, email, password_hash, avatar) VALUES (%s,%s,%s,%s)',
-            (name, email, hashed, avatar_url)
+            'INSERT INTO users (name, email, password_hash, avatar, email_verified, email_verify_token, email_verify_expires) VALUES (%s,%s,%s,%s,0,%s,%s)',
+            (name, email, hashed, avatar_url, verify_token_str, expires)
         )
         db.commit()
         user_id = cur.lastrowid
-        token   = create_token(user_id)
-        resp    = jsonify({'success': True, 'user': {'id': user_id, 'name': name, 'email': email}})
-        resp.set_cookie('token', token, httponly=True, samesite='Lax',
-                        max_age=None, secure=_SECURE_COOKIE)
-        return resp
+        app_url = os.environ.get('APP_URL', 'https://grimoire.sysnode.in')
+        verify_url = f"{app_url}/api/auth/verify-email?token={verify_token_str}"
+        _send_verify_email(email, verify_url, name=name)
+        return jsonify({'success': True, 'verify': True})
     except Exception:
         return jsonify({'error': 'Registration failed. Please try again.'}), 500
     finally:
@@ -323,6 +404,8 @@ def login():
             return jsonify({'error': 'Invalid credentials'}), 401
         if not bcrypt.checkpw(password.encode(), user['password_hash'].encode()):
             return jsonify({'error': 'Invalid credentials'}), 401
+        if not user.get('email_verified'):
+            return jsonify({'error': 'Please verify your email before signing in. Check your inbox for a verification link.', 'unverified': True}), 403
         token = create_token(user['id'])
         resp  = jsonify({
             'success': True,
@@ -366,7 +449,7 @@ def google_callback():
             if not user:
                 avatar_url = avatar or f"https://ui-avatars.com/api/?name={quote_plus(name)}&background=6366f1&color=fff"
                 cur.execute(
-                    'INSERT INTO users (name, email, avatar, google_id) VALUES (%s,%s,%s,%s)',
+                    'INSERT INTO users (name, email, avatar, google_id, email_verified) VALUES (%s,%s,%s,%s,1)',
                     (name, email, avatar_url, google_id)
                 )
                 db.commit()
@@ -390,6 +473,65 @@ def google_callback():
     except Exception as e:
         from urllib.parse import quote_plus
         return redirect(f'/?error={quote_plus("Google sign-in failed. Please try again.")}')
+
+
+@bp.route('/api/auth/verify-email', methods=['GET'])
+def verify_email():
+    from urllib.parse import quote_plus
+    token = request.args.get('token', '')
+    if not token:
+        return redirect(f'/login?error={quote_plus("Invalid verification link.")}')
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute(
+            'SELECT id, email_verified, email_verify_expires FROM users WHERE email_verify_token=%s',
+            (token,)
+        )
+        user = cur.fetchone()
+        if not user:
+            return redirect(f'/login?error={quote_plus("Invalid or already used verification link.")}')
+        if user['email_verified']:
+            return redirect('/login?verified=1')
+        if user['email_verify_expires'] and datetime.datetime.utcnow() > user['email_verify_expires']:
+            return redirect(f'/login?error={quote_plus("Verification link has expired. Please request a new one.")}')
+        cur.execute(
+            'UPDATE users SET email_verified=1, email_verify_token=NULL, email_verify_expires=NULL WHERE id=%s',
+            (user['id'],)
+        )
+        db.commit()
+    finally:
+        db.close()
+    return redirect('/login?verified=1')
+
+
+@bp.route('/api/auth/resend-verification', methods=['POST'])
+@limiter.limit('5 per hour')
+def resend_verification():
+    data  = request.json or {}
+    email = data.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'error': 'Email required'}), 400
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('SELECT id, name, email_verified FROM users WHERE email=%s', (email,))
+        user = cur.fetchone()
+        if not user or user['email_verified']:
+            return jsonify({'success': True})  # silent — don't reveal account existence
+        verify_token_str = secrets.token_urlsafe(32)
+        expires = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        cur.execute(
+            'UPDATE users SET email_verify_token=%s, email_verify_expires=%s WHERE id=%s',
+            (verify_token_str, expires, user['id'])
+        )
+        db.commit()
+        app_url = os.environ.get('APP_URL', 'https://grimoire.sysnode.in')
+        verify_url = f"{app_url}/api/auth/verify-email?token={verify_token_str}"
+        _send_verify_email(email, verify_url, name=user.get('name', ''))
+    finally:
+        db.close()
+    return jsonify({'success': True})
 
 
 @bp.route('/api/auth/logout', methods=['POST'])

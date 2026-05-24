@@ -138,10 +138,12 @@ export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
   const [keepSignedIn, setKeepSignedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [unverified, setUnverified] = useState(false);
+  const [resent, setResent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setError(""); setUnverified(false);
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -152,6 +154,7 @@ export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.unverified) setUnverified(true);
         setError(data.error || "Sign in failed. Please try again.");
         return;
       }
@@ -161,6 +164,16 @@ export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    setResent(false);
+    await fetch("/api/auth/resend-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    setResent(true);
   }
 
   return (
@@ -184,6 +197,13 @@ export function SignInForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         <div className="divider">or with email</div>
 
         {error && <div className="auth-error">{error}</div>}
+        {unverified && (
+          <div style={{ fontSize: 13, color: "var(--fg-muted)", marginBottom: 12 }}>
+            {resent ? "Verification email sent! Check your inbox." : (
+              <><a style={{ cursor: "pointer", color: "var(--accent)" }} onClick={handleResend}>Resend verification email</a></>
+            )}
+          </div>
+        )}
 
         <div className="field">
           <label>Email</label>
@@ -243,6 +263,8 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [verifyPending, setVerifyPending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -261,12 +283,52 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         setError(data.error || "Registration failed. Please try again.");
         return;
       }
+      if (data.verify) { setVerifyPending(true); return; }
       window.location.href = "/";
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    setResent(false);
+    await fetch("/api/auth/resend-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    setResent(true);
+  }
+
+  if (verifyPending) {
+    return (
+      <div className="auth-form-wrap">
+        <div className="auth-form" style={{ textAlign: "center" }}>
+          <div className="brand-row" style={{ justifyContent: "center" }}>
+            <span className="brand-mark" style={{ color: "var(--accent)" }}><BrandMark size={26} /></span>
+            <span>Grimoire</span>
+          </div>
+          <div style={{ fontSize: 40, margin: "24px 0 12px" }}>📬</div>
+          <h1 style={{ fontSize: 22 }}>Check your inbox</h1>
+          <p className="sub" style={{ marginBottom: 24 }}>
+            We sent a verification link to <strong>{email}</strong>.<br />
+            Click it to activate your account.
+          </p>
+          {resent
+            ? <p style={{ fontSize: 13, color: "var(--accent)" }}>Email resent! Check your inbox.</p>
+            : <p style={{ fontSize: 13, color: "var(--fg-muted)" }}>
+                Didn't get it?{" "}
+                <a style={{ cursor: "pointer", color: "var(--accent)" }} onClick={handleResend}>Resend email</a>
+              </p>
+          }
+          <div className="auth-foot" style={{ marginTop: 24 }}>
+            <a onClick={() => switchTo("signin")}>Back to sign in</a>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
