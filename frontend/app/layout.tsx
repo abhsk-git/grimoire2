@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Instrument_Serif, Rajdhani, Space_Grotesk, Sora } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif, Rajdhani, Space_Grotesk, Sora, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
@@ -41,6 +41,12 @@ const sora = Sora({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Grimoire — a quiet writing tool with a memory",
   description:
@@ -56,7 +62,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="light"
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${rajdhani.variable} ${spaceGrotesk.variable} ${sora.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${rajdhani.variable} ${spaceGrotesk.variable} ${sora.variable} ${dmSans.variable}`}
     >
       <head>
         <script
