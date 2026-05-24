@@ -167,38 +167,27 @@ export function UserProfile({ handle }: { handle: string }) {
 
       <div className="profile-shell">
         <div className="profile-head">
-          {user.avatar ? (
-            <img
-              src={user.avatar}
-              alt={user.name}
+          <div className="profile-left">
+            {user.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="av"
+                style={{ objectFit: "cover" }}
+                onError={(e) => {
+                  const el = e.target as HTMLImageElement;
+                  el.style.display = "none";
+                  el.nextElementSibling?.removeAttribute("style");
+                }}
+              />
+            ) : null}
+            <div
               className="av"
-              style={{ objectFit: "cover" }}
-              onError={(e) => {
-                const el = e.target as HTMLImageElement;
-                el.style.display = "none";
-                el.nextElementSibling?.removeAttribute("style");
-              }}
-            />
-          ) : null}
-          <div
-            className="av"
-            style={{ background: avatarBg, display: user.avatar ? "none" : undefined }}
-          >
-            {initials(user.name)}
-          </div>
-
-          <div className="meta">
-            <h1>{user.name}</h1>
-            <div className="handle">
-              <span>@{user.handle ?? user.name.toLowerCase().replace(/\s+/g, "")}</span>
-              <span
-                className="rank-badge"
-                style={{ color: rank.color, background: rank.bg, borderColor: rank.color }}
-                title={`${xp} XP`}
-              >
-                {"✦".repeat(Math.min(rank.stars, 5))}{rank.stars > 5 ? "★" : ""} {rank.name}
-              </span>
+              style={{ background: avatarBg, display: user.avatar ? "none" : undefined }}
+            >
+              {initials(user.name)}
             </div>
+
             {user.bio && <p className="bio">{user.bio}</p>}
             {(user.website || (user.social_links && Object.values(user.social_links).some(Boolean))) && (
               <div className="links">
@@ -228,6 +217,20 @@ export function UserProfile({ handle }: { handle: string }) {
                 )}
               </div>
             )}
+          </div>
+
+          <div className="meta">
+            <h1>{user.name}</h1>
+            <div className="handle">
+              <span>@{user.handle ?? user.name.toLowerCase().replace(/\s+/g, "")}</span>
+              <span
+                className="rank-badge"
+                style={{ color: rank.color, background: rank.bg, borderColor: rank.color }}
+                title={`${xp} XP`}
+              >
+                {"✦".repeat(Math.min(rank.stars, 5))}{rank.stars > 5 ? "★" : ""} {rank.name}
+              </span>
+            </div>
           </div>
 
           <button className="profile-share-btn btn btn-ghost btn-sm" title="Share profile">
