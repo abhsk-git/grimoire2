@@ -1067,10 +1067,11 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   position: absolute; top: 16px; left: 16px;
   font-size: 11px; font-weight: 700;
   padding: 4px 10px; border-radius: 999px;
-  background: rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.52);
   backdrop-filter: blur(8px);
   letter-spacing: 0.05em;
-  color: white;
+  color: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.15);
 }
 .feature-title {
   font-size: 20px; font-weight: 700; letter-spacing: -0.02em;

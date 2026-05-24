@@ -286,7 +286,7 @@ export function ExploreView() {
                         <article className="feature-post">
                           <div className="cover" style={coverStyle(p, i)}>
                             <div className="post-cover-overlay" />
-                            {p.featured ? <span className="pill" style={{ background: "rgba(255,255,255,0.18)" }}>Featured</span> : null}
+                            {p.featured ? <span className="pill">Featured</span> : null}
                           </div>
                           <div className="info">
                             <Link href={`/user/${toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none" }}>
