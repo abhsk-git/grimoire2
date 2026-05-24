@@ -3269,7 +3269,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .sett-nav-item { padding: 6px 10px; font-size: 12px; }
   .sett-theme-grid { grid-template-columns: repeat(2, 1fr); }
   .sett-profile-grid { grid-template-columns: 1fr; }
-  .sett-account-grid { grid-template-columns: 1fr; }
+  .sett-account-grid { display: contents; }
   .sett-profile-banner { grid-column: 1; }
   .sett-profile-banner .sett-banner-strip { border-bottom: 1px solid var(--border); }
   .sett-identity-inner { flex-direction: row; text-align: left; padding: 14px 16px; gap: 14px; }
