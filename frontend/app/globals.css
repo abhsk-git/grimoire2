@@ -2755,9 +2755,10 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 28px;
-  display: grid; grid-template-columns: 96px 1fr auto; gap: 22px;
+  display: grid; grid-template-columns: 96px 1fr; gap: 22px;
   align-items: flex-start;
   box-shadow: var(--shadow);
+  position: relative;
 }
 .profile-head .av {
   width: 108px; height: 108px; border-radius: 20px;
@@ -2801,9 +2802,10 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   color: var(--fg-muted);
 }
 .profile-head .links a:hover { color: var(--accent); }
-.profile-head .actions {
-  display: flex; flex-direction: column; gap: 8px;
-  align-items: flex-end;
+.profile-share-btn {
+  position: absolute; top: 16px; right: 16px;
+  padding: 6px 8px !important;
+  color: var(--fg-muted);
 }
 
 .profile-stats {
@@ -2922,13 +2924,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 @media (max-width: 720px) {
   .profile-shell { padding: 0 16px 60px; margin-top: -48px; }
   .profile-cover { height: 160px; }
-  .profile-head { grid-template-columns: 1fr; padding: 20px; gap: 14px; }
+  .profile-head { grid-template-columns: 80px 1fr; padding: 20px; gap: 14px; }
   .profile-head .av { width: 82px; height: 82px; border-radius: 16px; font-size: 28px; margin-top: -56px; }
   .profile-head h1 { font-size: 22px; }
-  .profile-head .actions { flex-direction: row; align-items: stretch; width: 100%; }
-  .profile-head .actions .btn { flex: 1; }
-  .profile-stats { gap: 18px; flex-wrap: wrap; }
-  .profile-stats .stat-col .n { font-size: 16px; }
   .profile-tabs { overflow-x: auto; flex-wrap: nowrap; }
   .profile-tabs::-webkit-scrollbar { display: none; }
   .profile-tabs button { flex-shrink: 0; padding: 12px 12px; }

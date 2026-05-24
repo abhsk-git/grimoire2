@@ -230,14 +230,9 @@ export function UserProfile({ handle }: { handle: string }) {
             )}
           </div>
 
-          <div className="actions">
-            <button className="btn btn-ghost btn-sm">
-              <Icon name="rss" size={13} /> RSS
-            </button>
-            <button className="btn btn-ghost btn-sm">
-              <Icon name="link" size={13} /> Share
-            </button>
-          </div>
+          <button className="profile-share-btn btn btn-ghost btn-sm" title="Share profile">
+            <Icon name="link" size={14} />
+          </button>
 
           <div className="xp-bar-wrap">
             <div className="xp-bar-label">
