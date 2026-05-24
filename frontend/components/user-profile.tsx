@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "./icons";
+import { useAuth } from "@/lib/auth";
 
 interface UserData {
   id: number;
@@ -151,6 +152,8 @@ export function UserProfile({ handle }: { handle: string }) {
     );
   }
 
+  const { user: authUser } = useAuth();
+  const isOwner = authUser && (authUser.id === user.id);
   const avatarBg = avatarColor(user.id);
   const xp = computeXP(posts, links);
   const rank = getRank(xp);
@@ -193,9 +196,16 @@ export function UserProfile({ handle }: { handle: string }) {
             </div>
           </div>
 
-          <button className="profile-share-btn btn btn-ghost btn-sm" title="Share profile">
-            <Icon name="link" size={14} />
-          </button>
+          <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 6 }}>
+            {isOwner && (
+              <Link href="/settings" className="btn btn-ghost btn-sm" title="Settings" style={{ padding: "0 10px" }}>
+                <Icon name="settings" size={14} />
+              </Link>
+            )}
+            <button className="btn btn-ghost btn-sm" title="Share profile" style={{ padding: "0 10px" }}>
+              <Icon name="link" size={14} />
+            </button>
+          </div>
 
           <div className="xp-bar-wrap">
             <div className="xp-bar-label">

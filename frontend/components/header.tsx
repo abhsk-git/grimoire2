@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
 import { useTheme } from "@/lib/theme";
@@ -7,16 +8,18 @@ import { useTheme } from "@/lib/theme";
 interface HeaderProps {
   loggedIn?: boolean;
   username?: string;
+  handle?: string;
   onSignIn?: () => void;
   onSignOut?: () => void;
   onSearchOpen?: () => void;
 }
 
-export function Header({ loggedIn, username, onSignIn, onSignOut, onSearchOpen }: HeaderProps) {
+export function Header({ loggedIn, username, handle, onSignIn, onSignOut, onSearchOpen }: HeaderProps) {
   const { theme, setTheme } = useTheme();
-  const initials = username
-    ? username.slice(0, 2).toUpperCase()
-    : "ME";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
+  const profileHref = `/user/${handle ?? username?.toLowerCase().replace(/\s+/g, "-") ?? "me"}`;
 
   function toggleTheme() {
     const themes = ["light", "dark", "midnight", "geek"] as const;
@@ -24,13 +27,19 @@ export function Header({ loggedIn, username, onSignIn, onSignOut, onSearchOpen }
     setTheme(next);
   }
 
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    if (menuOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
   return (
     <header className="header">
       <div className="container header-inner">
         <Link href="/" className="brand">
-          <span className="brand-mark">
-            <BrandMark size={28} />
-          </span>
+          <span className="brand-mark"><BrandMark size={28} /></span>
           <span>Grimoire</span>
         </Link>
 
@@ -58,26 +67,34 @@ export function Header({ loggedIn, username, onSignIn, onSignOut, onSearchOpen }
               <a href="/dashboard" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
                 <Icon name="layout-grid" size={14} /> Dashboard
               </a>
-              <button
-                className="avatar"
-                onClick={onSignOut}
-                title="Sign out"
-                style={{ cursor: "pointer" }}
-              >
-                {initials}
-              </button>
+              <div ref={menuRef} style={{ position: "relative" }}>
+                <button className="avatar" onClick={() => setMenuOpen(v => !v)} title="Account menu">
+                  {initials}
+                </button>
+                {menuOpen && (
+                  <div className="user-dropdown">
+                    <Link href={profileHref} className="user-dropdown-item" onClick={() => setMenuOpen(false)}>
+                      <Icon name="users" size={13} /> Profile
+                    </Link>
+                    <Link href="/settings" className="user-dropdown-item" onClick={() => setMenuOpen(false)}>
+                      <Icon name="settings" size={13} /> Settings
+                    </Link>
+                    <div className="user-dropdown-sep" />
+                    <button className="user-dropdown-item user-dropdown-signout" onClick={() => { setMenuOpen(false); onSignOut?.(); }}>
+                      <Icon name="arrow-right" size={13} /> Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <>
               <button className="icon-btn" aria-label="Theme" onClick={toggleTheme}>
                 <Icon name={theme === "dark" || theme === "midnight" ? "sun" : "moon"} size={16} />
               </button>
-              <button className="btn btn-ghost btn-sm" onClick={onSignIn}>
-                Sign in
-              </button>
+              <button className="btn btn-ghost btn-sm" onClick={onSignIn}>Sign in</button>
               <button className="btn btn-primary btn-sm" onClick={onSignIn}>
-                Get started
-                <Icon name="arrow-right" size={14} />
+                Get started <Icon name="arrow-right" size={14} />
               </button>
             </>
           )}

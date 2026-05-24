@@ -27,6 +27,7 @@ function LandingContent() {
       <Header
         loggedIn={!loading && !!user}
         username={user?.username}
+        handle={user?.handle}
         onSignIn={() => (window.location.href = "/login")}
         onSignOut={handleSignOut}
         onSearchOpen={() => setOpen(true)}

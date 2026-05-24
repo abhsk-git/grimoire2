@@ -1562,13 +1562,45 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .side-tags .tag .n { color: var(--fg-soft); font-size: 10px; }
 .side-foot {
   margin-top: auto;
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px; border-top: 1px solid var(--border); font-size: 13px;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px; border-top: 1px solid var(--border);
 }
-.side-foot .avatar { width: 30px; height: 30px; font-size: 12px; border-width: 0; }
-.side-foot .who { line-height: 1.2; flex: 1; min-width: 0; }
-.side-foot .who .n { font-weight: 600; }
-.side-foot .who .e { font-size: 11px; color: var(--fg-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-foot-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500; color: var(--fg-muted);
+  text-decoration: none; cursor: pointer; width: 100%;
+  transition: background .12s, color .12s;
+}
+.side-foot-btn:hover { background: var(--bg-inset); color: var(--fg); }
+.side-foot-signout:hover { color: #ef4444; }
+
+/* ── User dropdown ── */
+.dash-user-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px 5px 5px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 500; color: var(--fg);
+  background: var(--bg-soft); border: 1px solid var(--border);
+  cursor: pointer; transition: background .12s;
+}
+.dash-user-pill:hover { background: var(--bg-inset); }
+.user-dropdown {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  min-width: 180px;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  overflow: hidden; z-index: 200;
+  display: flex; flex-direction: column; padding: 4px;
+}
+.user-dropdown-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 6px;
+  font-size: 13px; color: var(--fg-muted); text-decoration: none;
+  cursor: pointer; transition: background .1s, color .1s; width: 100%;
+}
+.user-dropdown-item:hover { background: var(--bg-soft); color: var(--fg); }
+.user-dropdown-sep { height: 1px; background: var(--border); margin: 4px 0; }
+.user-dropdown-signout:hover { color: #ef4444; }
 
 /* ===== main area ===== */
 .main { display: flex; flex-direction: column; min-width: 0; }

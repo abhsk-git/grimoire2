@@ -30,6 +30,11 @@ function DashContent() {
     );
   }
 
+  async function handleSignOut() {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    window.location.href = "/";
+  }
+
   if (!user) return null;
 
   return (
@@ -48,6 +53,7 @@ function DashContent() {
           setSelectedCollectionName(name);
         }}
         collectionsKey={collectionsKey}
+        onSignOut={handleSignOut}
       />
       {drawerOpen && (
         <div
@@ -61,7 +67,10 @@ function DashContent() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           onMenu={() => setDrawerOpen(true)}
-        onBookmarkSaved={() => setLinksVersion(v => v + 1)}
+          onBookmarkSaved={() => setLinksVersion(v => v + 1)}
+          username={user.username}
+          handle={user.handle}
+          onSignOut={handleSignOut}
         />
         <div className="main-body">
           {view === "posts" && <MyPostsView viewMode={viewMode} />}

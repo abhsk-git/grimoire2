@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
@@ -34,6 +34,7 @@ interface SidebarProps {
   selectedCollection: number | null;
   onSelectCollection: (id: number | null, name: string | null) => void;
   collectionsKey?: number;
+  onSignOut: () => void;
 }
 
 const NAV: { id: DashView; label: string; ico: string }[] = [
@@ -41,7 +42,7 @@ const NAV: { id: DashView; label: string; ico: string }[] = [
   { id: "all",   label: "Bookmarks", ico: "bookmark" },
 ];
 
-export function DashSidebar({ view, setView, open, onClose, username, email, totalLinks, selectedCollection, onSelectCollection, collectionsKey = 0 }: SidebarProps) {
+export function DashSidebar({ view, setView, open, onClose, username, email, totalLinks, selectedCollection, onSelectCollection, collectionsKey = 0, onSignOut }: SidebarProps) {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [collVersion, setCollVersion] = useState(0);
@@ -77,10 +78,10 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
 
   return (
     <aside className={`side ${open ? "open" : ""}`}>
-      <div className="side-brand">
+      <Link href="/" className="side-brand" style={{ textDecoration: "none", color: "inherit" }}>
         <span className="brand-mark"><BrandMark size={26} /></span>
         <span>Grimoire</span>
-      </div>
+      </Link>
 
       <div className="side-nav">
         {NAV.map((n) => (
@@ -151,27 +152,14 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
       )}
 
       <div className="side-foot">
-        <Link
-          href={`/user/${username.toLowerCase().replace(/\s+/g, '-')}`}
-          className="avatar"
-          style={{ background: "linear-gradient(135deg,#5b54d6,#8e8df0)", textDecoration: "none" }}
-        >
-          {initials}
+        <Link href="/settings" className="side-foot-btn" title="Settings">
+          <Icon name="settings" size={15} />
+          <span>Settings</span>
         </Link>
-        <Link href={`/user/${username.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none", color: "inherit", minWidth: 0 }}>
-          <div className="who">
-            <div className="n">{username}</div>
-            <div className="e">{email}</div>
-          </div>
-        </Link>
-        <Link
-          href="/settings"
-          className="icon-btn"
-          style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
-          title="Settings"
-        >
-          <Icon name="cmd" size={13} />
-        </Link>
+        <button className="side-foot-btn side-foot-signout" onClick={onSignOut} title="Sign out">
+          <Icon name="arrow-right" size={15} />
+          <span>Sign out</span>
+        </button>
       </div>
     </aside>
   );
@@ -183,18 +171,33 @@ interface HeaderProps {
   setViewMode: (m: "grid" | "list") => void;
   onMenu: () => void;
   onBookmarkSaved?: () => void;
+  username: string;
+  handle?: string;
+  onSignOut: () => void;
 }
 
-export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSaved }: HeaderProps) {
+export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSaved, username, handle, onSignOut }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { open, setOpen } = useSearchModal();
   const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
+  const profileHref = `/user/${handle ?? username.toLowerCase().replace(/\s+/g, "-")}`;
 
   function toggleTheme() {
     const themes = ["light", "dark", "midnight", "geek"] as const;
     const next = themes[(themes.indexOf(theme as typeof themes[number]) + 1) % themes.length];
     setTheme(next);
   }
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setUserMenuOpen(false);
+    }
+    if (userMenuOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [userMenuOpen]);
 
   return (
     <>
@@ -209,17 +212,21 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
             <rect x="1" y="11" width="14" height="2" rx="1" />
           </svg>
         </button>
-        <div className="brand">
+        <Link href="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
           <span className="brand-mark"><BrandMark size={22} /></span>
           Grimoire
-        </div>
+        </Link>
         <div style={{ flex: 1 }} />
         <button className="icon-btn" aria-label="Search" style={{ width: 36, height: 36 }} onClick={() => setOpen(true)}>
           <Icon name="search" size={15} />
         </button>
-        <Link href="/write" className="btn btn-primary btn-sm" style={{ padding: "0 12px" }}>
-          <Icon name="pen" size={13} /> New
-        </Link>
+        <button
+          className="avatar"
+          style={{ width: 34, height: 34, fontSize: 12, borderRadius: 8 }}
+          onClick={() => setUserMenuOpen(v => !v)}
+        >
+          {initials}
+        </button>
       </div>
 
       {/* Desktop header */}
@@ -266,9 +273,29 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
           <Icon name="bookmark" size={15} />
         </button>
 
-        <Link href="/write" className="btn btn-primary btn-sm">
-          <Icon name="pen" size={14} /> New post
-        </Link>
+        <div ref={menuRef} style={{ position: "relative" }}>
+          <button className="dash-user-pill" onClick={() => setUserMenuOpen(v => !v)}>
+            <span className="avatar" style={{ width: 26, height: 26, fontSize: 11, borderRadius: 6, flexShrink: 0 }}>{initials}</span>
+            <span>{username}</span>
+          </button>
+          {userMenuOpen && (
+            <div className="user-dropdown">
+              <Link href={profileHref} className="user-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                <Icon name="users" size={13} /> Profile
+              </Link>
+              <Link href="/write" className="user-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                <Icon name="pen" size={13} /> New post
+              </Link>
+              <Link href="/settings" className="user-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                <Icon name="settings" size={13} /> Settings
+              </Link>
+              <div className="user-dropdown-sep" />
+              <button className="user-dropdown-item user-dropdown-signout" onClick={() => { setUserMenuOpen(false); onSignOut(); }}>
+                <Icon name="arrow-right" size={13} /> Sign out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
