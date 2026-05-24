@@ -336,7 +336,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   border: 2px solid var(--bg);
   overflow: hidden; position: relative;
 }
-.avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+.avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar.has-photo { background: none; }
 
 /* ---------- HERO ---------- */
 .hero {

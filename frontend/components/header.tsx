@@ -61,7 +61,7 @@ export function Header({ loggedIn, username, handle, avatar, onSignIn, onSignUp,
                 <Icon name="layout-grid" size={14} /> Dashboard
               </a>
               <div ref={menuRef} style={{ position: "relative" }}>
-                <button className="avatar" onClick={() => setMenuOpen(v => !v)} title="Account menu">
+                <button className={`avatar${avatar ? " has-photo" : ""}`} onClick={() => setMenuOpen(v => !v)} title="Account menu">
                   {avatar ? <img src={avatar} alt={username} /> : initials}
                 </button>
                 {menuOpen && (

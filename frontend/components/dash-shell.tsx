@@ -219,7 +219,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
         </button>
         <div ref={mobileMenuRef} style={{ position: "relative" }}>
           <button
-            className="avatar"
+            className={`avatar${avatar ? " has-photo" : ""}`}
             style={{ width: 34, height: 34, fontSize: 12, borderRadius: 8 }}
             onClick={() => setUserMenuOpen(v => !v)}
           >
@@ -306,7 +306,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
 
         <div ref={desktopMenuRef} style={{ position: "relative" }}>
           <button className="dash-user-pill" onClick={() => setUserMenuOpen(v => !v)}>
-            <span className="avatar" style={{ width: 26, height: 26, fontSize: 11, borderRadius: 6, flexShrink: 0 }}>
+            <span className={`avatar${avatar ? " has-photo" : ""}`} style={{ width: 26, height: 26, fontSize: 11, borderRadius: 6, flexShrink: 0 }}>
               {avatar ? <img src={avatar} alt={username} /> : initials}
             </span>
             <span>{username}</span>
