@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
-import { useTheme } from "@/lib/theme";
 import { SearchModal, useSearchModal } from "./search-modal";
 import { BookmarkModal, useBookmarkModal } from "./bookmark-modal";
 import { NewCollectionModal } from "./collection-modal";
@@ -177,7 +176,6 @@ interface HeaderProps {
 }
 
 export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSaved, username, handle, onSignOut }: HeaderProps) {
-  const { theme, setTheme } = useTheme();
   const { open, setOpen } = useSearchModal();
   const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -185,12 +183,6 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
   const profileHref = `/user/${handle ?? username.toLowerCase().replace(/\s+/g, "-")}`;
-
-  function toggleTheme() {
-    const themes = ["light", "dark", "midnight", "geek"] as const;
-    const next = themes[(themes.indexOf(theme as typeof themes[number]) + 1) % themes.length];
-    setTheme(next);
-  }
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -257,10 +249,6 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
         </div>
 
         <div style={{ flex: 1 }} />
-
-        <button className="icon-btn" title="Theme" onClick={toggleTheme}>
-          <Icon name={theme === "dark" || theme === "midnight" ? "sun" : "moon"} size={16} />
-        </button>
 
         <div className="view-toggle">
             <button

@@ -19,7 +19,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("grimoire-theme") as Theme | null;
-    if (saved) setThemeState(saved);
+    if (saved) {
+      setThemeState(saved);
+    } else {
+      const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      setThemeState(preferred);
+      document.documentElement.setAttribute("data-theme", preferred);
+    }
   }, []);
 
   function setTheme(t: Theme) {

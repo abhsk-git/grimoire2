@@ -67,7 +67,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('grimoire-theme')||'light';document.documentElement.setAttribute('data-theme',t);var r=localStorage.getItem('grimoire-realm');if(r&&r!=='default')document.documentElement.setAttribute('data-realm',r);}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('grimoire-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var r=localStorage.getItem('grimoire-realm');if(r&&r!=='default')document.documentElement.setAttribute('data-realm',r);}catch(e){}})()`,
           }}
         />
       </head>

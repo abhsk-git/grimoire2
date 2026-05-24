@@ -2,22 +2,13 @@
 
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
-import { useTheme } from "@/lib/theme";
-
 interface PublicHeaderProps {
   loggedIn?: boolean;
   username?: string;
 }
 
 export function PublicHeader({ loggedIn, username }: PublicHeaderProps) {
-  const { theme, setTheme } = useTheme();
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
-
-  function toggleTheme() {
-    const themes = ["light", "dark", "midnight", "geek"] as const;
-    const next = themes[(themes.indexOf(theme as typeof themes[number]) + 1) % themes.length];
-    setTheme(next);
-  }
 
   return (
     <header className="public-header">
@@ -44,12 +35,6 @@ export function PublicHeader({ loggedIn, username }: PublicHeaderProps) {
               <Link href="/write" className="btn btn-ghost btn-sm">
                 <Icon name="pen" size={13} /> Write
               </Link>
-              <button className="icon-btn" aria-label="Theme" onClick={toggleTheme}>
-                <Icon
-                  name={theme === "dark" || theme === "midnight" ? "sun" : "moon"}
-                  size={16}
-                />
-              </button>
               <Link
                 href={`/user/${username ? username.toLowerCase().replace(/\s+/g, '-') : ''}`}
                 className="avatar"
@@ -60,12 +45,6 @@ export function PublicHeader({ loggedIn, username }: PublicHeaderProps) {
             </>
           ) : (
             <>
-              <button className="icon-btn" aria-label="Theme" onClick={toggleTheme}>
-                <Icon
-                  name={theme === "dark" || theme === "midnight" ? "sun" : "moon"}
-                  size={16}
-                />
-              </button>
               <Link href="/" className="btn btn-ghost btn-sm">
                 Sign in
               </Link>

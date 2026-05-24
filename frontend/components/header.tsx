@@ -3,8 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
-import { useTheme } from "@/lib/theme";
-
 interface HeaderProps {
   loggedIn?: boolean;
   username?: string;
@@ -15,17 +13,10 @@ interface HeaderProps {
 }
 
 export function Header({ loggedIn, username, handle, onSignIn, onSignOut, onSearchOpen }: HeaderProps) {
-  const { theme, setTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
   const profileHref = `/user/${handle ?? username?.toLowerCase().replace(/\s+/g, "-") ?? "me"}`;
-
-  function toggleTheme() {
-    const themes = ["light", "dark", "midnight", "geek"] as const;
-    const next = themes[(themes.indexOf(theme as typeof themes[number]) + 1) % themes.length];
-    setTheme(next);
-  }
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -89,9 +80,6 @@ export function Header({ loggedIn, username, handle, onSignIn, onSignOut, onSear
             </>
           ) : (
             <>
-              <button className="icon-btn" aria-label="Theme" onClick={toggleTheme}>
-                <Icon name={theme === "dark" || theme === "midnight" ? "sun" : "moon"} size={16} />
-              </button>
               <button className="btn btn-ghost btn-sm" onClick={onSignIn}>Sign in</button>
               <button className="btn btn-primary btn-sm" onClick={onSignIn}>
                 Get started <Icon name="arrow-right" size={14} />
