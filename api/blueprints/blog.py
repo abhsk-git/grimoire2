@@ -118,8 +118,8 @@ def _sanitize_inline(text):
     )
     # Remove self-closing dangerous tags
     text = re.sub(r'<(?:script|style|iframe|object|embed)\s*/>', '', text, flags=re.IGNORECASE)
-    # Remove on* event handler attributes
-    text = re.sub(r'''\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)''', '', text, flags=re.IGNORECASE)
+    # Remove on* event handler attributes ([\s/]+ covers <img/onerror=...> bypass)
+    text = re.sub(r'''[\s/]+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)''', '', text, flags=re.IGNORECASE)
     # Remove javascript: URI in href/src/action
     text = re.sub(r'''(?:href|src|action)\s*=\s*["']?\s*javascript:[^"'\s>]*''', '', text, flags=re.IGNORECASE)
     # Remove data: URIs in src (potential XSS vector)

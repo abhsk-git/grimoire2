@@ -32,8 +32,14 @@ def explore_links():
             conditions.append('FIND_IN_SET(%s, l.tags)')
             params.append(tag)
 
+        privacy_filter = "COALESCE(JSON_EXTRACT(u.settings, '$.privacy.hideFromExplore'), false) = false"
         where = ' AND '.join(conditions)
-        cur.execute(f'SELECT COUNT(*) as total FROM links l WHERE {where}', params)
+
+        cur.execute(f'''
+            SELECT COUNT(*) as total FROM links l
+            JOIN users u ON l.user_id = u.id
+            WHERE {where} AND {privacy_filter}
+        ''', params)
         total = cur.fetchone()['total']
 
         cur.execute(f'''
@@ -42,7 +48,7 @@ def explore_links():
                    u.id as author_id, u.name as author_name, u.avatar as author_avatar
             FROM links l
             JOIN users u ON l.user_id = u.id
-            WHERE {where}
+            WHERE {where} AND {privacy_filter}
             ORDER BY l.created_at DESC
             LIMIT %s OFFSET %s
         ''', params + [per_page, offset])

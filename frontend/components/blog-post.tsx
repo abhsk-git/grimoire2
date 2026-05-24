@@ -53,8 +53,8 @@ function sanitize(html: string): string {
   );
   // Remove self-closing dangerous tags
   s = s.replace(/<(?:script|style|iframe|object|embed)[^>]*\/>/gi, "");
-  // Remove on* event handler attributes
-  s = s.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, "");
+  // Remove on* event handler attributes ([\s/]+ covers <img/onerror=...> bypass)
+  s = s.replace(/[\s/]+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, "");
   // Remove javascript: URIs
   s = s.replace(
     /(?:href|src|action)\s*=\s*["']?\s*javascript:[^"'\s>]*/gi,
