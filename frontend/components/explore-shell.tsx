@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
 interface PublicHeaderProps {
@@ -9,6 +10,14 @@ interface PublicHeaderProps {
 
 export function PublicHeader({ loggedIn, username }: PublicHeaderProps) {
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  function handleSearch(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      const q = searchRef.current?.value.trim();
+      if (q) window.location.href = `/explore?q=${encodeURIComponent(q)}`;
+    }
+  }
 
   return (
     <header className="public-header">
@@ -22,7 +31,7 @@ export function PublicHeader({ loggedIn, username }: PublicHeaderProps) {
 
         <div className="public-search">
           <Icon name="search" size={15} />
-          <input placeholder="Search posts, writers, tags…" />
+          <input ref={searchRef} placeholder="Search posts, writers, tags…" onKeyDown={handleSearch} />
           <span className="kbd">⌘K</span>
         </div>
 
@@ -45,10 +54,10 @@ export function PublicHeader({ loggedIn, username }: PublicHeaderProps) {
             </>
           ) : (
             <>
-              <Link href="/" className="btn btn-ghost btn-sm">
+              <Link href="/login" className="btn btn-ghost btn-sm">
                 Sign in
               </Link>
-              <Link href="/" className="btn btn-primary btn-sm">
+              <Link href="/login?signup=1" className="btn btn-primary btn-sm">
                 Get started <Icon name="arrow-right" size={13} />
               </Link>
             </>

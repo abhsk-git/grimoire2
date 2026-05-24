@@ -42,9 +42,9 @@ export function Header({ loggedIn, username, handle, onSignIn, onSignUp, onSignO
           </nav>
         ) : (
           <nav className="nav-links">
-            <a href="#features">Writing</a>
-            <a href="#discover">Read</a>
-            <a href="#features">References</a>
+            <a href="/#features">Writing</a>
+            <a href="/#discover">Read</a>
+            <a href="/#features">References</a>
           </nav>
         )}
 

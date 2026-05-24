@@ -385,7 +385,7 @@ def google_callback():
         jwt_token = create_token(user_id)
         resp = redirect('/')
         resp.set_cookie('token', jwt_token, httponly=True, samesite='Lax',
-                        max_age=30*24*3600, secure=_SECURE_COOKIE)
+                        max_age=None, secure=_SECURE_COOKIE)
         return resp
     except Exception as e:
         from urllib.parse import quote_plus
