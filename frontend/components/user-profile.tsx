@@ -194,13 +194,6 @@ export function UserProfile({ handle }: { handle: string }) {
             <h1>{user.name}</h1>
             <div className="handle">
               <span>@{user.handle ?? user.name.toLowerCase().replace(/\s+/g, "")}</span>
-              <span
-                className="rank-badge"
-                style={{ color: rank.color, background: rank.bg, borderColor: rank.color }}
-                title={`${xp} XP`}
-              >
-                {"✦".repeat(Math.min(rank.stars, 5))}{rank.stars > 5 ? "★" : ""} {rank.name}
-              </span>
             </div>
           </div>
 
