@@ -16,7 +16,7 @@ function ExploreContent() {
 
   return (
     <div className="explore-page">
-      <PublicHeader loggedIn={!!user} username={user?.username} />
+      <PublicHeader loggedIn={!!user} username={user?.username} avatar={user?.avatar} />
 
       <main className="public-main">
         <div className="container-wide">
