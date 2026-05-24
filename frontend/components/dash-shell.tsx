@@ -181,7 +181,8 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
   const { open, setOpen } = useSearchModal();
   const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
   const profileHref = `/user/${handle ?? username.toLowerCase().replace(/\s+/g, "-")}`;
 
@@ -193,7 +194,9 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setUserMenuOpen(false);
+      const inMobile = mobileMenuRef.current?.contains(e.target as Node);
+      const inDesktop = desktopMenuRef.current?.contains(e.target as Node);
+      if (!inMobile && !inDesktop) setUserMenuOpen(false);
     }
     if (userMenuOpen) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -220,7 +223,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
         <button className="icon-btn" aria-label="Search" style={{ width: 36, height: 36 }} onClick={() => setOpen(true)}>
           <Icon name="search" size={15} />
         </button>
-        <div ref={menuRef} style={{ position: "relative" }}>
+        <div ref={mobileMenuRef} style={{ position: "relative" }}>
           <button
             className="avatar"
             style={{ width: 34, height: 34, fontSize: 12, borderRadius: 8 }}
@@ -289,7 +292,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
           <Icon name="bookmark" size={15} />
         </button>
 
-        <div style={{ position: "relative" }}>
+        <div ref={desktopMenuRef} style={{ position: "relative" }}>
           <button className="dash-user-pill" onClick={() => setUserMenuOpen(v => !v)}>
             <span className="avatar" style={{ width: 26, height: 26, fontSize: 11, borderRadius: 6, flexShrink: 0 }}>{initials}</span>
             <span>{username}</span>
