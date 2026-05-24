@@ -7,6 +7,7 @@ import { BrandMark, Icon } from "./icons";
 import { SearchModal, useSearchModal } from "./search-modal";
 import { BookmarkModal, useBookmarkModal } from "./bookmark-modal";
 import { NewCollectionModal } from "./collection-modal";
+import { avatarColor, isRealAvatar } from "@/lib/avatar";
 
 export type DashView = "posts" | "all";
 
@@ -183,7 +184,8 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
   const [fabOpen, setFabOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
-  const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
+  const initials  = username ? username.slice(0, 2).toUpperCase() : "ME";
+  const realPhoto = isRealAvatar(avatar);
   const profileHref = `/user/${handle ?? username.toLowerCase().replace(/\s+/g, "-")}`;
 
   useEffect(() => {
@@ -219,11 +221,11 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
         </button>
         <div ref={mobileMenuRef} style={{ position: "relative" }}>
           <button
-            className={`avatar${avatar ? " has-photo" : ""}`}
-            style={{ width: 34, height: 34, fontSize: 12, borderRadius: 8 }}
+            className={`avatar${realPhoto ? " has-photo" : ""}`}
+            style={{ width: 34, height: 34, fontSize: 12, borderRadius: 8, ...(realPhoto ? {} : { background: avatarColor(username) }) }}
             onClick={() => setUserMenuOpen(v => !v)}
           >
-            {avatar ? <img src={avatar} alt={username} /> : initials}
+            {realPhoto ? <img src={avatar!} alt={username} /> : initials}
           </button>
           {userMenuOpen && (
             <div className="user-dropdown">
@@ -306,8 +308,8 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
 
         <div ref={desktopMenuRef} style={{ position: "relative" }}>
           <button className="dash-user-pill" onClick={() => setUserMenuOpen(v => !v)}>
-            <span className={`avatar${avatar ? " has-photo" : ""}`} style={{ width: 26, height: 26, fontSize: 11, borderRadius: 6, flexShrink: 0 }}>
-              {avatar ? <img src={avatar} alt={username} /> : initials}
+            <span className={`avatar${realPhoto ? " has-photo" : ""}`} style={{ width: 26, height: 26, fontSize: 11, borderRadius: 6, flexShrink: 0, ...(realPhoto ? {} : { background: avatarColor(username) }) }}>
+              {realPhoto ? <img src={avatar!} alt={username} /> : initials}
             </span>
             <span>{username}</span>
           </button>
