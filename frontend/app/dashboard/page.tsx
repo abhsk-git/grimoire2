@@ -70,6 +70,7 @@ function DashContent() {
           onBookmarkSaved={() => setLinksVersion(v => v + 1)}
           username={user.username}
           handle={user.handle}
+          avatar={user.avatar}
           onSignOut={handleSignOut}
         />
         <div className="main-body">

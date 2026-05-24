@@ -28,6 +28,7 @@ function LandingContent() {
         loggedIn={!loading && !!user}
         username={user?.username}
         handle={user?.handle}
+        avatar={user?.avatar}
         onSignIn={() => (window.location.href = "/login")}
         onSignUp={() => (window.location.href = "/login?signup=1")}
         onSignOut={handleSignOut}
