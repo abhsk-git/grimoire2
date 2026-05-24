@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { Icon } from "./icons";
 import { useTheme } from "@/lib/theme";
+import { useRealm } from "@/lib/realm";
 import { ImageCropModal } from "./image-crop-modal";
 import { PasswordInput } from "./auth-forms";
 
@@ -451,6 +452,14 @@ const THEMES = [
   { id: "geek",     label: "Geek",     preview: "#f3f4ed", accent: "#2da14e" },
 ] as const;
 
+const REALMS = [
+  { id: "default",   label: "Default",   color: null,      desc: "Theme default" },
+  { id: "void",      label: "Void",      color: "#8b5cf6", desc: "Purple" },
+  { id: "celestial", label: "Celestial", color: "#f59e0b", desc: "Gold" },
+  { id: "forest",    label: "Forest",    color: "#10b981", desc: "Emerald" },
+  { id: "sakura",    label: "Sakura",    color: "#ec4899", desc: "Pink" },
+] as const;
+
 const READING_MODES = [
   {
     id: "compact" as const,
@@ -474,6 +483,7 @@ const READING_MODES = [
 
 function AppearanceTab() {
   const { theme, setTheme } = useTheme();
+  const { realm, setRealm } = useRealm();
   const { settings, update } = useSettings();
   const rm = settings.appearance.readingMode ?? "spacious";
 
@@ -502,6 +512,30 @@ function AppearanceTab() {
               </div>
               <span className="sett-theme-label">{t.label}</span>
               {theme === t.id && <span className="sett-theme-check"><Icon name="check" size={10} /></span>}
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Realm">
+        <p className="sett-help" style={{ marginBottom: 14 }}>Override the accent color on any theme. Mix and match.</p>
+        <div className="sett-realm-grid">
+          {REALMS.map(r => (
+            <button
+              key={r.id}
+              className={`sett-realm-card${realm === r.id ? " active" : ""}`}
+              onClick={() => setRealm(r.id as any)}
+              style={r.color ? { ["--realm-color" as any]: r.color } : undefined}
+            >
+              <div
+                className="sett-realm-swatch"
+                style={r.color
+                  ? { background: r.color, boxShadow: `0 4px 14px -4px ${r.color}99` }
+                  : { background: "conic-gradient(#5b54d6 0% 25%, #3ee07a 25% 50%, #36e0c4 50% 75%, #ec4899 75%)" }
+                }
+              />
+              <span className="sett-realm-label">{r.label}</span>
+              {realm === r.id && <span className="sett-realm-check"><Icon name="check" size={9} /></span>}
             </button>
           ))}
         </div>

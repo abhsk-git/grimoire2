@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Instrument_Serif, Rajdhani, Space_Grotesk, Sora } fr
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
+import { RealmProvider } from "@/lib/realm";
 import { SettingsProvider } from "@/lib/settings";
 
 const geistSans = Geist({
@@ -60,16 +61,18 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('grimoire-theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('grimoire-theme')||'light';document.documentElement.setAttribute('data-theme',t);var r=localStorage.getItem('grimoire-realm');if(r&&r!=='default')document.documentElement.setAttribute('data-realm',r);}catch(e){}})()`,
           }}
         />
       </head>
       <body>
         <AuthProvider>
           <ThemeProvider>
-            <SettingsProvider>
-              {children}
-            </SettingsProvider>
+            <RealmProvider>
+              <SettingsProvider>
+                {children}
+              </SettingsProvider>
+            </RealmProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

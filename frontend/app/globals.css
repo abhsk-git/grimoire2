@@ -114,6 +114,53 @@
   --font-display: var(--font-sora, 'Sora', sans-serif);
 }
 
+/* ── Realm accent overrides ── */
+
+[data-realm="void"] {
+  --accent: #8b5cf6;
+  --accent-soft: rgba(139, 92, 246, 0.10);
+  --accent-fg: #ffffff;
+  --accent-ink: #6d28d9;
+}
+[data-theme="dark"][data-realm="void"],
+[data-theme="midnight"][data-realm="void"] {
+  --accent-ink: #c4b5fd;
+}
+
+[data-realm="celestial"] {
+  --accent: #f59e0b;
+  --accent-soft: rgba(245, 158, 11, 0.10);
+  --accent-fg: #1a0800;
+  --accent-ink: #92400e;
+}
+[data-theme="dark"][data-realm="celestial"],
+[data-theme="midnight"][data-realm="celestial"] {
+  --accent-ink: #fcd34d;
+  --accent-fg: #1a0800;
+}
+
+[data-realm="forest"] {
+  --accent: #10b981;
+  --accent-soft: rgba(16, 185, 129, 0.10);
+  --accent-fg: #ffffff;
+  --accent-ink: #065f46;
+}
+[data-theme="dark"][data-realm="forest"],
+[data-theme="midnight"][data-realm="forest"] {
+  --accent-ink: #6ee7b7;
+}
+
+[data-realm="sakura"] {
+  --accent: #ec4899;
+  --accent-soft: rgba(236, 72, 153, 0.10);
+  --accent-fg: #ffffff;
+  --accent-ink: #9d174d;
+}
+[data-theme="dark"][data-realm="sakura"],
+[data-theme="midnight"][data-realm="sakura"] {
+  --accent-ink: #fbcfe8;
+}
+
 /* ---------- base ---------- */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -3349,6 +3396,39 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   transition: border-color .12s;
 }
 .sett-social-input:focus { border-color: var(--accent); }
+
+/* ── Realm picker ────────────────────────────────────────────────────────────── */
+.sett-realm-grid {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  padding: 16px 18px;
+}
+.sett-realm-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg-soft);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative;
+  min-width: 76px;
+}
+.sett-realm-card:hover { border-color: var(--border-strong); }
+.sett-realm-card.active { border-color: var(--realm-color, var(--accent)); background: var(--bg-inset); }
+.sett-realm-swatch {
+  width: 38px; height: 38px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.sett-realm-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--fg-soft); text-transform: uppercase;
+}
+.sett-realm-check {
+  position: absolute; top: 6px; right: 6px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--realm-color, var(--accent));
+  display: grid; place-items: center; color: white;
+}
 
 /* ── Reading mode picker ─────────────────────────────────────────────────────── */
 .sett-reading-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 18px; }
