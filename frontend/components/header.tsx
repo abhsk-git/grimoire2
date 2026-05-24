@@ -82,7 +82,7 @@ export function Header({ loggedIn, username, handle, onSignIn, onSignUp, onSignO
           ) : (
             <>
               <button className="btn btn-ghost btn-sm" onClick={onSignIn}>Sign in</button>
-              <button className="btn btn-primary btn-sm" onClick={onSignUp}>
+              <button className="btn btn-primary btn-sm header-getstarted" onClick={onSignUp}>
                 Get started <Icon name="arrow-right" size={14} />
               </button>
             </>
