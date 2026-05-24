@@ -3273,6 +3273,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .sett-profile-banner .sett-banner-strip { border-bottom: 1px solid var(--border); }
   .sett-identity-inner { flex-direction: row; text-align: left; padding: 14px 16px; gap: 14px; }
   .sett-identity-inner .sett-avatar-clickable { flex-shrink: 0; }
+  .sett-rss-box { font-size: 11px; }
+  .sett-rss-url { white-space: normal; word-break: break-all; text-overflow: clip; }
 }
 
 /* ── Banner strip (inside-card, at top) ─────────────────────────────────────── */
