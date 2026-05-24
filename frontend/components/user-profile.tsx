@@ -239,29 +239,6 @@ export function UserProfile({ handle }: { handle: string }) {
             </button>
           </div>
 
-          <div className="profile-stats">
-            <div className="stat-col">
-              <span className="n">{posts.length}</span>
-              <span className="l">Posts</span>
-            </div>
-            <div className="stat-col">
-              <span className="n">{posts.reduce((s, p) => s + (p.views || 0), 0).toLocaleString()}</span>
-              <span className="l">Reads</span>
-            </div>
-            <div className="stat-col">
-              <span className="n">{posts.reduce((s, p) => s + (p.likes || 0), 0).toLocaleString()}</span>
-              <span className="l">Likes</span>
-            </div>
-            <div className="stat-col">
-              <span className="n">{links.length}</span>
-              <span className="l">Refs</span>
-            </div>
-            <div className="stat-col xp-col">
-              <span className="n" style={{ color: rank.color }}>{xp.toLocaleString()}</span>
-              <span className="l">XP</span>
-            </div>
-          </div>
-
           <div className="xp-bar-wrap">
             <div className="xp-bar-label">
               <span style={{ color: rank.color, fontWeight: 700 }}>
