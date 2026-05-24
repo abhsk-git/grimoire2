@@ -116,6 +116,17 @@
 
 /* ── Realm accent overrides ── */
 
+[data-realm="shadow"] {
+  --accent: #64748b;
+  --accent-soft: rgba(100, 116, 139, 0.10);
+  --accent-fg: #ffffff;
+  --accent-ink: #334155;
+}
+[data-theme="dark"][data-realm="shadow"],
+[data-theme="midnight"][data-realm="shadow"] {
+  --accent-ink: #cbd5e1;
+}
+
 [data-realm="void"] {
   --accent: #8b5cf6;
   --accent-soft: rgba(139, 92, 246, 0.10);

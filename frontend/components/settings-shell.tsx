@@ -454,6 +454,7 @@ const THEMES = [
 
 const REALMS = [
   { id: "default",   label: "Default",   color: null,      desc: "Theme default" },
+  { id: "shadow",    label: "Shadow",    color: "#64748b", desc: "Slate" },
   { id: "void",      label: "Void",      color: "#8b5cf6", desc: "Purple" },
   { id: "celestial", label: "Celestial", color: "#f59e0b", desc: "Gold" },
   { id: "forest",    label: "Forest",    color: "#10b981", desc: "Emerald" },

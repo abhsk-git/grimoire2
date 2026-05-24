@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export type Realm = "default" | "void" | "celestial" | "forest" | "sakura";
+export type Realm = "default" | "shadow" | "void" | "celestial" | "forest" | "sakura";
 
 interface RealmContextValue {
   realm: Realm;
