@@ -22,12 +22,14 @@ interface Post {
   author_id: number;
   author_name: string;
   author_avatar: string;
+  author_handle?: string;
 }
 
 interface Writer {
   id: number;
   name: string;
   avatar: string;
+  handle?: string;
   post_count: number;
   total_views: number;
   total_likes: number;
@@ -46,6 +48,7 @@ interface Link_ {
   author_name: string;
   author_avatar: string;
   author_id: number;
+  author_handle?: string;
 }
 
 interface Tag {
@@ -289,7 +292,7 @@ export function ExploreView() {
                             {p.featured ? <span className="pill">Featured</span> : null}
                           </div>
                           <div className="info">
-                            <Link href={`/user/${toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none" }}>
+                            <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none" }}>
                               <div className="by">
                                 <img
                                   className="avatar"
@@ -354,7 +357,7 @@ export function ExploreView() {
                             )}
                             <h3 className="post-title">{p.title}</h3>
                             <div className="post-meta">
-                              <Link href={`/user/${toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} className="post-author" style={{ textDecoration: "none", color: "inherit" }}>
+                              <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} className="post-author" style={{ textDecoration: "none", color: "inherit" }}>
                                 <img
                                   src={p.author_avatar || avatarFallback(p.author_name)}
                                   onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
@@ -417,7 +420,7 @@ export function ExploreView() {
           ) : (
             <div className="writers-grid">
               {writers.map((w, i) => (
-                <Link key={w.id} href={`/user/${toHandle(w.name)}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link key={w.id} href={`/user/${w.handle || toHandle(w.name)}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="writer-card">
                     <div className="rank">#{i + 1}</div>
                     <img
@@ -494,7 +497,7 @@ export function ExploreView() {
                             {l.author_name && (
                               <span className="post-author">
                                 <span style={{ color: "var(--fg-soft)", fontFamily: "var(--font-mono)", fontSize: 10 }}>by</span>
-                                <Link href={`/user/${toHandle(l.author_name)}`} onClick={e => e.stopPropagation()} style={{ color: "var(--accent)", fontWeight: 600 }}>{l.author_name}</Link>
+                                <Link href={`/user/${l.author_handle || toHandle(l.author_name)}`} onClick={e => e.stopPropagation()} style={{ color: "var(--accent)", fontWeight: 600 }}>{l.author_name}</Link>
                               </span>
                             )}
                             <span style={{ flex: 1 }} />

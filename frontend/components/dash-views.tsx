@@ -92,13 +92,22 @@ function getFavColor(domain: string): string {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   } catch {
     return "";
   }
+}
+
+function postDateLabel(post: ApiPost): string {
+  if (post.status === "draft" || !post.published_at) {
+    return `Edited ${formatDate(post.updated_at)}`;
+  }
+  const pubMs  = new Date(post.published_at).getTime();
+  const updMs  = new Date(post.updated_at).getTime();
+  const edited = updMs - pubMs > 5 * 60 * 1000;
+  return edited
+    ? `Published ${formatDate(post.published_at)} · edited ${formatDate(post.updated_at)}`
+    : `Published ${formatDate(post.published_at)}`;
 }
 
 function formatReadTime(minutes: number): string {
@@ -475,7 +484,7 @@ function PostCard({ post, onDelete }: { post: ApiPost; onDelete: (id: number) =>
           <div className="post-excerpt">{post.excerpt}</div>
         )}
         <div className="post-meta">
-          <span>{formatDate(post.updated_at)}</span>
+          <span>{postDateLabel(post)}</span>
           <span style={{ flex: 1 }} />
           <button
             title="Delete"
@@ -654,7 +663,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
               <div className="body">
                 <div className="t">{p.title || "Untitled"}</div>
                 <div className="m">
-                  <span>{formatDate(p.updated_at)}</span>
+                  <span>{postDateLabel(p)}</span>
                 </div>
               </div>
               <button
