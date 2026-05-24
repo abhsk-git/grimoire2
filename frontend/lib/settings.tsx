@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useTheme } from "./theme";
+import { useRealm } from "./realm";
 
 export interface EditorSettings {
   slashMenu:         boolean;
@@ -14,6 +15,7 @@ export interface EditorSettings {
 export interface AppearanceSettings {
   theme:       string;
   readingMode: "compact" | "spacious" | "serif";
+  realm:       string;
 }
 
 export interface PublishingSettings {
@@ -54,6 +56,7 @@ const DEFAULTS: UserSettings = {
   appearance: {
     theme:       "dark",
     readingMode: "spacious",
+    realm:       "default",
   },
   publishing: {
     defaultVisibility: "draft",
@@ -91,6 +94,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(DEFAULTS);
   const [loaded,   setLoaded]   = useState(false);
   const { setTheme } = useTheme();
+  const { setRealm } = useRealm();
 
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" })
@@ -103,6 +107,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           }
           setSettings(s);
           if (s.appearance?.theme) setTheme(s.appearance.theme as any);
+          if (s.appearance?.realm) setRealm(s.appearance.realm as any);
         }
       })
       .catch(() => {})

@@ -525,7 +525,7 @@ function AppearanceTab() {
             <button
               key={r.id}
               className={`sett-realm-card${realm === r.id ? " active" : ""}`}
-              onClick={() => setRealm(r.id as any)}
+              onClick={() => { setRealm(r.id as any); update({ appearance: { realm: r.id } }); }}
               style={r.color ? { ["--realm-color" as any]: r.color } : undefined}
             >
               <div
