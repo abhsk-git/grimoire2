@@ -240,6 +240,12 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
         </div>
       </div>
 
+      {/* Mobile FAB — save bookmark */}
+      <button className="dash-fab" aria-label="Save bookmark" onClick={() => setBmOpen(true)}>
+        <Icon name="bookmark" size={20} />
+        <span>Save</span>
+      </button>
+
       {/* Desktop header */}
       <div className="main-header">
         <div className="main-search" onClick={() => setOpen(true)} style={{ cursor: "pointer" }}>

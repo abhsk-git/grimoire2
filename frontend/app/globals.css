@@ -1492,6 +1492,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   animation: fadein 0.15s ease-out;
 }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.dash-fab { display: none; }
+
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }
   .side {
@@ -1506,6 +1508,18 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .drawer-backdrop.open { display: block; }
   .main-header { display: none !important; }
   .main-body { padding: 18px; }
+  .dash-fab {
+    display: flex; align-items: center; gap: 8px;
+    position: fixed; bottom: 24px; right: 20px; z-index: 35;
+    background: var(--accent); color: var(--accent-fg);
+    border: none; border-radius: 50px;
+    padding: 13px 20px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: 0 4px 16px color-mix(in oklab, var(--accent) 40%, transparent);
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .dash-fab:active { transform: scale(0.95); }
 }
 .side-brand {
   display: flex; align-items: center; gap: 10px;
