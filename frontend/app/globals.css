@@ -3269,7 +3269,6 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .sett-nav-item { padding: 6px 10px; font-size: 12px; }
   .sett-theme-grid { grid-template-columns: repeat(2, 1fr); }
   .sett-profile-grid { grid-template-columns: 1fr; }
-  .sett-account-grid { display: contents; }
   .sett-profile-banner { grid-column: 1; }
   .sett-profile-banner .sett-banner-strip { border-bottom: 1px solid var(--border); }
   .sett-identity-inner { flex-direction: row; text-align: left; padding: 14px 16px; gap: 14px; }
@@ -3505,12 +3504,14 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .sett-rss-copy.copied { color: var(--accent); border-color: var(--accent); }
 
 /* ── Account tab 2-col grid (email + password side by side) ─────────────────── */
-.sett-account-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  align-items: start;
-  margin-bottom: 4px;
+@media (min-width: 641px) {
+  .sett-account-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+    margin-bottom: 4px;
+  }
 }
 
 /* ── Notification badge ──────────────────────────────────────────────────────── */
