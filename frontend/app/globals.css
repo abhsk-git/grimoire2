@@ -3274,6 +3274,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .sett-identity-inner { flex-direction: row; text-align: left; padding: 14px 16px; gap: 14px; }
   .sett-identity-inner .sett-avatar-clickable { flex-shrink: 0; }
 }
+@media (min-width: 641px) {
+  .sett-identity-inner .sett-link-btn { text-align: center; align-self: center; }
+}
 
 /* ── Banner strip (inside-card, at top) ─────────────────────────────────────── */
 .sett-banner-strip {
