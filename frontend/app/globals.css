@@ -2821,6 +2821,36 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--fg-soft); font-weight: 600;
 }
+.profile-stats .stat-col.xp-col { margin-left: auto; }
+
+.rank-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.07em;
+  padding: 2px 9px; border-radius: 999px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.xp-bar-wrap {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; gap: 7px;
+  padding-top: 14px;
+}
+.xp-bar-label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12px; color: var(--fg-muted);
+}
+.xp-bar-track {
+  height: 5px; border-radius: 999px;
+  background: var(--bg-inset);
+  overflow: hidden;
+}
+.xp-bar-fill {
+  height: 100%; border-radius: 999px;
+  transition: width 1s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 0 6px currentColor;
+}
 
 .profile-tabs {
   display: flex; gap: 2px; margin: 28px 0 20px;

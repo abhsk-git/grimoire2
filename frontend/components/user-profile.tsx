@@ -38,6 +38,33 @@ interface UserPost {
 
 type Tab = "posts" | "refs" | "about";
 
+const RANKS = [
+  { name: "Apprentice", min: 0,    max: 50,       color: "#6b7280", bg: "rgba(107,114,128,0.13)", stars: 1 },
+  { name: "Scribe",     min: 50,   max: 150,      color: "#22c55e", bg: "rgba(34,197,94,0.13)",   stars: 2 },
+  { name: "Arcanist",   min: 150,  max: 350,      color: "#6366f1", bg: "rgba(99,102,241,0.13)",  stars: 3 },
+  { name: "Sorcerer",   min: 350,  max: 700,      color: "#a855f7", bg: "rgba(168,85,247,0.13)",  stars: 4 },
+  { name: "Archmage",   min: 700,  max: 1200,     color: "#f59e0b", bg: "rgba(245,158,11,0.13)",  stars: 5 },
+  { name: "Sage",       min: 1200, max: Infinity, color: "#ef4444", bg: "rgba(239,68,68,0.13)",   stars: 6 },
+];
+
+function computeXP(posts: UserPost[], links: UserLink[]) {
+  const totalReads = posts.reduce((s, p) => s + (p.views || 0), 0);
+  const totalLikes = posts.reduce((s, p) => s + (p.likes || 0), 0);
+  return Math.round(posts.length * 10 + links.length * 2 + totalReads * 0.1 + totalLikes * 0.5);
+}
+
+function getRank(xp: number) {
+  for (let i = RANKS.length - 1; i >= 0; i--) {
+    if (xp >= RANKS[i].min) return RANKS[i];
+  }
+  return RANKS[0];
+}
+
+function xpProgress(xp: number, rank: typeof RANKS[0]) {
+  if (rank.max === Infinity) return 100;
+  return Math.min(100, ((xp - rank.min) / (rank.max - rank.min)) * 100);
+}
+
 const COVER_GRADIENTS = [
   "linear-gradient(135deg,#5b54d6,#8e8df0 60%,#b486f0)",
   "linear-gradient(135deg,#1b3a6b,#5563d0 60%,#8e8df0)",
@@ -125,6 +152,11 @@ export function UserProfile({ handle }: { handle: string }) {
   }
 
   const avatarBg = avatarColor(user.id);
+  const xp = computeXP(posts, links);
+  const rank = getRank(xp);
+  const pct = xpProgress(xp, rank);
+  const nextRank = RANKS[RANKS.indexOf(rank) + 1];
+  const xpToNext = nextRank ? nextRank.min - xp : 0;
 
   return (
     <div className="profile-page">
@@ -159,6 +191,13 @@ export function UserProfile({ handle }: { handle: string }) {
             <h1>{user.name}</h1>
             <div className="handle">
               <span>@{user.handle ?? user.name.toLowerCase().replace(/\s+/g, "")}</span>
+              <span
+                className="rank-badge"
+                style={{ color: rank.color, background: rank.bg, borderColor: rank.color }}
+                title={`${xp} XP`}
+              >
+                {"✦".repeat(Math.min(rank.stars, 5))}{rank.stars > 5 ? "★" : ""} {rank.name}
+              </span>
             </div>
             {user.bio && <p className="bio">{user.bio}</p>}
             {(user.website || (user.social_links && Object.values(user.social_links).some(Boolean))) && (
@@ -215,7 +254,31 @@ export function UserProfile({ handle }: { handle: string }) {
             </div>
             <div className="stat-col">
               <span className="n">{links.length}</span>
-              <span className="l">References</span>
+              <span className="l">Refs</span>
+            </div>
+            <div className="stat-col xp-col">
+              <span className="n" style={{ color: rank.color }}>{xp.toLocaleString()}</span>
+              <span className="l">XP</span>
+            </div>
+          </div>
+
+          <div className="xp-bar-wrap">
+            <div className="xp-bar-label">
+              <span style={{ color: rank.color, fontWeight: 700 }}>
+                {"✦".repeat(Math.min(rank.stars, 5))}{rank.stars > 5 ? "★" : ""} {rank.name}
+              </span>
+              <span>
+                {nextRank
+                  ? <>{xpToNext} XP to <strong style={{ color: nextRank.color }}>{nextRank.name}</strong></>
+                  : <span style={{ color: rank.color, fontWeight: 700 }}>Max Rank</span>
+                }
+              </span>
+            </div>
+            <div className="xp-bar-track">
+              <div
+                className="xp-bar-fill"
+                style={{ width: `${pct}%`, background: rank.color }}
+              />
             </div>
           </div>
         </div>
