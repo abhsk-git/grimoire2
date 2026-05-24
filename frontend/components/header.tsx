@@ -8,11 +8,12 @@ interface HeaderProps {
   username?: string;
   handle?: string;
   onSignIn?: () => void;
+  onSignUp?: () => void;
   onSignOut?: () => void;
   onSearchOpen?: () => void;
 }
 
-export function Header({ loggedIn, username, handle, onSignIn, onSignOut, onSearchOpen }: HeaderProps) {
+export function Header({ loggedIn, username, handle, onSignIn, onSignUp, onSignOut, onSearchOpen }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
@@ -81,7 +82,7 @@ export function Header({ loggedIn, username, handle, onSignIn, onSignOut, onSear
           ) : (
             <>
               <button className="btn btn-ghost btn-sm" onClick={onSignIn}>Sign in</button>
-              <button className="btn btn-primary btn-sm" onClick={onSignIn}>
+              <button className="btn btn-primary btn-sm" onClick={onSignUp}>
                 Get started <Icon name="arrow-right" size={14} />
               </button>
             </>
