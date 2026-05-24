@@ -62,8 +62,8 @@
   --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 30px 80px -20px rgba(0, 0, 0, 0.7), 0 12px 28px -10px rgba(0, 0, 0, 0.4);
   color-scheme: dark;
-  --font-sans: var(--font-rajdhani, 'Rajdhani', sans-serif);
-  --font-display: var(--font-rajdhani, 'Rajdhani', sans-serif);
+  --font-sans: var(--font-sora, 'Sora', sans-serif);
+  --font-display: var(--font-sora, 'Sora', sans-serif);
 }
 
 /* ----- GEEK (terminal) ----- */
@@ -110,6 +110,8 @@
   --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 30px 80px -20px rgba(0, 0, 0, 0.7), 0 12px 28px -10px rgba(0, 0, 0, 0.4);
   color-scheme: dark;
+  --font-sans: var(--font-sora, 'Sora', sans-serif);
+  --font-display: var(--font-sora, 'Sora', sans-serif);
 }
 
 /* ---------- base ---------- */
