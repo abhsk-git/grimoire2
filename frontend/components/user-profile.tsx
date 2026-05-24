@@ -103,6 +103,7 @@ export function UserProfile({ handle }: { handle: string }) {
   const [tab, setTab] = useState<Tab>("posts");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { user: authUser } = useAuth();
 
   useEffect(() => {
     setLoading(true);
@@ -152,7 +153,6 @@ export function UserProfile({ handle }: { handle: string }) {
     );
   }
 
-  const { user: authUser } = useAuth();
   const isOwner = authUser && (authUser.id === user.id);
   const avatarBg = avatarColor(user.id);
   const bannerBg = COVER_GRADIENTS[user.id % COVER_GRADIENTS.length];
@@ -169,7 +169,8 @@ export function UserProfile({ handle }: { handle: string }) {
           <img
             src={user.banner}
             alt=""
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: 0, transition: "opacity 0.4s ease" }}
+            onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = "1"; }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}
@@ -183,7 +184,8 @@ export function UserProfile({ handle }: { handle: string }) {
                 src={user.avatar}
                 alt={user.name}
                 className="av"
-                style={{ objectFit: "cover" }}
+                style={{ objectFit: "cover", opacity: 0, transition: "opacity 0.3s ease" }}
+                onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = "1"; }}
                 onError={(e) => {
                   const el = e.target as HTMLImageElement;
                   el.style.display = "none";
