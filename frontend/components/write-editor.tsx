@@ -502,6 +502,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   // calls the latest saveDraft — without this, the timer calls the version from
   // the initial render where editorReady=false and returns early every time
   const saveDraftRef = useRef<(silent?: boolean) => Promise<void>>(async () => {});
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) window.location.href = "/login";
@@ -683,6 +684,8 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const saveDraft = useCallback(
     async (_silent = false) => {
       if (!editorRef.current || !editorReady) return;
+      if (isSavingRef.current) return;
+      isSavingRef.current = true;
       setSaveStatus("saving");
       try {
         const payload = await buildPayload();
@@ -714,6 +717,8 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         }
       } catch {
         setSaveStatus("error");
+      } finally {
+        isSavingRef.current = false;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -743,25 +748,36 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   }
 
   async function handlePublish() {
-    await saveDraft(true);
-    if (!postIdRef.current) return;
-    const r = await fetch(`/api/blog/posts/${postIdRef.current}/publish`, {
-      method: "POST",
-      credentials: "include",
-    });
-    if (r.ok) {
-      const data = await r.json();
-      setStatus(data.status === "published" ? "published" : "draft");
+    try {
+      await saveDraft(true);
+      if (!postIdRef.current) return;
+      const r = await fetch(`/api/blog/posts/${postIdRef.current}/publish`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (r.ok) {
+        const data = await r.json();
+        setStatus(data.status === "published" ? "published" : "draft");
+      } else {
+        setSaveStatus("error");
+      }
+    } catch {
+      setSaveStatus("error");
     }
   }
 
   async function handleDelete() {
     if (!postIdRef.current) { window.location.href = "/dashboard"; return; }
-    const r = await fetch(`/api/blog/posts/${postIdRef.current}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (r.ok) window.location.href = "/dashboard";
+    try {
+      const r = await fetch(`/api/blog/posts/${postIdRef.current}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (r.ok) window.location.href = "/dashboard";
+      else setSaveStatus("error");
+    } catch {
+      setSaveStatus("error");
+    }
   }
 
   async function handleCoverFile(file: File) {

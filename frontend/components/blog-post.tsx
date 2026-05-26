@@ -383,11 +383,13 @@ function CommentCard({
             <button
               className="cmt-del"
               onClick={async () => {
-                const r = await fetch(`/api/blog/comments/${comment.id}`, {
-                  method: "DELETE",
-                  credentials: "include",
-                });
-                if (r.ok) onDelete(comment.id);
+                try {
+                  const r = await fetch(`/api/blog/comments/${comment.id}`, {
+                    method: "DELETE",
+                    credentials: "include",
+                  });
+                  if (r.ok) onDelete(comment.id);
+                } catch {}
               }}
             >
               delete

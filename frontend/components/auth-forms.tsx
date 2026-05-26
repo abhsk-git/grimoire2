@@ -140,6 +140,7 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
   const [error, setError] = useState("");
   const [unverified, setUnverified] = useState(false);
   const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -167,13 +168,20 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
   }
 
   async function handleResend() {
+    if (resending) return;
+    setResending(true);
     setResent(false);
-    await fetch("/api/auth/resend-verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    setResent(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) setResent(true);
+    } catch {}
+    finally {
+      setResending(false);
+    }
   }
 
   return (
@@ -203,7 +211,9 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
         {unverified && (
           <div style={{ fontSize: 13, color: "var(--fg-muted)", marginBottom: 12 }}>
             {resent ? "Verification email sent! Check your inbox." : (
-              <><a style={{ cursor: "pointer", color: "var(--accent)" }} onClick={handleResend}>Resend verification email</a></>
+              <a style={{ cursor: resending ? "default" : "pointer", color: "var(--accent)" }} onClick={handleResend}>
+                {resending ? "Sending…" : "Resend verification email"}
+              </a>
             )}
           </div>
         )}
@@ -268,6 +278,7 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
   const [error, setError] = useState("");
   const [verifyPending, setVerifyPending] = useState(false);
   const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -296,13 +307,20 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
   }
 
   async function handleResend() {
+    if (resending) return;
+    setResending(true);
     setResent(false);
-    await fetch("/api/auth/resend-verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    setResent(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) setResent(true);
+    } catch {}
+    finally {
+      setResending(false);
+    }
   }
 
   if (verifyPending) {
@@ -323,7 +341,9 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
             ? <p style={{ fontSize: 13, color: "var(--accent)" }}>Email resent! Check your inbox.</p>
             : <p style={{ fontSize: 13, color: "var(--fg-muted)" }}>
                 Didn't get it?{" "}
-                <a style={{ cursor: "pointer", color: "var(--accent)" }} onClick={handleResend}>Resend email</a>
+                <a style={{ cursor: resending ? "default" : "pointer", color: "var(--accent)" }} onClick={handleResend}>
+                    {resending ? "Sending…" : "Resend email"}
+                  </a>
               </p>
           }
           <div className="auth-foot" style={{ marginTop: 24 }}>

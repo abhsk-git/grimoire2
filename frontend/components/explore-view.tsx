@@ -108,32 +108,35 @@ export function ExploreView() {
     const linkId = bookmarked.get(post.id);
     setBookmarking(prev => new Set(prev).add(post.id));
 
-    if (linkId !== undefined) {
-      const r = await fetch(`/api/links/${linkId}`, { method: "DELETE", credentials: "include" });
-      if (r.ok) setBookmarked(prev => { const m = new Map(prev); m.delete(post.id); return m; });
-    } else {
-      const postUrl = window.location.origin + "/blog/" + post.slug;
-      const r = await fetch("/api/links", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: postUrl,
-          title: post.title,
-          description: post.excerpt || "",
-          image: post.cover_image || "",
-          favicon: "",
-          tags: post.tags || "",
-          is_public: false,
-        }),
-      });
-      if (r.ok) {
-        const data = await r.json();
-        setBookmarked(prev => new Map(prev).set(post.id, data.id));
+    try {
+      if (linkId !== undefined) {
+        const r = await fetch(`/api/links/${linkId}`, { method: "DELETE", credentials: "include" });
+        if (r.ok) setBookmarked(prev => { const m = new Map(prev); m.delete(post.id); return m; });
+      } else {
+        const postUrl = window.location.origin + "/blog/" + post.slug;
+        const r = await fetch("/api/links", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: postUrl,
+            title: post.title,
+            description: post.excerpt || "",
+            image: post.cover_image || "",
+            favicon: "",
+            tags: post.tags || "",
+            is_public: false,
+          }),
+        });
+        if (r.ok) {
+          const data = await r.json();
+          setBookmarked(prev => new Map(prev).set(post.id, data.id));
+        }
       }
+    } catch {}
+    finally {
+      setBookmarking(prev => { const s = new Set(prev); s.delete(post.id); return s; });
     }
-
-    setBookmarking(prev => { const s = new Set(prev); s.delete(post.id); return s; });
   }
 
   // Stories
@@ -153,53 +156,68 @@ export function ExploreView() {
 
   const fetchPosts = useCallback(async () => {
     setPostsLoading(true);
-    const params = new URLSearchParams({ per_page: "20" });
-    if (search) params.set("q", search);
-    if (activeTag) params.set("tag", activeTag);
-    const r = await fetch(`/api/blog/posts?${params}`);
-    if (r.ok) {
-      const data = await r.json();
-      setPosts(data.posts || []);
+    try {
+      const params = new URLSearchParams({ per_page: "20" });
+      if (search) params.set("q", search);
+      if (activeTag) params.set("tag", activeTag);
+      const r = await fetch(`/api/blog/posts?${params}`);
+      if (r.ok) {
+        const data = await r.json();
+        setPosts(data.posts || []);
+      }
+    } catch {}
+    finally {
+      setPostsLoading(false);
     }
-    setPostsLoading(false);
   }, [search, activeTag]);
 
   const fetchBlogTags = useCallback(async () => {
-    const r = await fetch("/api/blog/tags");
-    if (r.ok) setBlogTags(await r.json());
+    try {
+      const r = await fetch("/api/blog/tags");
+      if (r.ok) setBlogTags(await r.json());
+    } catch {}
   }, []);
 
   const fetchWriters = useCallback(async () => {
     setWritersLoading(true);
-    const r = await fetch("/api/blog/writers");
-    if (r.ok) setWriters(await r.json());
-    setWritersLoading(false);
+    try {
+      const r = await fetch("/api/blog/writers");
+      if (r.ok) setWriters(await r.json());
+    } catch {}
+    finally {
+      setWritersLoading(false);
+    }
   }, []);
 
   const fetchLinks = useCallback(async () => {
     setLinksLoading(true);
-    const params = new URLSearchParams({ per_page: "24" });
-    if (search) params.set("q", search);
-    if (activeTag) params.set("tag", activeTag);
-    const r = await fetch(`/api/explore?${params}`);
-    if (r.ok) {
-      const data = await r.json();
-      setLinks(data.links || []);
-      setLinksTotal(data.total || 0);
+    try {
+      const params = new URLSearchParams({ per_page: "24" });
+      if (search) params.set("q", search);
+      if (activeTag) params.set("tag", activeTag);
+      const r = await fetch(`/api/explore?${params}`);
+      if (r.ok) {
+        const data = await r.json();
+        setLinks(data.links || []);
+        setLinksTotal(data.total || 0);
+      }
+    } catch {}
+    finally {
+      setLinksLoading(false);
     }
-    setLinksLoading(false);
   }, [search, activeTag]);
 
   const fetchLinkTags = useCallback(async () => {
-    const r = await fetch("/api/explore/trending-tags");
-    if (r.ok) setLinkTags(await r.json());
+    try {
+      const r = await fetch("/api/explore/trending-tags");
+      if (r.ok) setLinkTags(await r.json());
+    } catch {}
   }, []);
 
-  // Initial load
+  // Initial load — tags only; posts/links are fetched by the filter effect below
   useEffect(() => {
-    fetchPosts();
     fetchBlogTags();
-  }, [fetchPosts, fetchBlogTags]);
+  }, [fetchBlogTags]);
 
   // Tab-specific fetches
   useEffect(() => {
