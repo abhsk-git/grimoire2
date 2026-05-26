@@ -1076,6 +1076,33 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         </div>
       </div>
 
+      {/* ── Mobile bottom action bar ── */}
+      <div className="write-mobile-bar">
+        <button
+          className="write-mbar-btn"
+          onClick={() => setDetailsOpen((v) => !v)}
+        >
+          <Icon name="settings" size={15} />
+          Details
+        </button>
+        <button
+          className="write-mbar-btn"
+          onClick={() => saveDraft()}
+          disabled={!editorReady}
+        >
+          <Icon name="feather" size={15} />
+          Save
+        </button>
+        <button
+          className="write-mbar-btn primary"
+          onClick={handlePublish}
+          disabled={!editorReady}
+        >
+          <Icon name="globe" size={15} />
+          {status === "published" ? "Unpublish" : "Publish"}
+        </button>
+      </div>
+
       {/* ── Slash command palette (gated by editor settings) ── */}
       {settings.editor.slashMenu && slashMenu?.open && filteredCmds.length > 0 && (
         <SlashMenuPanel
