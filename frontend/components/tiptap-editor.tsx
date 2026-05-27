@@ -667,7 +667,7 @@ export function TiptapEditor({
             onChange={e => setYtUrl(e.target.value)}
             onKeyDown={e => {
               if (e.key === "Enter") {
-                if (ytUrl && editor) (editor.commands as any).setYoutubeVideo({ src: ytUrl });
+                if (ytUrl && editor) editor.chain().focus().setYoutubeVideo({ src: ytUrl }).run();
                 setYtMode(false); setYtUrl("");
               }
               if (e.key === "Escape") { setYtMode(false); setYtUrl(""); }
@@ -675,7 +675,7 @@ export function TiptapEditor({
           />
           <button className="tt-tb-btn" onMouseDown={e => {
             e.preventDefault();
-            if (ytUrl && editor) (editor.commands as any).setYoutubeVideo({ src: ytUrl });
+            if (ytUrl && editor) editor.chain().focus().setYoutubeVideo({ src: ytUrl }).run();
             setYtMode(false); setYtUrl("");
           }}>↵ Embed</button>
           <button className="tt-tb-btn" onMouseDown={e => { e.preventDefault(); setYtMode(false); setYtUrl(""); }}>✕</button>
