@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { PublicFooter } from "@/components/sections";
+import { editorJsToHtml, sanitizeHtml } from "@/lib/editorjs-renderer";
 
 interface Post {
   id: number;
@@ -41,166 +42,6 @@ interface Comment {
   replies?: Comment[];
 }
 
-// ── XSS sanitizer ────────────────────────────────────────────────────────────
-// Applied to EditorJS text fields that may contain inline HTML (b, i, a, etc.)
-// Strips dangerous tags, event handlers, and javascript: URIs.
-function sanitize(html: string): string {
-  if (!html) return "";
-  // Remove script/style/iframe/object/embed blocks
-  let s = html.replace(
-    /<(?:script|style|iframe|object|embed)[\s>][\s\S]*?<\/(?:script|style|iframe|object|embed)>/gi,
-    ""
-  );
-  // Remove self-closing dangerous tags
-  s = s.replace(/<(?:script|style|iframe|object|embed)[^>]*\/>/gi, "");
-  // Remove on* event handler attributes ([\s/]+ covers <img/onerror=...> bypass)
-  s = s.replace(/[\s/]+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, "");
-  // Remove javascript: URIs
-  s = s.replace(
-    /(?:href|src|action)\s*=\s*["']?\s*javascript:[^"'\s>]*/gi,
-    ""
-  );
-  // Remove data: URIs in src
-  s = s.replace(/src\s*=\s*["']?\s*data:[^"'\s>]*/gi, "");
-  return s;
-}
-
-// ── HTML renderer ─────────────────────────────────────────────────────────────
-function toHtml(contentJson: string): string {
-  let data: any;
-  try {
-    data = JSON.parse(contentJson);
-  } catch {
-    return "<p>Content unavailable.</p>";
-  }
-  const parts: string[] = [];
-  for (const b of data.blocks || []) {
-    const bt: string = b.type || "";
-    const bd: any = b.data || {};
-
-    if (bt === "paragraph") {
-      parts.push(`<p>${sanitize(bd.text || "")}</p>`);
-    } else if (bt === "header") {
-      const lvl = Math.min(Math.max(parseInt(bd.level) || 2, 1), 6);
-      const text = sanitize(bd.text || "");
-      const anchor = (bd.text || "")
-        .replace(/<[^>]+>/g, "")
-        .trim()
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/[-\s]+/g, "-")
-        .replace(/^-|-$/g, "");
-      parts.push(`<h${lvl} id="${esc(anchor)}">${text}</h${lvl}>`);
-    } else if (bt === "list") {
-      const tag = bd.style === "ordered" ? "ol" : "ul";
-      const items = (bd.items || [])
-        .map((i: string) => `<li>${sanitize(i)}</li>`)
-        .join("");
-      parts.push(`<${tag}>${items}</${tag}>`);
-    } else if (bt === "checklist") {
-      const rows = (bd.items || [])
-        .map(
-          (item: any) =>
-            `<label class="cl-item"><input type="checkbox"${
-              item.checked ? " checked" : ""
-            } disabled><span>${sanitize(item.text || "")}</span></label>`
-        )
-        .join("");
-      parts.push(`<div class="blog-checklist">${rows}</div>`);
-    } else if (bt === "quote") {
-      const cap = bd.caption
-        ? `<cite>${sanitize(bd.caption)}</cite>`
-        : "";
-      const align = esc(bd.alignment || "left");
-      parts.push(
-        `<blockquote style="text-align:${align}"><p>${sanitize(
-          bd.text || ""
-        )}</p>${cap}</blockquote>`
-      );
-    } else if (bt === "code") {
-      // Code is always fully escaped — no inline formatting
-      const lang = esc(bd.language || "");
-      const code = escHtml(bd.code || "");
-      parts.push(`<pre><code class="language-${lang}">${code}</code></pre>`);
-    } else if (bt === "image") {
-      const url = esc(bd.file?.url || bd.url || "");
-      const cap: string = bd.caption || "";
-      const cls = [
-        bd.stretched ? "stretched" : "",
-        bd.withBorder ? "bordered" : "",
-        bd.withBackground ? "with-bg" : "",
-      ]
-        .filter(Boolean)
-        .join(" ");
-      const capHtml = cap
-        ? `<figcaption>${sanitize(cap)}</figcaption>`
-        : "";
-      parts.push(
-        `<figure class="blog-figure ${cls}"><img src="${url}" alt="${esc(
-          cap.replace(/<[^>]+>/g, "")
-        )}" loading="lazy">${capHtml}</figure>`
-      );
-    } else if (bt === "embed") {
-      const rawEmbed: string = bd.embed || "";
-      const SAFE_EMBED_HOSTS = new Set([
-        "www.youtube.com", "youtube.com", "www.youtube-nocookie.com",
-        "player.vimeo.com", "vimeo.com",
-        "twitter.com", "www.twitter.com",
-        "www.instagram.com", "open.spotify.com",
-        "soundcloud.com", "codepen.io",
-      ]);
-      let embedAllowed = false;
-      try {
-        const u = new URL(rawEmbed);
-        if ((u.protocol === "https:" || u.protocol === "http:") &&
-            SAFE_EMBED_HOSTS.has(u.hostname)) {
-          embedAllowed = true;
-        }
-      } catch { /* invalid URL — skip */ }
-      if (!embedAllowed) break;
-      const embed = esc(rawEmbed);
-      const cap: string = bd.caption || "";
-      const capHtml = cap
-        ? `<figcaption>${sanitize(cap)}</figcaption>`
-        : "";
-      parts.push(
-        `<figure class="blog-embed"><iframe src="${embed}" frameborder="0" allowfullscreen loading="lazy"></iframe>${capHtml}</figure>`
-      );
-    } else if (bt === "table") {
-      let rowsHtml = "";
-      (bd.content || []).forEach((row: string[], i: number) => {
-        const tag = i === 0 ? "th" : "td";
-        rowsHtml +=
-          "<tr>" +
-          row.map((c) => `<${tag}>${sanitize(c)}</${tag}>`).join("") +
-          "</tr>";
-      });
-      parts.push(
-        `<div class="table-wrap"><table>${rowsHtml}</table></div>`
-      );
-    } else if (bt === "delimiter") {
-      parts.push('<div class="blog-delimiter">✦ &nbsp; ✦ &nbsp; ✦</div>');
-    } else if (bt === "warning") {
-      parts.push(
-        `<div class="blog-warning"><strong>${sanitize(
-          bd.title || ""
-        )}</strong><p>${sanitize(bd.message || "")}</p></div>`
-      );
-    }
-  }
-  return parts.join("\n");
-}
-
-function esc(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-function escHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
@@ -668,7 +509,10 @@ export function BlogPost({ slug }: Props) {
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
-  const contentHtml = toHtml(post.content || "{}");
+  const rawContent = post.content || "";
+  const contentHtml = rawContent.trim().startsWith("{")
+    ? editorJsToHtml(rawContent)
+    : sanitizeHtml(rawContent);
 
   return (
     <div className="post-page">
