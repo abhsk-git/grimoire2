@@ -17,6 +17,12 @@ import TaskItem from "@tiptap/extension-task-item";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { createLowlight, common } from "lowlight";
+import Typography from "@tiptap/extension-typography";
+import { Youtube } from "@tiptap/extension-youtube";
+import { Emoji, emojis } from "@tiptap/extension-emoji";
+import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
+import { BlockMath, InlineMath } from "@tiptap/extension-mathematics";
+import "katex/dist/katex.min.css";
 
 const lowlight = createLowlight(common);
 
@@ -102,6 +108,12 @@ const SLASH_CMDS: SlashCmd[] = [
     exec: (e,f,t) => e.chain().focus().deleteRange({from:f,to:t}).setHorizontalRule().run() },
   { id: "image",     label: "Image",         hint: "Upload or embed an image",     icon: "🖼",   keywords: ["image","img","photo","upload"],
     exec: () => {} },
+  { id: "youtube",   label: "YouTube",       hint: "Embed a YouTube video",        icon: "▶",    keywords: ["youtube","video","embed","yt"],
+    exec: () => {} },
+  { id: "math",      label: "Math",          hint: "LaTeX math block",             icon: "∑",    keywords: ["math","latex","equation","formula"],
+    exec: (e,f,t) => e.chain().focus().deleteRange({from:f,to:t}).insertContent({ type: "blockMath", attrs: { value: "" } }).run() },
+  { id: "details",   label: "Toggle",        hint: "Collapsible details block",    icon: "▸",    keywords: ["details","toggle","collapse","accordion","spoiler"],
+    exec: (e,f,t) => e.chain().focus().deleteRange({from:f,to:t}).setDetails().run() },
 ];
 
 function filterCmds(query: string): SlashCmd[] {
@@ -214,6 +226,80 @@ function DividerLineIcon() {
     <line x1="2" y1="12" x2="22" y2="12"/>
   </svg>;
 }
+function YoutubeIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22.54 6.42A2.78 2.78 0 0 0 20.6 4.47C18.88 4 12 4 12 4s-6.88 0-8.6.47A2.78 2.78 0 0 0 1.46 6.42 29.94 29.94 0 0 0 1 12a29.94 29.94 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.4 19.53C5.12 20 12 20 12 20s6.88 0 8.6-.47a2.78 2.78 0 0 0 1.94-1.95A29.94 29.94 0 0 0 23 12a29.94 29.94 0 0 0-.46-5.58z"/>
+    <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="var(--bg-elev)" stroke="none"/>
+  </svg>;
+}
+function DetailsIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 18l6-6-6-6"/>
+    <line x1="4" y1="6" x2="20" y2="6"/>
+    <line x1="4" y1="12" x2="13" y2="12"/>
+    <line x1="4" y1="18" x2="13" y2="18"/>
+  </svg>;
+}
+
+// ── Emoji suggestion renderer ──────────────────────────────────────────────
+// Returns the render callbacks the Emoji extension's suggestion plugin expects.
+function buildEmojiSuggestion() {
+  let popup: HTMLElement | null = null;
+  let items: { name: string; emoji: string; shortcodes: string[] }[] = [];
+  let selected = 0;
+  let onSelect: ((item: { name: string; emoji: string }) => void) | null = null;
+
+  function render() {
+    if (!popup) return;
+    popup.innerHTML = items.slice(0, 10).map((it, i) => `
+      <button class="emoji-item${i === selected ? " selected" : ""}" data-i="${i}">
+        <span class="emoji-glyph">${it.emoji}</span>
+        <span class="emoji-name">:${it.shortcodes[0]}:</span>
+      </button>
+    `).join("");
+    popup.querySelectorAll(".emoji-item").forEach(btn => {
+      (btn as HTMLElement).addEventListener("mousedown", e => {
+        e.preventDefault();
+        const i = parseInt((btn as HTMLElement).dataset.i ?? "0");
+        onSelect?.(items[i]);
+      });
+    });
+  }
+
+  return {
+    onStart(props: { items: typeof items; command: (p: { name: string; emoji: string }) => void; clientRect?: (() => DOMRect | null) | null }) {
+      items    = props.items;
+      selected = 0;
+      onSelect = (it) => props.command(it);
+      if (!items.length) return;
+      popup = document.createElement("div");
+      popup.className = "emoji-picker";
+      document.body.appendChild(popup);
+      const rect = props.clientRect?.();
+      if (rect) { popup.style.top = `${rect.bottom + 6}px`; popup.style.left = `${rect.left}px`; }
+      render();
+    },
+    onUpdate(props: { items: typeof items; command: (p: { name: string; emoji: string }) => void; clientRect?: (() => DOMRect | null) | null }) {
+      items    = props.items;
+      selected = 0;
+      onSelect = (it) => props.command(it);
+      const rect = props.clientRect?.();
+      if (popup && rect) { popup.style.top = `${rect.bottom + 6}px`; popup.style.left = `${rect.left}px`; }
+      render();
+    },
+    onKeyDown(props: { event: KeyboardEvent }) {
+      if (!items.length) return false;
+      if (props.event.key === "ArrowDown") { selected = (selected + 1) % Math.min(items.length, 10); render(); return true; }
+      if (props.event.key === "ArrowUp")   { selected = (selected - 1 + Math.min(items.length, 10)) % Math.min(items.length, 10); render(); return true; }
+      if (props.event.key === "Enter")     { onSelect?.(items[selected]); return true; }
+      return false;
+    },
+    onExit() {
+      popup?.remove();
+      popup = null;
+    },
+  };
+}
 
 // ── Toolbar button ─────────────────────────────────────────────────────────
 function TbBtn({ active, title, onClick, children, cls }: {
@@ -232,8 +318,8 @@ function TbBtn({ active, title, onClick, children, cls }: {
 }
 
 // ── Fixed toolbar — two rows, tick prop forces re-render on editor state change ──
-function FixedToolbar({ editor, onImageClick, tick: _, onToggle }: {
-  editor: Editor; onImageClick: () => void; tick: number; onToggle: () => void;
+function FixedToolbar({ editor, onImageClick, onYoutubeClick, tick: _, onToggle }: {
+  editor: Editor; onImageClick: () => void; onYoutubeClick: () => void; tick: number; onToggle: () => void;
 }) {
   const [colorMode, setColorMode] = useState<null | "text" | "highlight">(null);
   const [linkMode, setLinkMode]   = useState(false);
@@ -394,9 +480,12 @@ function FixedToolbar({ editor, onImageClick, tick: _, onToggle }: {
             ? editor.chain().focus().lift("callout").run()
             : editor.chain().focus().wrapIn("callout", { kind: "warning" }).run();
         }}>⚠</TbBtn>
+        <TbBtn active={editor.isActive("details")}    title="Toggle / collapsible" onClick={() => editor.chain().focus().setDetails().run()}><DetailsIcon /></TbBtn>
         <div className="tt-tb-sep" />
         <TbBtn title="Insert table"    onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon /></TbBtn>
         <TbBtn title="Insert image"    onClick={onImageClick}><ImageIcon /></TbBtn>
+        <TbBtn title="Embed YouTube"   onClick={onYoutubeClick}><YoutubeIcon /></TbBtn>
+        <TbBtn title="Math / LaTeX block (also: /math)" onClick={() => editor.chain().focus().insertContent({ type: "blockMath", attrs: { value: "" } }).run()}>∑</TbBtn>
         <TbBtn title="Horizontal rule" onClick={() => editor.chain().focus().setHorizontalRule().run()}><DividerLineIcon /></TbBtn>
       </div>
     </div>
@@ -443,6 +532,8 @@ export function TiptapEditor({
   const [colorPicker, setColorPicker]     = useState<"text" | "highlight" | null>(null);
   const [linkInput, setLinkInput]         = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
+  const [ytMode, setYtMode]               = useState(false);
+  const [ytUrl, setYtUrl]                 = useState("");
 
   const editor = useEditor({
     extensions: [
@@ -466,6 +557,18 @@ export function TiptapEditor({
       TableHeader,
       CodeBlockLowlight.configure({ lowlight }),
       CalloutNode,
+      Typography,
+      Youtube.configure({ width: 720, height: 405, nocookie: true }),
+      Emoji.configure({
+        emojis,
+        enableEmoticons: true,
+        suggestion: { render: buildEmojiSuggestion },
+      }),
+      Details.configure({ persist: true }),
+      DetailsContent,
+      DetailsSummary,
+      BlockMath,
+      InlineMath,
     ],
     content: initialContent || "",
     autofocus: autofocus ? "end" : false,
@@ -509,6 +612,10 @@ export function TiptapEditor({
     if (cmd.id === "image") {
       editor.chain().focus().deleteRange({ from: slashFrom, to: queryEnd }).run();
       fileInputRef.current?.click();
+    } else if (cmd.id === "youtube") {
+      editor.chain().focus().deleteRange({ from: slashFrom, to: queryEnd }).run();
+      setYtUrl("");
+      setYtMode(true);
     } else {
       cmd.exec(editor, slashFrom, queryEnd);
     }
@@ -525,6 +632,7 @@ export function TiptapEditor({
           <FixedToolbar
             editor={editor}
             onImageClick={() => fileInputRef.current?.click()}
+            onYoutubeClick={() => { setYtUrl(""); setYtMode(true); }}
             tick={tick}
             onToggle={() => setShowToolbar(false)}
           />
@@ -544,6 +652,33 @@ export function TiptapEditor({
           <TbBtn title="Delete column"    onClick={() => editor.chain().focus().deleteColumn().run()} cls="danger">✕ Col</TbBtn>
           <div className="tt-tb-sep" />
           <TbBtn title="Delete entire table" onClick={() => editor.chain().focus().deleteTable().run()} cls="danger">✕ Delete table</TbBtn>
+        </div>
+      )}
+
+      {/* ── YouTube URL input — inline prompt below toolbar ── */}
+      {ytMode && (
+        <div className="tt-yt-bar" onMouseDown={e => e.preventDefault()}>
+          <YoutubeIcon />
+          <input
+            autoFocus
+            className="tt-link-input tt-link-input-tb"
+            value={ytUrl}
+            placeholder="Paste YouTube URL…"
+            onChange={e => setYtUrl(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter") {
+                if (ytUrl && editor) (editor.commands as any).setYoutubeVideo({ src: ytUrl });
+                setYtMode(false); setYtUrl("");
+              }
+              if (e.key === "Escape") { setYtMode(false); setYtUrl(""); }
+            }}
+          />
+          <button className="tt-tb-btn" onMouseDown={e => {
+            e.preventDefault();
+            if (ytUrl && editor) (editor.commands as any).setYoutubeVideo({ src: ytUrl });
+            setYtMode(false); setYtUrl("");
+          }}>↵ Embed</button>
+          <button className="tt-tb-btn" onMouseDown={e => { e.preventDefault(); setYtMode(false); setYtUrl(""); }}>✕</button>
         </div>
       )}
 

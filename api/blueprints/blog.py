@@ -83,25 +83,11 @@ def _unique_slug(cur, base, exclude_id=None):
         slug, i = f'{base}-{i}', i + 1
 
 
-def _reading_time(content_json):
+def _reading_time(content):
     try:
-        data = json.loads(content_json) if isinstance(content_json, str) else content_json
-        words = 0
-        code_lines = 0
-        for b in data.get('blocks', []):
-            bd, bt = b.get('data', {}), b.get('type', '')
-            if bt in ('paragraph', 'header', 'quote'):
-                words += len(re.sub(r'<[^>]+>', '', bd.get('text', '')).split())
-            elif bt == 'list':
-                for item in bd.get('items', []):
-                    words += len(re.sub(r'<[^>]+>', '', item).split())
-            elif bt == 'checklist':
-                for item in bd.get('items', []):
-                    words += len(re.sub(r'<[^>]+>', '', item.get('text', '') if isinstance(item, dict) else item).split())
-            elif bt == 'code':
-                code_lines += len(bd.get('code', '').splitlines())
-        # prose at 200 wpm; code at 25 lines/min (readers slow down for code)
-        minutes = words / 200 + code_lines / 25
+        text = re.sub(r'<[^>]+>', ' ', content or '')
+        words = len(text.split())
+        minutes = words / 200
         return max(1, round(minutes))
     except Exception:
         return 1
@@ -363,12 +349,7 @@ def list_posts():
 def create_post():
     data    = request.json or {}
     title   = (data.get('title') or 'Untitled').strip()[:500]
-    content = data.get('content', '{}')
-    try:
-        content = json.dumps(json.loads(content) if isinstance(content, str) else content)
-    except Exception:
-        content = '{}'
-
+    content = (data.get('content') or '').strip()
     excerpt = (data.get('excerpt') or '').strip()[:500]
     cover   = (data.get('cover_image') or '')[:500]
     tags    = _normalize_tags(data.get('tags') or '')
@@ -459,12 +440,7 @@ def update_post(post_id):
         old_cover = row.get('cover_image') or ''
 
         title   = (data.get('title') or 'Untitled').strip()[:500]
-        content = data.get('content', '{}')
-        try:
-            content = json.dumps(json.loads(content) if isinstance(content, str) else content)
-        except Exception:
-            content = '{}'
-
+        content = (data.get('content') or '').strip()
         excerpt  = (data.get('excerpt') or '').strip()[:500]
         cover    = (data.get('cover_image') or '')[:500]
         tags     = _normalize_tags(data.get('tags') or '')

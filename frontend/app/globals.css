@@ -4283,6 +4283,19 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .tt-toolbar-rows {
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+/* Fade-right hint on row 2 to show it's scrollable */
+.tt-toolbar-rows::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  height: 36px;
+  background: linear-gradient(to right, transparent, color-mix(in oklab, var(--bg-soft) 60%, var(--bg-elev)));
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Each toolbar strip */
@@ -4506,4 +4519,122 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   margin: 0;
   color: var(--fg-soft);
   font-size: 14px;
+}
+
+/* ── Emoji picker dropdown ───────────────────────────────────────────────── */
+.emoji-picker {
+  position: fixed;
+  z-index: 999;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: var(--shadow);
+  min-width: 180px;
+  max-width: 220px;
+}
+.emoji-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.emoji-item:hover, .emoji-item.selected {
+  background: var(--accent-soft);
+}
+.emoji-glyph { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.emoji-name  { font-size: 12px; color: var(--fg-muted); }
+
+/* ── YouTube embed bar ───────────────────────────────────────────────────── */
+.tt-yt-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: color-mix(in oklab, #ff0000 5%, var(--bg-soft));
+  border-bottom: 1px solid color-mix(in oklab, #ff0000 20%, var(--border));
+}
+
+/* ── YouTube embed in editor + post ─────────────────────────────────────── */
+.tiptap-editor-body .ProseMirror div[data-youtube-video],
+.tiptap-editor-body .ProseMirror iframe {
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 1.2em 0;
+  max-width: 100%;
+}
+.post-content iframe[src*="youtube"] {
+  border-radius: 10px;
+  max-width: 100%;
+  aspect-ratio: 16/9;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Details / collapsible block ─────────────────────────────────────────── */
+.tiptap-editor-body .ProseMirror details,
+.post-content details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 1em 0;
+  overflow: hidden;
+}
+.tiptap-editor-body .ProseMirror summary,
+.post-content summary {
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg-soft);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tiptap-editor-body .ProseMirror summary::before,
+.post-content summary::before {
+  content: "▸";
+  font-size: 11px;
+  transition: transform 0.18s;
+  color: var(--accent);
+}
+.tiptap-editor-body .ProseMirror details[open] summary::before,
+.post-content details[open] summary::before {
+  transform: rotate(90deg);
+}
+.tiptap-editor-body .ProseMirror .details-content,
+.post-content details > *:not(summary) {
+  padding: 10px 16px;
+}
+
+/* ── Math blocks (KaTeX) ─────────────────────────────────────────────────── */
+.tiptap-editor-body .ProseMirror .math-node,
+.post-content .math-node {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin: 1em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+.tiptap-editor-body .ProseMirror .math-node.inline,
+.post-content .math-node.inline {
+  display: inline-block;
+  padding: 1px 6px;
+  margin: 0;
+  background: var(--bg-inset);
+  border-radius: 4px;
+  vertical-align: middle;
 }
