@@ -10,6 +10,7 @@ export interface EditorSettings {
   autosaveInterval:  number;
   wordCount:         boolean;
   readingTime:       boolean;
+  toolbar:           boolean;
 }
 
 export interface AppearanceSettings {
@@ -52,6 +53,7 @@ const DEFAULTS: UserSettings = {
     autosaveInterval: 4,
     wordCount:        true,
     readingTime:      true,
+    toolbar:          true,
   },
   appearance: {
     theme:       "dark",

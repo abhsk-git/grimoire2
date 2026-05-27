@@ -642,6 +642,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
                 onReady={() => setEditorReady(true)}
                 placeholder="Tell your story…"
                 autofocus={!initialPostId}
+                toolbarEnabled={settings.editor.toolbar}
               />
             )}
           </div>
