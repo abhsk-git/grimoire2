@@ -13,63 +13,8 @@ import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { Icon } from "./icons";
 import { ImageCropModal } from "./image-crop-modal";
-
-declare global {
-  interface Window {
-    EditorJS: any;
-    Header: any;
-    List: any;
-    Quote: any;
-    CodeTool: any;
-    InlineCode: any;
-    Delimiter: any;
-    ImageTool: any;
-    Embed: any;
-    Table: any;
-    Warning: any;
-    Marker: any;
-    Checklist: any;
-    LinkTool: any;
-  }
-}
-
-const CDN_SCRIPTS = [
-  "https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest/dist/editorjs.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/header@latest/dist/header.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/list@latest/dist/list.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/quote@latest/dist/quote.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/code@latest/dist/code.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/inline-code@latest/dist/inline-code.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest/dist/delimiter.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/image@latest/dist/image.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/embed@latest/dist/embed.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/table@latest/dist/table.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/warning@latest/dist/warning.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/marker@latest/dist/marker.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest/dist/checklist.umd.js",
-  "https://cdn.jsdelivr.net/npm/@editorjs/link@latest/dist/link.umd.js",
-];
-
-function loadScripts(): Promise<void> {
-  return CDN_SCRIPTS.reduce(
-    (chain, src) =>
-      chain.then(
-        () =>
-          new Promise<void>((resolve, reject) => {
-            if (document.querySelector(`script[src="${src}"]`)) {
-              resolve();
-              return;
-            }
-            const s = document.createElement("script");
-            s.src = src;
-            s.onload = () => resolve();
-            s.onerror = () => reject(new Error(`Failed to load ${src}`));
-            document.head.appendChild(s);
-          })
-      ),
-    Promise.resolve()
-  );
-}
+import { TiptapEditor } from "./tiptap-editor";
+import { editorJsToHtml } from "@/lib/editorjs-renderer";
 
 interface PostData {
   id: number;
@@ -89,119 +34,6 @@ interface TagSuggestion {
 
 interface WriteEditorProps {
   postId?: number;
-}
-
-// ── Slash command definitions ─────────────────────────────────────────────────
-
-interface SlashCmd {
-  id: string;
-  label: string;
-  hint: string;
-  type: string;
-  data: Record<string, unknown>;
-  icon: string;
-  keywords: string[];
-}
-
-const SLASH_CMDS: SlashCmd[] = [
-  { id:"text",      label:"Text",          hint:"Plain paragraph text",         type:"paragraph", data:{},                    icon:"P",  keywords:["p","text","body","paragraph"] },
-  { id:"h2",        label:"Heading 2",     hint:"Large section heading",        type:"header",    data:{ level:2 },           icon:"H2", keywords:["h2","heading","title"] },
-  { id:"h3",        label:"Heading 3",     hint:"Medium section heading",       type:"header",    data:{ level:3 },           icon:"H3", keywords:["h3","subheading","sub"] },
-  { id:"bullet",    label:"Bullet List",   hint:"Unordered list",               type:"list",      data:{ style:"unordered" }, icon:"•",  keywords:["ul","list","bullet"] },
-  { id:"numbered",  label:"Numbered List", hint:"Ordered / numbered list",      type:"list",      data:{ style:"ordered" },   icon:"1.", keywords:["ol","ordered","number"] },
-  { id:"checklist", label:"Checklist",     hint:"To-do list with checkboxes",   type:"checklist", data:{},                    icon:"☑",  keywords:["todo","check","task"] },
-  { id:"quote",     label:"Quote",         hint:"Highlighted blockquote",       type:"quote",     data:{},                    icon:"❝",  keywords:["quote","blockquote","cite"] },
-  { id:"code",      label:"Code Block",    hint:"Syntax-highlighted code",      type:"code",      data:{},                    icon:"<>", keywords:["code","pre","snippet"] },
-  { id:"grid",      label:"Table",         hint:"Grid of rows and columns",     type:"table",     data:{},                    icon:"▦",  keywords:["table","grid","data"] },
-  { id:"warning",   label:"Warning",       hint:"Callout or alert box",         type:"warning",   data:{},                    icon:"⚠",  keywords:["warning","alert","note"] },
-  { id:"divider",   label:"Divider",       hint:"Visual section break",         type:"delimiter", data:{},                    icon:"—",  keywords:["hr","divider","line","break","delimiter"] },
-  { id:"image",     label:"Image",         hint:"Upload or embed an image",     type:"image",     data:{},                    icon:"🖼", keywords:["image","img","photo"] },
-];
-
-function getFilteredCmds(query: string): SlashCmd[] {
-  if (!query) return SLASH_CMDS;
-  const q = query.toLowerCase();
-  const prefixMatch = (s: string) => s.startsWith(q);
-  const subMatch    = (s: string) => s.includes(q);
-  const score = (c: SlashCmd) => {
-    // Single-char queries: only match by id prefix — keeps results tight
-    // (e.g. "/t" → only "text", not "table" whose label also starts with T)
-    if (q.length === 1) return prefixMatch(c.id) ? 0 : 3;
-    if (prefixMatch(c.id) || prefixMatch(c.label.toLowerCase())) return 0;
-    if (c.keywords.some(prefixMatch)) return 1;
-    if (subMatch(c.id) || subMatch(c.label.toLowerCase()) || c.keywords.some(subMatch)) return 2;
-    return 3;
-  };
-  return SLASH_CMDS.map(c => ({ c, s: score(c) }))
-    .filter(({ s }) => s < 3)
-    .sort((a, b) => a.s - b.s)
-    .map(({ c }) => c);
-}
-
-// ── Slash Menu Panel ──────────────────────────────────────────────────────────
-
-function SlashMenuPanel({
-  query,
-  selected,
-  pos,
-  onSelect,
-  onHover,
-}: {
-  query: string;
-  selected: number;
-  pos: { top: number; left: number };
-  onSelect: (cmd: SlashCmd) => void;
-  onHover: (idx: number) => void;
-}) {
-  const filtered = getFilteredCmds(query);
-  const listRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // children[0] is the heading div when query is set, so items are offset by 1
-    const childIdx = query ? selected + 1 : selected;
-    const item = listRef.current?.children[childIdx] as HTMLElement;
-    item?.scrollIntoView({ block: "nearest" });
-  }, [selected, query]); // filtered is derived from query; no need to list it
-
-  if (!filtered.length) return null;
-
-  const menuHeight = Math.min(filtered.length, 7) * 52 + (query ? 36 : 8) + 8;
-  const adjustedTop =
-    pos.top + menuHeight > window.innerHeight - 8
-      ? pos.top - menuHeight - 28
-      : pos.top;
-  const adjustedLeft = Math.min(pos.left, window.innerWidth - 292);
-
-  return (
-    <div
-      className="slash-menu"
-      ref={listRef}
-      style={{ top: adjustedTop, left: adjustedLeft }}
-    >
-      {query && (
-        <div className="slash-menu-heading">
-          Blocks
-          {filtered.length === 1 && (
-            <span className="slash-menu-enter-hint">↵ to insert</span>
-          )}
-        </div>
-      )}
-      {filtered.map((cmd, i) => (
-        <button
-          key={cmd.id}
-          className={`slash-menu-item${i === selected ? " selected" : ""}`}
-          onMouseDown={(e) => { e.preventDefault(); onSelect(cmd); }}
-          onMouseEnter={() => onHover(i)}
-        >
-          <span className="slash-menu-icon">{cmd.icon}</span>
-          <div className="slash-menu-text">
-            <span className="slash-menu-label">{cmd.label}</span>
-            <span className="slash-menu-hint">{cmd.hint}</span>
-          </div>
-        </button>
-      ))}
-    </div>
-  );
 }
 
 // ── Cover Image Zone ──────────────────────────────────────────────────────────
@@ -303,15 +135,8 @@ function CoverZone({
               if (e.key === "Escape") setUrlMode(false);
             }}
           />
-          <button className="we-cover-btn" onClick={handleUrlSubmit}>
-            Add
-          </button>
-          <button
-            className="we-cover-btn"
-            onClick={() => setUrlMode(false)}
-          >
-            Cancel
-          </button>
+          <button className="we-cover-btn" onClick={handleUrlSubmit}>Add</button>
+          <button className="we-cover-btn" onClick={() => setUrlMode(false)}>Cancel</button>
         </div>
       ) : (
         <div className="we-cover-placeholder">
@@ -323,10 +148,7 @@ function CoverZone({
             Drop an image, click to upload,{" "}
             <button
               className="we-cover-link"
-              onClick={(e) => {
-                e.stopPropagation();
-                setUrlMode(true);
-              }}
+              onClick={(e) => { e.stopPropagation(); setUrlMode(true); }}
             >
               or paste a URL
             </button>
@@ -360,13 +182,8 @@ function TagChips({
   const inputRef = useRef<HTMLInputElement>(null);
 
   function addTag(raw: string) {
-    const t = raw
-      .trim()
-      .toLowerCase()
-      .replace(/[^\w-]/g, "");
-    if (t && !tags.includes(t) && tags.length < 10) {
-      onChange([...tags, t]);
-    }
+    const t = raw.trim().toLowerCase().replace(/[^\w-]/g, "");
+    if (t && !tags.includes(t) && tags.length < 10) onChange([...tags, t]);
     setInputVal("");
   }
 
@@ -385,19 +202,12 @@ function TagChips({
 
   const filteredSuggestions = suggestions
     .map((s) => s.name)
-    .filter(
-      (n) =>
-        !tags.includes(n) &&
-        (inputVal === "" || n.startsWith(inputVal.toLowerCase()))
-    )
+    .filter((n) => !tags.includes(n) && (inputVal === "" || n.startsWith(inputVal.toLowerCase())))
     .slice(0, 8);
 
   return (
     <div className="we-tags-wrap">
-      <div
-        className="we-tags"
-        onClick={() => inputRef.current?.focus()}
-      >
+      <div className="we-tags" onClick={() => inputRef.current?.focus()}>
         {tags.length === 0 && !focused && (
           <span className="we-tags-placeholder">Add up to 10 tags…</span>
         )}
@@ -407,10 +217,7 @@ function TagChips({
             {tag}
             <button
               className="we-tag-remove"
-              onClick={(e) => {
-                e.stopPropagation();
-                removeTag(tag);
-              }}
+              onClick={(e) => { e.stopPropagation(); removeTag(tag); }}
             >
               ×
             </button>
@@ -427,7 +234,6 @@ function TagChips({
             setTimeout(() => setFocused(false), 150);
             if (inputVal) addTag(inputVal);
           }}
-          placeholder={tags.length === 0 ? "" : ""}
           style={{ width: Math.max(80, inputVal.length * 9 + 16) }}
         />
       </div>
@@ -462,9 +268,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
   const [postId, setPostId] = useState<number | null>(initialPostId ?? null);
   const [status, setStatus] = useState<"draft" | "published">("draft");
-  const [saveStatus, setSaveStatus] = useState<
-    "" | "saving" | "saved" | "unsaved" | "error"
-  >("");
+  const [saveStatus, setSaveStatus] = useState<"" | "saving" | "saved" | "unsaved" | "error">("");
   const [editorReady, setEditorReady] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -477,30 +281,14 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [coverUploading, setCoverUploading] = useState(false);
   const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
-  const [slashMenu, setSlashMenu] = useState<{
-    open: boolean;
-    query: string;
-    selected: number;
-    pos: { top: number; left: number };
-  } | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [initialContent, setInitialContent] = useState<string | undefined>(undefined);
 
-  const editorRef = useRef<any>(null);
   const postIdRef = useRef<number | null>(initialPostId ?? null);
+  const contentRef = useRef<string>("");
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const excerptRef = useRef<HTMLTextAreaElement>(null);
-  // stable ref so event handlers always see latest slash-menu state
-  const slashMenuRef = useRef(slashMenu);
-  useEffect(() => { slashMenuRef.current = slashMenu; }, [slashMenu]);
-
-  // Keep settings accessible inside EditorJS onChange (stale closure guard)
-  const editorSettingsRef = useRef(settings.editor);
-  useEffect(() => { editorSettingsRef.current = settings.editor; }, [settings.editor]);
-
-  // stable ref so the autosave timer (inside a stale EditorJS closure) always
-  // calls the latest saveDraft — without this, the timer calls the version from
-  // the initial render where editorReady=false and returns early every time
   const saveDraftRef = useRef<(silent?: boolean) => Promise<void>>(async () => {});
   const isSavingRef = useRef(false);
 
@@ -514,129 +302,36 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       .then((d) => setTagSuggestions(Array.isArray(d) ? d : []));
   }, []);
 
+  // Load existing post data
   useEffect(() => {
-    if (authLoading || !user) return;
-
-    async function init() {
-      let initialData: any = undefined;
-
-      if (initialPostId) {
-        try {
-          const r = await fetch(`/api/blog/posts/${initialPostId}`, {
-            credentials: "include",
-          });
-          if (r.ok) {
-            const post: PostData = await r.json();
-            setTitle(post.title || "");
-            setSlug(post.slug || "");
-            setTagList(
-              (post.tags || "")
-                .split(",")
-                .map((t) => t.trim())
-                .filter(Boolean)
-            );
-            setExcerpt(post.excerpt || "");
-            setCoverUrl(post.cover_image || "");
-            setStatus(post.status === "published" ? "published" : "draft");
-            if (post.content) {
-              try { initialData = JSON.parse(post.content); } catch {}
-            }
-          }
-        } catch {}
-      }
-
-      await loadScripts();
-      editorRef.current?.destroy?.();
-
-      editorRef.current = new window.EditorJS({
-        holder: "editorjs",
-        autofocus: !initialPostId,
-        placeholder: "Tell your story…",
-        data: initialData,
-        tools: {
-          header: { class: window.Header, inlineToolbar: true },
-          list: { class: window.List, inlineToolbar: true },
-          quote: { class: window.Quote, inlineToolbar: true },
-          code: { class: window.CodeTool },
-          inlineCode: { class: window.InlineCode },
-          delimiter: window.Delimiter,
-          image: {
-            class: window.ImageTool,
-            config: {
-              uploader: {
-                async uploadByFile(file: File) {
-                  const fd = new FormData();
-                  fd.append("image", file);
-                  const r = await fetch("/api/blog/upload", {
-                    method: "POST",
-                    credentials: "include",
-                    body: fd,
-                  });
-                  return r.ok ? r.json() : { success: 0 };
-                },
-                async uploadByUrl(url: string) {
-                  const r = await fetch("/api/blog/upload", {
-                    method: "POST",
-                    credentials: "include",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url }),
-                  });
-                  return r.ok ? r.json() : { success: 0 };
-                },
-              },
-            },
-          },
-          embed: window.Embed,
-          table: { class: window.Table, inlineToolbar: true },
-          warning: window.Warning,
-          marker: { class: window.Marker },
-          checklist: { class: window.Checklist, inlineToolbar: true },
-          linkTool: {
-            class: window.LinkTool,
-            config: { endpoint: "/api/link-meta" },
-          },
-        },
-        onChange: () => {
-          setSaveStatus("unsaved");
-          scheduleAutoSave();
-          updateWordCount();
-
-          // Slash command detection (respects settings via ref, avoids stale closure)
-          if (editorSettingsRef.current.slashMenu) {
-            const active = document.activeElement as HTMLElement | null;
-            const editorEl = document.getElementById("editorjs");
-            if (active && editorEl?.contains(active)) {
-              const text = (active.textContent ?? "").trim();
-              if (text.startsWith("/")) {
-                const query = text.slice(1).toLowerCase();
-                const sel = window.getSelection();
-                const rect = sel?.rangeCount
-                  ? sel.getRangeAt(0).getBoundingClientRect()
-                  : active.getBoundingClientRect();
-                if (rect.height > 0) {
-                  setSlashMenu({
-                    open: true,
-                    query,
-                    selected: 0,
-                    pos: { top: rect.bottom + 6, left: Math.max(rect.left, 20) },
-                  });
-                  return;
-                }
-              }
-            }
-          }
-          setSlashMenu((prev) => (prev?.open ? null : prev));
-        },
-      });
-
-      setEditorReady(true);
+    if (authLoading || !user || !initialPostId) {
+      if (!initialPostId) setInitialContent("");
+      return;
     }
 
-    init();
-    return () => {
-      autoSaveTimer.current && clearTimeout(autoSaveTimer.current);
-      editorRef.current?.destroy?.();
-    };
+    async function loadPost() {
+      try {
+        const r = await fetch(`/api/blog/posts/${initialPostId}`, { credentials: "include" });
+        if (!r.ok) return;
+        const post: PostData = await r.json();
+        setTitle(post.title || "");
+        setSlug(post.slug || "");
+        setTagList((post.tags || "").split(",").map((t) => t.trim()).filter(Boolean));
+        setExcerpt(post.excerpt || "");
+        setCoverUrl(post.cover_image || "");
+        setStatus(post.status === "published" ? "published" : "draft");
+
+        if (post.content) {
+          const trimmed = post.content.trim();
+          // Detect old EditorJS JSON format (starts with "{") vs new Tiptap HTML
+          setInitialContent(trimmed.startsWith("{") ? editorJsToHtml(post.content) : post.content);
+        } else {
+          setInitialContent("");
+        }
+      } catch {}
+    }
+
+    loadPost();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user]);
 
@@ -647,33 +342,10 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     autoSaveTimer.current = setTimeout(() => saveDraftRef.current(true), ms);
   }
 
-  async function updateWordCount() {
-    if (!editorRef.current) return;
-    try {
-      const data = await editorRef.current.save();
-      const text = data.blocks
-        .map((b: any) => {
-          if (["paragraph", "header", "quote"].includes(b.type))
-            return b.data?.text || "";
-          if (b.type === "list") return (b.data?.items || []).join(" ");
-          if (b.type === "code") return b.data?.code || "";
-          if (b.type === "checklist")
-            return (b.data?.items || [])
-              .map((i: any) => i?.text || "")
-              .join(" ");
-          return "";
-        })
-        .join(" ")
-        .replace(/<[^>]+>/g, "");
-      setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
-    } catch {}
-  }
-
-  async function buildPayload() {
-    const editorData = await editorRef.current.save();
+  function buildPayload() {
     return {
       title: titleRef.current?.value || title,
-      content: JSON.stringify(editorData),
+      content: contentRef.current,
       excerpt: excerptRef.current?.value || excerpt,
       cover_image: coverUrl,
       tags: tagList.join(","),
@@ -683,16 +355,14 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
   const saveDraft = useCallback(
     async (_silent = false) => {
-      if (!editorRef.current || !editorReady) return;
+      if (!editorReady) return;
       if (isSavingRef.current) return;
       isSavingRef.current = true;
       setSaveStatus("saving");
       try {
-        const payload = await buildPayload();
+        const payload = buildPayload();
         const isNew = !postIdRef.current;
-        const url = isNew
-          ? "/api/blog/posts"
-          : `/api/blog/posts/${postIdRef.current}`;
+        const url = isNew ? "/api/blog/posts" : `/api/blog/posts/${postIdRef.current}`;
         const r = await fetch(url, {
           method: isNew ? "POST" : "PUT",
           credentials: "include",
@@ -709,8 +379,6 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
           if (data.slug) setSlug(data.slug);
           setSaveStatus("saved");
           setLastSaved(new Date());
-          // 2800 ms matches the saved-flash CSS animation so React removes
-          // the element right as it finishes fading out — no visible pop
           setTimeout(() => setSaveStatus(""), 2800);
         } else {
           setSaveStatus("error");
@@ -724,28 +392,18 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [editorReady, excerpt, coverUrl, tagList, slug]
   );
-  // keep ref in sync so stale closures (EditorJS onChange timer) always call latest version
   useEffect(() => { saveDraftRef.current = saveDraft; }, [saveDraft]);
 
-  // Close slash menu on window scroll — menu is position:fixed so it drifts from cursor
   useEffect(() => {
-    const close = () => setSlashMenu(null);
-    window.addEventListener("scroll", close, { passive: true });
-    return () => window.removeEventListener("scroll", close);
-  }, []);
-
-  async function selectSlashCmd(cmd: SlashCmd) {
-    setSlashMenu(null);
-    if (!editorRef.current) return;
-    try {
-      const idx = editorRef.current.blocks?.getCurrentBlockIndex?.() ?? -1;
-      if (idx >= 0) {
-        // replace:true (6th arg) swaps the "/" block in-place — no delete+insert
-        // race that would let EditorJS's Enter handler sneak in a new empty block
-        editorRef.current.blocks.insert(cmd.type, cmd.data, {}, idx, true, true);
+    function onKey(e: globalThis.KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        saveDraft();
       }
-    } catch {}
-  }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [saveDraft]);
 
   async function handlePublish() {
     try {
@@ -803,16 +461,18 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     }
   }
 
-  useEffect(() => {
-    function onKey(e: globalThis.KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-        e.preventDefault();
-        saveDraft();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [saveDraft]);
+  async function handleInlineImageUpload(file: File): Promise<string | null> {
+    const fd = new FormData();
+    fd.append("image", file);
+    const r = await fetch("/api/blog/upload", {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.success && d.file?.url ? d.file.url : null;
+  }
 
   if (authLoading || !user) {
     return (
@@ -833,8 +493,6 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
     ? `Saved ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
     : "";
 
-  const filteredCmds = slashMenu?.open ? getFilteredCmds(slashMenu.query) : [];
-
   return (
     <div className="write-page">
 
@@ -850,17 +508,19 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
             {status === "published" ? "Live" : "Draft"}
           </span>
           {saveLabel ? (
-            /* key=saveStatus forces a remount on every state change,
-               which restarts the CSS entry animation from scratch */
             <span
               key={saveStatus}
-              className={`write-save-status${saveStatus === "error" ? " error" : saveStatus === "unsaved" ? " unsaved" : saveStatus === "saving" ? " saving" : saveStatus === "saved" ? " saved" : ""}`}
+              className={`write-save-status${
+                saveStatus === "error" ? " error"
+                : saveStatus === "unsaved" ? " unsaved"
+                : saveStatus === "saving" ? " saving"
+                : saveStatus === "saved" ? " saved" : ""
+              }`}
             >
               {saveStatus === "saving" && <span className="save-dot" />}
               {saveLabel}
             </span>
           ) : null}
-          {/* timestamp: key=lastSaved ms so it remounts (and re-animates) after each save */}
           {lastSaved && saveStatus !== "saving" && saveStatus !== "saved" && (
             <span key={lastSaved.getTime()} className="write-last-saved">
               {lastSavedLabel}
@@ -874,17 +534,13 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         </div>
 
         <div className="write-topbar-right">
-          <Link
-            href="/settings?tab=editor"
-            className="write-details-btn"
-            title="Editor settings"
-          >
+          <Link href="/settings?tab=editor" className="write-details-btn" title="Editor settings">
             <Icon name="cmd" size={14} />
           </Link>
           <button
             className="write-details-btn"
             onClick={() => setDetailsOpen((v) => !v)}
-            title="Post details (slug, excerpt, SEO)"
+            title="Post details"
           >
             <Icon name="settings" size={14} />
             Details
@@ -907,33 +563,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       </div>
 
       {/* ── Canvas ── */}
-      <div
-        className="write-canvas"
-        onKeyDownCapture={(e) => {
-          // Block EditorJS's built-in slashPressed() so our custom menu is the
-          // only thing that shows — without this, EditorJS opens its native toolbox
-          // in empty paragraph blocks while table cells get our menu (inconsistent).
-          if (e.key === "/" && !e.ctrlKey && !e.metaKey && !slashMenu?.open) {
-            // Only intercept if slash menu is enabled in settings
-            if (settings.editor.slashMenu) e.stopPropagation();
-            return;
-          }
-
-          if (!slashMenu?.open || !filteredCmds.length) return;
-          if (!["ArrowDown","ArrowUp","Enter","Tab","Escape"].includes(e.key)) return;
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.key === "ArrowDown")
-            setSlashMenu((p) => p && { ...p, selected: (p.selected + 1) % filteredCmds.length });
-          else if (e.key === "ArrowUp")
-            setSlashMenu((p) => p && { ...p, selected: (p.selected - 1 + filteredCmds.length) % filteredCmds.length });
-          else if (e.key === "Enter" || e.key === "Tab") {
-            const cmd = filteredCmds[slashMenu.selected];
-            if (cmd) selectSlashCmd(cmd);
-          } else if (e.key === "Escape")
-            setSlashMenu(null);
-        }}
-      >
+      <div className="write-canvas">
 
         {/* Cover zone */}
         <CoverZone
@@ -974,14 +604,12 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
             rows={1}
           />
 
-          {/* Tags */}
           <TagChips
             tags={tagList}
             suggestions={tagSuggestions}
             onChange={(t) => { setTagList(t); setSaveStatus("unsaved"); scheduleAutoSave(); }}
           />
 
-          {/* Excerpt */}
           <textarea
             ref={excerptRef}
             className="write-excerpt"
@@ -997,23 +625,33 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
             rows={1}
           />
 
-          <div className="write-divider">
-            <span />
-          </div>
+          <div className="write-divider"><span /></div>
 
-          {/* Editor body */}
+          {/* Tiptap editor */}
           <div className="write-body">
-            <div id="editorjs" />
+            {initialContent !== undefined && (
+              <TiptapEditor
+                initialContent={initialContent}
+                onChange={(html, wc) => {
+                  contentRef.current = html;
+                  setWordCount(wc);
+                  setSaveStatus("unsaved");
+                  scheduleAutoSave();
+                }}
+                onImageUpload={handleInlineImageUpload}
+                onReady={() => setEditorReady(true)}
+                placeholder="Tell your story…"
+                autofocus={!initialPostId}
+                toolbarEnabled={settings.editor.toolbar}
+              />
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Details slide-over (slug + SEO only) ── */}
+      {/* ── Details slide-over ── */}
       {detailsOpen && (
-        <div
-          className="settings-overlay open"
-          onClick={() => setDetailsOpen(false)}
-        />
+        <div className="settings-overlay open" onClick={() => setDetailsOpen(false)} />
       )}
       <div className={`write-settings${detailsOpen ? " open" : ""}`}>
         <div className="write-settings-head">
@@ -1055,10 +693,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
                   >
                     Yes, delete
                   </button>
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setDeleteConfirm(false)}
-                  >
+                  <button className="btn btn-ghost btn-sm" onClick={() => setDeleteConfirm(false)}>
                     Cancel
                   </button>
                 </div>
@@ -1078,41 +713,19 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
       {/* ── Mobile bottom action bar ── */}
       <div className="write-mobile-bar">
-        <button
-          className="write-mbar-btn"
-          onClick={() => setDetailsOpen((v) => !v)}
-        >
+        <button className="write-mbar-btn" onClick={() => setDetailsOpen((v) => !v)}>
           <Icon name="settings" size={15} />
           Details
         </button>
-        <button
-          className="write-mbar-btn"
-          onClick={() => saveDraft()}
-          disabled={!editorReady}
-        >
+        <button className="write-mbar-btn" onClick={() => saveDraft()} disabled={!editorReady}>
           <Icon name="feather" size={15} />
           Save
         </button>
-        <button
-          className="write-mbar-btn primary"
-          onClick={handlePublish}
-          disabled={!editorReady}
-        >
+        <button className="write-mbar-btn primary" onClick={handlePublish} disabled={!editorReady}>
           <Icon name="globe" size={15} />
           {status === "published" ? "Unpublish" : "Publish"}
         </button>
       </div>
-
-      {/* ── Slash command palette (gated by editor settings) ── */}
-      {settings.editor.slashMenu && slashMenu?.open && filteredCmds.length > 0 && (
-        <SlashMenuPanel
-          query={slashMenu.query}
-          selected={slashMenu.selected}
-          pos={slashMenu.pos}
-          onSelect={selectSlashCmd}
-          onHover={(i) => setSlashMenu((p) => p && { ...p, selected: i })}
-        />
-      )}
     </div>
   );
 }

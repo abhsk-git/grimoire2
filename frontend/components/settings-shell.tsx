@@ -410,6 +410,9 @@ function EditorTab() {
   return (
     <>
       <Section title="Writing tools">
+        <SettRow label="Formatting toolbar" hint="Show the persistent toolbar with all formatting options">
+          <Toggle checked={e.toolbar} onChange={v => update({ editor: { toolbar: v } })} />
+        </SettRow>
         <SettRow label="Slash command menu" hint="Type / to insert block types">
           <Toggle checked={e.slashMenu} onChange={v => update({ editor: { slashMenu: v } })} />
         </SettRow>
