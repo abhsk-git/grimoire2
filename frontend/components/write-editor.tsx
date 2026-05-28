@@ -264,7 +264,7 @@ function TagChips({
 
 export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const { user, loading: authLoading } = useAuth();
-  const { settings } = useSettings();
+  const { settings, loaded: settingsLoaded } = useSettings();
 
   const [postId, setPostId] = useState<number | null>(initialPostId ?? null);
   const [status, setStatus] = useState<"draft" | "published">("draft");
@@ -295,6 +295,16 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   useEffect(() => {
     if (!authLoading && !user) window.location.href = "/login";
   }, [user, authLoading]);
+
+  // Apply publishing defaults for new posts once settings are loaded
+  useEffect(() => {
+    if (initialPostId || !settingsLoaded) return;
+    setStatus(settings.publishing.defaultVisibility ?? "draft");
+    const defaults = (settings.publishing.defaultTags || "")
+      .split(",").map((t) => t.trim().toLowerCase().replace(/[^\w-]/g, "")).filter(Boolean);
+    if (defaults.length > 0) setTagList(defaults);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsLoaded]);
 
   useEffect(() => {
     fetch("/api/blog/tags")
@@ -531,6 +541,11 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
               {wordCount} {wordCount === 1 ? "word" : "words"}
             </span>
           )}
+          {settings.editor.readingTime && wordCount > 0 && (
+            <span className="write-word-count">
+              {Math.max(1, Math.ceil(wordCount / 200))} min read
+            </span>
+          )}
         </div>
 
         <div className="write-topbar-right">
@@ -643,6 +658,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
                 placeholder="Tell your story…"
                 autofocus={!initialPostId}
                 toolbarEnabled={settings.editor.toolbar}
+                slashMenuEnabled={settings.editor.slashMenu}
               />
             )}
           </div>

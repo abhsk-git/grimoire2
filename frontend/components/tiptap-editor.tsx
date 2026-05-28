@@ -494,13 +494,14 @@ function FixedToolbar({ editor, onImageClick, onYoutubeClick, tick: _, onToggle 
 
 // ── Props ──────────────────────────────────────────────────────────────────
 export interface TiptapEditorProps {
-  initialContent?:  string;
-  onChange?:        (html: string, wordCount: number) => void;
-  onImageUpload?:   (file: File) => Promise<string | null>;
-  onReady?:         () => void;
-  placeholder?:     string;
-  autofocus?:       boolean;
-  toolbarEnabled?:  boolean;
+  initialContent?:   string;
+  onChange?:         (html: string, wordCount: number) => void;
+  onImageUpload?:    (file: File) => Promise<string | null>;
+  onReady?:          () => void;
+  placeholder?:      string;
+  autofocus?:        boolean;
+  toolbarEnabled?:   boolean;
+  slashMenuEnabled?: boolean;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -512,6 +513,7 @@ export function TiptapEditor({
   placeholder = "Tell your story…",
   autofocus = false,
   toolbarEnabled = true,
+  slashMenuEnabled = true,
 }: TiptapEditorProps) {
   const fileInputRef     = useRef<HTMLInputElement>(null);
   const onImageUploadRef = useRef(onImageUpload);
@@ -579,10 +581,14 @@ export function TiptapEditor({
       onChange?.(html, wc);
       setTick(n => n + 1);
 
-      const info = detectSlash(ed);
-      if (info) {
-        const coords = ed.view.coordsAtPos(info.queryEnd);
-        setSlashMenu({ ...info, pos: { top: coords.bottom + 6, left: Math.max(coords.left, 20) }, selected: 0 });
+      if (slashMenuEnabled) {
+        const info = detectSlash(ed);
+        if (info) {
+          const coords = ed.view.coordsAtPos(info.queryEnd);
+          setSlashMenu({ ...info, pos: { top: coords.bottom + 6, left: Math.max(coords.left, 20) }, selected: 0 });
+        } else {
+          setSlashMenu(null);
+        }
       } else {
         setSlashMenu(null);
       }
