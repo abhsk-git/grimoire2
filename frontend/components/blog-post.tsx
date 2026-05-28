@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { useSettings } from "@/lib/settings";
 import { PublicFooter } from "@/components/sections";
 import { editorJsToHtml, sanitizeHtml } from "@/lib/editorjs-renderer";
 
@@ -341,6 +342,8 @@ interface Props {
 
 export function BlogPost({ slug }: Props) {
   const { user } = useAuth();
+  const { settings } = useSettings();
+  const readingMode = settings.appearance.readingMode ?? "spacious";
   const [post, setPost] = useState<Post | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -555,7 +558,7 @@ export function BlogPost({ slug }: Props) {
       )}
 
       {/* Article */}
-      <article className="post-article">
+      <article className={`post-article post-article--${readingMode}`}>
         {tagsList.length > 0 && (
           <div className="post-tag-row">
             {tagsList.map((tag) => (
