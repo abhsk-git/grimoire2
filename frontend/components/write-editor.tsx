@@ -334,7 +334,9 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         if (post.content) {
           const trimmed = post.content.trim();
           // Detect old EditorJS JSON format (starts with "{") vs new Tiptap HTML
-          setInitialContent(trimmed.startsWith("{") ? editorJsToHtml(post.content) : post.content);
+          const html = trimmed.startsWith("{") ? editorJsToHtml(post.content) : post.content;
+          setInitialContent(html);
+          contentRef.current = html; // seed ref so saves before first edit don't wipe content
         } else {
           setInitialContent("");
         }

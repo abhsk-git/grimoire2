@@ -17,3 +17,6 @@ SECURITY_AUDIT.md
 # Uploads (symlinked, not tracked)
 static/
 api/static/uploads/
+
+# One-off local scripts
+restore_posts.py
