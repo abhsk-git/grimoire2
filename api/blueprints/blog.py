@@ -2,6 +2,10 @@ from flask import Blueprint, request, jsonify, render_template, redirect, abort,
 import json, re, unicodedata, os, datetime, ipaddress, socket
 from urllib.parse import urlparse
 from utils import get_db, login_required, optional_auth, verify_token, cache_get, cache_set, cache_delete_prefix
+import nh3
+from bs4 import BeautifulSoup
+import threading
+from mailer import send_comment_notification, send_reply_notification
 
 bp = Blueprint('blog', __name__)
 
@@ -93,24 +97,67 @@ def _reading_time(content):
         return 1
 
 
-def _sanitize_inline(text):
-    """Strip dangerous HTML while preserving EditorJS inline formatting tags."""
+_INLINE_TAGS  = frozenset({'b', 'i', 'u', 's', 'strong', 'em', 'del', 'a', 'code', 'mark', 'sub', 'sup', 'span'})
+_INLINE_ATTRS = {'a': {'href', 'title', 'target'}, 'span': {'style', 'class'}, 'mark': {'style', 'data-color'}}
+
+_TIPTAP_TAGS  = frozenset({
+    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
+    'table', 'thead', 'tbody', 'tr', 'th', 'td',
+    'figure', 'figcaption', 'hr', 'br', 'div', 'span',
+    'strong', 'em', 'b', 'i', 'u', 's', 'del',
+    'a', 'mark', 'sub', 'sup', 'img', 'input',
+    'details', 'summary', 'iframe',
+})
+_TIPTAP_ATTRS = {
+    'a':         {'href', 'title', 'target'},
+    'img':       {'src', 'alt', 'loading', 'class', 'width', 'height'},
+    'span':      {'style', 'class', 'data-type'},
+    'div':       {'class', 'data-type', 'data-callout'},
+    'code':      {'class'},
+    'pre':       {'class'},
+    'th':        {'colspan', 'rowspan'},
+    'td':        {'colspan', 'rowspan'},
+    'input':     {'type', 'checked', 'disabled'},
+    'li':        {'data-checked'},
+    'p':         {'style', 'class'},
+    'h1': {'id'}, 'h2': {'id'}, 'h3': {'id'},
+    'h4': {'id'}, 'h5': {'id'}, 'h6': {'id'},
+    'blockquote': {'style'},
+    'mark':      {'style', 'data-color'},
+    'figure':    {'class'},
+    'details':   {'open'},
+    'ul':        {'data-type'},
+    'ol':        {'start'},
+    'iframe':    {'src', 'frameborder', 'allowfullscreen', 'loading', 'width', 'height'},
+}
+
+
+def _sanitize_inline(text: str) -> str:
+    """Sanitize EditorJS inline HTML with nh3 (allows safe formatting tags only)."""
     if not text:
         return ''
-    # Remove dangerous block-level tags and their content
-    text = re.sub(
-        r'<(?:script|style|iframe|object|embed)[\s>][\s\S]*?</(?:script|style|iframe|object|embed)>',
-        '', text, flags=re.IGNORECASE
-    )
-    # Remove self-closing dangerous tags
-    text = re.sub(r'<(?:script|style|iframe|object|embed)\s*/>', '', text, flags=re.IGNORECASE)
-    # Remove on* event handler attributes ([\s/]+ covers <img/onerror=...> bypass)
-    text = re.sub(r'''[\s/]+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)''', '', text, flags=re.IGNORECASE)
-    # Remove javascript: URI in href/src/action
-    text = re.sub(r'''(?:href|src|action)\s*=\s*["']?\s*javascript:[^"'\s>]*''', '', text, flags=re.IGNORECASE)
-    # Remove data: URIs in src (potential XSS vector)
-    text = re.sub(r'''src\s*=\s*["']?\s*data:[^"'\s>]*''', '', text, flags=re.IGNORECASE)
-    return text
+    return nh3.clean(text, tags=_INLINE_TAGS, attributes=_INLINE_ATTRS, link_rel='noopener noreferrer')
+
+
+def _sanitize_tiptap_html(html: str) -> str:
+    """Sanitize full Tiptap HTML before persisting: strip XSS via nh3, then validate iframe srcs."""
+    if not html:
+        return ''
+    cleaned = nh3.clean(html, tags=_TIPTAP_TAGS, attributes=_TIPTAP_ATTRS, link_rel='noopener noreferrer')
+    # Validate iframe srcs against the embed allowlist
+    soup = BeautifulSoup(cleaned, 'html.parser')
+    safe_hosts = {h.lstrip('www.') for h in _SAFE_EMBED_HOSTS}
+    for iframe in soup.find_all('iframe'):
+        src = iframe.get('src', '')
+        try:
+            parsed = urlparse(src)
+            host = (parsed.hostname or '').lstrip('www.')
+            if parsed.scheme not in ('http', 'https') or host not in safe_hosts:
+                iframe.decompose()
+        except Exception:
+            iframe.decompose()
+    return str(soup)
 
 
 def _to_html(content_json):
@@ -227,6 +274,71 @@ def _normalize_tags(raw):
             seen.add(t)
             out.append(t)
     return ','.join(out)[:300]
+
+
+# ── Notification helpers ───────────────────────────────────────────────────────
+
+def _fire_comment_notifications(cur, post_id: int, parent_id, commenter_user_id, commenter_name: str, comment_text: str):
+    """Dispatch comment/reply notification emails in a background thread."""
+    from blueprints.settings import _load as _load_settings
+
+    try:
+        # Get post info + author
+        cur.execute(
+            'SELECT title, slug, user_id FROM blog_posts WHERE id=%s',
+            (post_id,)
+        )
+        post = cur.fetchone()
+        if not post:
+            return
+
+        post_title     = post['title']
+        post_slug      = post['slug']
+        post_author_id = post['user_id']
+
+        notify_targets = []  # list of (email, name, kind) tuples
+
+        # 1. Notify the post author on any top-level comment (and replies, unless they are the commenter)
+        if post_author_id != commenter_user_id:
+            cur.execute('SELECT email, settings FROM users WHERE id=%s', (post_author_id,))
+            author_row = cur.fetchone()
+            if author_row:
+                author_settings = _load_settings(author_row.get('settings'))
+                if author_settings.get('notifications', {}).get('onComment', True):
+                    notify_targets.append((author_row['email'], 'comment'))
+
+        # 2. Notify the parent commenter if this is a reply
+        if parent_id:
+            cur.execute(
+                'SELECT user_id FROM blog_comments WHERE id=%s',
+                (parent_id,)
+            )
+            parent = cur.fetchone()
+            if parent and parent['user_id'] and parent['user_id'] != commenter_user_id and parent['user_id'] != post_author_id:
+                cur.execute('SELECT email, settings FROM users WHERE id=%s', (parent['user_id'],))
+                parent_row = cur.fetchone()
+                if parent_row:
+                    parent_settings = _load_settings(parent_row.get('settings'))
+                    if parent_settings.get('notifications', {}).get('onReply', True):
+                        notify_targets.append((parent_row['email'], 'reply'))
+
+        if not notify_targets:
+            return
+
+        def _send_all():
+            for email, kind in notify_targets:
+                try:
+                    if kind == 'comment':
+                        send_comment_notification(email, post_title, post_slug, commenter_name, comment_text)
+                    else:
+                        send_reply_notification(email, post_title, post_slug, commenter_name, comment_text)
+                except Exception:
+                    pass
+
+        threading.Thread(target=_send_all, daemon=True).start()
+
+    except Exception:
+        pass  # notifications are best-effort
 
 
 # ── Page routes ───────────────────────────────────────────────────────────────
@@ -349,7 +461,9 @@ def list_posts():
 def create_post():
     data    = request.json or {}
     title   = (data.get('title') or 'Untitled').strip()[:500]
-    content = (data.get('content') or '').strip()
+    raw_content = (data.get('content') or '').strip()
+    # Sanitize Tiptap HTML; leave EditorJS JSON untouched (it's sanitized at render time)
+    content = _sanitize_tiptap_html(raw_content) if not raw_content.lstrip().startswith('{') else raw_content
     excerpt = (data.get('excerpt') or '').strip()[:500]
     cover   = (data.get('cover_image') or '')[:500]
     tags    = _normalize_tags(data.get('tags') or '')
@@ -439,14 +553,15 @@ def update_post(post_id):
 
         old_cover = row.get('cover_image') or ''
 
-        title   = (data.get('title') or 'Untitled').strip()[:500]
-        content = (data.get('content') or '').strip()
-        excerpt  = (data.get('excerpt') or '').strip()[:500]
-        cover    = (data.get('cover_image') or '')[:500]
-        tags     = _normalize_tags(data.get('tags') or '')
-        rtime    = _reading_time(content)
-        raw_slug = (data.get('slug') or _generate_slug(title)).strip()
-        slug     = _unique_slug(cur, raw_slug, exclude_id=post_id)
+        title       = (data.get('title') or 'Untitled').strip()[:500]
+        raw_content = (data.get('content') or '').strip()
+        content     = _sanitize_tiptap_html(raw_content) if not raw_content.lstrip().startswith('{') else raw_content
+        excerpt     = (data.get('excerpt') or '').strip()[:500]
+        cover       = (data.get('cover_image') or '')[:500]
+        tags        = _normalize_tags(data.get('tags') or '')
+        rtime       = _reading_time(content)
+        raw_slug    = (data.get('slug') or _generate_slug(title)).strip()
+        slug        = _unique_slug(cur, raw_slug, exclude_id=post_id)
 
         cur.execute('''
             UPDATE blog_posts SET title=%s,slug=%s,excerpt=%s,content=%s,
@@ -644,6 +759,9 @@ def add_comment(post_id):
         )
         db.commit()
         cid = cur.lastrowid
+
+        # Fire notification emails off the request thread so they don't block the response
+        _fire_comment_notifications(cur, post_id, parent_id, request.user_id, stored_author, content)
 
         if request.user_id:
             cur.execute('''

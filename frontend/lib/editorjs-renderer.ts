@@ -1,16 +1,13 @@
 // Converts EditorJS JSON → sanitized HTML for backward compat with old posts.
+import DOMPurify from "dompurify";
 
 function sanitize(html: string): string {
   if (!html) return "";
-  let s = html.replace(
-    /<(?:script|style|iframe|object|embed)[\s>][\s\S]*?<\/(?:script|style|iframe|object|embed)>/gi,
-    ""
-  );
-  s = s.replace(/<(?:script|style|iframe|object|embed)[^>]*\/>/gi, "");
-  s = s.replace(/[\s/]+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, "");
-  s = s.replace(/(?:href|src|action)\s*=\s*["']?\s*javascript:[^"'\s>]*/gi, "");
-  s = s.replace(/src\s*=\s*["']?\s*data:[^"'\s>]*/gi, "");
-  return s;
+  if (typeof window === "undefined") return html; // SSR: content pre-sanitised server-side
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ["b", "i", "u", "s", "strong", "em", "del", "a", "code", "mark", "sub", "sup", "span"],
+    ALLOWED_ATTR: ["href", "title", "target", "rel", "style", "class", "data-color"],
+  });
 }
 
 function esc(s: string): string {
@@ -26,7 +23,27 @@ function escHtml(s: string): string {
 }
 
 export function sanitizeHtml(html: string): string {
-  return sanitize(html);
+  if (!html) return "";
+  if (typeof window === "undefined") return html;
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      "p", "h1", "h2", "h3", "h4", "h5", "h6",
+      "ul", "ol", "li", "blockquote", "pre", "code",
+      "table", "thead", "tbody", "tr", "th", "td",
+      "figure", "figcaption", "hr", "br", "div", "span",
+      "strong", "em", "b", "i", "u", "s", "del",
+      "a", "mark", "sub", "sup", "img", "input",
+      "details", "summary", "iframe",
+    ],
+    ALLOWED_ATTR: [
+      "href", "title", "target", "rel",
+      "src", "alt", "loading", "class", "width", "height",
+      "style", "id", "colspan", "rowspan",
+      "type", "checked", "disabled", "data-checked", "data-type",
+      "data-callout", "data-color", "start", "open",
+      "frameborder", "allowfullscreen",
+    ],
+  });
 }
 
 export function editorJsToHtml(contentJson: string): string {

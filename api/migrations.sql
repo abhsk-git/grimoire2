@@ -24,3 +24,17 @@ ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS featured TINYINT(1) DEFAULT 0;
 
 -- User settings: JSON blob, synced per-account (editor prefs, theme, etc.)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS settings JSON NULL;
+
+-- Security event log: login success/fail, password changes, resets
+CREATE TABLE IF NOT EXISTS security_log (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event      VARCHAR(64) NOT NULL,
+    user_id    INT NULL,
+    ip         VARCHAR(45) NULL,
+    user_agent VARCHAR(300) NULL,
+    detail     VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_event (event),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

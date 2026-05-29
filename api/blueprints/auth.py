@@ -6,6 +6,26 @@ from extensions import limiter
 
 logger = logging.getLogger(__name__)
 
+
+def _log_security_event(event: str, user_id=None, detail: str = ''):
+    """Write a security event row to the DB. Best-effort — never raises."""
+    try:
+        from utils import get_db
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr or '')[:45]
+        ua = (request.headers.get('User-Agent') or '')[:300]
+        db  = get_db()
+        cur = db.cursor()
+        try:
+            cur.execute(
+                'INSERT INTO security_log (event, user_id, ip, user_agent, detail) VALUES (%s,%s,%s,%s,%s)',
+                (event, user_id, ip, ua, detail[:500])
+            )
+            db.commit()
+        finally:
+            db.close()
+    except Exception:
+        logger.exception('Failed to write security log event: %s', event)
+
 _SECURE_COOKIE = os.environ.get('APP_URL', '').startswith('https')
 
 
@@ -401,12 +421,15 @@ def login():
         cur.execute('SELECT * FROM users WHERE email=%s', (email,))
         user = cur.fetchone()
         if not user or not user.get('password_hash'):
+            _log_security_event('login_fail', detail=f'email={email} reason=no_account')
             return jsonify({'error': 'Invalid credentials'}), 401
         if not bcrypt.checkpw(password.encode(), user['password_hash'].encode()):
+            _log_security_event('login_fail', user_id=user['id'], detail='reason=bad_password')
             return jsonify({'error': 'Invalid credentials'}), 401
         if not user.get('email_verified'):
             return jsonify({'error': 'Please verify your email before signing in. Check your inbox for a verification link.', 'unverified': True}), 403
         token = create_token(user['id'])
+        _log_security_event('login_success', user_id=user['id'])
         resp  = jsonify({
             'success': True,
             'user': {
@@ -756,6 +779,7 @@ def change_password():
         new_hash = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
         cur.execute('UPDATE users SET password_hash=%s WHERE id=%s', (new_hash, request.user_id))
         db.commit()
+        _log_security_event('password_changed', user_id=request.user_id)
     finally:
         db.close()
     return jsonify({'success': True})
@@ -775,6 +799,8 @@ def forgot_password():
         cur.execute('SELECT id, name FROM users WHERE email=%s', (email,))
         user = cur.fetchone()
         # Always return success to avoid email enumeration
+        # Opportunistically purge globally expired tokens (eventual cleanup)
+        cur.execute('DELETE FROM password_resets WHERE expires_at < NOW()')
         if user:
             # Invalidate all previous unused reset tokens for this user
             cur.execute(
@@ -834,6 +860,7 @@ def reset_password():
         # Invalidate ALL reset tokens for this user (not just the one used)
         cur.execute('UPDATE password_resets SET used=1 WHERE user_id=%s', (row['user_id'],))
         db.commit()
+        _log_security_event('password_reset', user_id=row['user_id'])
         return jsonify({'success': True, 'message': 'Password updated. You can now sign in.'})
     except Exception:
         return jsonify({'error': 'Failed to reset password. Please try again.'}), 500
