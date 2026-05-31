@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, render_template, redirect, abort,
 import json, re, unicodedata, os, datetime, ipaddress, socket
 from urllib.parse import urlparse
 from utils import get_db, login_required, optional_auth, verify_token, cache_get, cache_set, cache_delete_prefix
+from extensions import limiter
 import nh3
 from bs4 import BeautifulSoup
 import threading
@@ -36,6 +37,33 @@ def _is_safe_external_url(url: str) -> bool:
         return True
     except Exception:
         return False
+
+
+def _validate_comment_media(media_url, media_type):
+    """Validate an optional comment attachment.
+
+    Returns (url, type) to store, (None, None) when no media was supplied,
+    or False when media was supplied but is not allowed.
+
+    GIFs must be https URLs on *.giphy.com (we only ever hand out GIPHY URLs
+    via the proxy). Stickers must point at our own self-hosted pack. This keeps
+    comment media to an allowlist — no arbitrary user-supplied image URLs.
+    """
+    if not media_url:
+        return (None, None)
+    media_url = str(media_url).strip()[:512]
+    if media_type not in ('gif', 'sticker'):
+        return False
+    if media_type == 'sticker':
+        if not re.fullmatch(r'/static/stickers/[a-z0-9_-]+\.svg', media_url):
+            return False
+    else:  # gif
+        p = urlparse(media_url)
+        host = (p.hostname or '').lower()
+        if p.scheme != 'https' or not (host == 'giphy.com' or host.endswith('.giphy.com')):
+            return False
+    return (media_url, media_type)
+
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -697,8 +725,8 @@ def get_comments(post_id):
     cur = db.cursor(dictionary=True)
     try:
         cur.execute('''
-            SELECT c.id, c.content, c.author_name, c.user_id, c.created_at,
-                   c.parent_id, c.likes, c.dislikes,
+            SELECT c.id, c.content, c.media_url, c.media_type, c.author_name,
+                   c.user_id, c.created_at, c.parent_id, c.likes, c.dislikes,
                    u.name as user_name, u.avatar as user_avatar
             FROM blog_comments c
             LEFT JOIN users u ON c.user_id=u.id
@@ -729,7 +757,11 @@ def get_comments(post_id):
 def add_comment(post_id):
     data       = request.json or {}
     content    = (data.get('content') or '').strip()[:2000]
-    if not content:
+    media      = _validate_comment_media(data.get('media_url'), data.get('media_type'))
+    if media is False:
+        return jsonify({'error': 'Invalid attachment'}), 400
+    media_url, media_type = media
+    if not content and not media_url:
         return jsonify({'error': 'Comment cannot be empty'}), 400
     guest_name = (data.get('author_name') or 'Anonymous').strip()[:100]
     parent_id  = data.get('parent_id') or None
@@ -754,25 +786,28 @@ def add_comment(post_id):
             stored_author = guest_name
 
         cur.execute(
-            'INSERT INTO blog_comments (post_id,parent_id,user_id,author_name,content) VALUES (%s,%s,%s,%s,%s)',
-            (post_id, parent_id, request.user_id, stored_author, content)
+            'INSERT INTO blog_comments (post_id,parent_id,user_id,author_name,content,media_url,media_type) '
+            'VALUES (%s,%s,%s,%s,%s,%s,%s)',
+            (post_id, parent_id, request.user_id, stored_author, content, media_url, media_type)
         )
         db.commit()
         cid = cur.lastrowid
 
         # Fire notification emails off the request thread so they don't block the response
-        _fire_comment_notifications(cur, post_id, parent_id, request.user_id, stored_author, content)
+        notify_text = content or ('[sticker]' if media_type == 'sticker' else '[GIF]')
+        _fire_comment_notifications(cur, post_id, parent_id, request.user_id, stored_author, notify_text)
 
         if request.user_id:
             cur.execute('''
-                SELECT c.id, c.content, c.author_name, c.user_id, c.created_at,
-                       c.parent_id, c.likes, c.dislikes,
+                SELECT c.id, c.content, c.media_url, c.media_type, c.author_name,
+                       c.user_id, c.created_at, c.parent_id, c.likes, c.dislikes,
                        u.name as user_name, u.avatar as user_avatar
                 FROM blog_comments c JOIN users u ON c.user_id=u.id WHERE c.id=%s
             ''', (cid,))
         else:
             cur.execute(
-                'SELECT id,content,author_name,user_id,created_at,parent_id,likes,dislikes FROM blog_comments WHERE id=%s',
+                'SELECT id,content,media_url,media_type,author_name,user_id,created_at,parent_id,likes,dislikes '
+                'FROM blog_comments WHERE id=%s',
                 (cid,)
             )
         c = cur.fetchone()
@@ -889,6 +924,93 @@ def vote_comment(comment_id):
         return jsonify({'error': 'Failed to vote'}), 500
     finally:
         db.close()
+
+
+# ── GIF + sticker pickers for comments ────────────────────────────────────────
+# Tenor (Google) stopped accepting new API clients in Jan 2026 and shuts down
+# entirely on 2026-06-30, so this proxies GIPHY instead.
+GIPHY_BASE = 'https://api.giphy.com/v1/gifs'
+
+
+@bp.route('/api/blog/gifs', methods=['GET'])
+@limiter.limit('60 per minute; 600 per hour')
+def gif_search():
+    """Server-side proxy for GIPHY. Keeps the API key off the client and lets
+    the rate limiter throttle abuse. Empty query returns GIPHY's trending feed."""
+    key = os.environ.get('GIPHY_KEY', '')
+    if not key:
+        return jsonify({'error': 'GIF search is not configured', 'results': []}), 503
+
+    q = (request.args.get('q') or '').strip()[:80]
+    try:
+        offset = max(0, min(int(request.args.get('pos') or 0), 4999))
+    except (ValueError, TypeError):
+        offset = 0
+
+    import requests as http_requests
+    params = {
+        'api_key': key,
+        'limit':   24,
+        'offset':  offset,
+        'rating':  'pg-13',
+        'bundle':  'messaging_non_clips',
+    }
+    if q:
+        params['q'] = q
+        endpoint = f'{GIPHY_BASE}/search'
+    else:
+        endpoint = f'{GIPHY_BASE}/trending'
+
+    try:
+        r    = http_requests.get(endpoint, params=params, timeout=8)
+        data = r.json()
+    except Exception:
+        return jsonify({'error': 'GIF service unavailable', 'results': []}), 502
+
+    out = []
+    for item in data.get('data', []):
+        images  = item.get('images', {}) or {}
+        full    = images.get('original', {}) or {}
+        preview = images.get('fixed_width', {}) or images.get('downsized', {}) or full
+        url     = full.get('url')
+        if not url:
+            continue
+        try:
+            dims = [int(full.get('width') or 0), int(full.get('height') or 0)]
+        except (ValueError, TypeError):
+            dims = [0, 0]
+        out.append({
+            'id':          item.get('id'),
+            'url':         url,
+            'preview':     preview.get('url') or url,
+            'dims':        dims,
+            'description': (item.get('title') or 'gif')[:120],
+        })
+    next_offset = offset + len(out)
+    return jsonify({'results': out, 'next': str(next_offset) if out else ''})
+
+
+@bp.route('/api/blog/stickers', methods=['GET'])
+def list_stickers():
+    """Manifest for the self-hosted weeb sticker pack (api/static/stickers)."""
+    sticker_dir   = os.path.join(_HERE, '..', 'static', 'stickers')
+    manifest_path = os.path.join(sticker_dir, 'manifest.json')
+    items = []
+    try:
+        with open(manifest_path, encoding='utf-8') as f:
+            manifest = json.load(f)
+        for s in manifest:
+            sid = s.get('id', '')
+            if re.fullmatch(r'[a-z0-9_-]+', sid) and \
+               os.path.exists(os.path.join(sticker_dir, f'{sid}.svg')):
+                items.append({
+                    'id':    sid,
+                    'label': s.get('label', sid),
+                    'url':   f'/static/stickers/{sid}.svg',
+                })
+    except Exception:
+        pass
+    return jsonify(items)
 
 
 @bp.route('/api/blog/my-posts', methods=['GET'])

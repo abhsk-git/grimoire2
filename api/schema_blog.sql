@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS blog_comments (
   user_id     INT NULL,
   author_name VARCHAR(100) DEFAULT 'Anonymous',
   content     TEXT NOT NULL,
+  media_url   VARCHAR(512) NULL,
+  media_type  ENUM('gif','sticker') NULL,
   likes       INT UNSIGNED DEFAULT 0,
   dislikes    INT UNSIGNED DEFAULT 0,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

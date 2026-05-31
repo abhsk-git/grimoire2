@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff1a8"/><stop offset="1" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="112" height="112" rx="30" fill="url(#g)"/>
+  <rect x="4" y="4" width="112" height="56" rx="30" fill="#fff" opacity="0.2"/>
+  <circle cx="40" cy="52" r="11" fill="#fff"/><circle cx="40" cy="52" r="5" fill="#3b2606"/>
+  <circle cx="80" cy="52" r="11" fill="#fff"/><circle cx="80" cy="52" r="5" fill="#3b2606"/>
+  <ellipse cx="60" cy="84" rx="13" ry="17" fill="#7a3e09"/>
+  <ellipse cx="60" cy="80" rx="8" ry="10" fill="#c2410c"/>
+  <text x="60" y="116" font-family="Arial Black, Arial, sans-serif" font-size="13" font-weight="900" fill="#7a4e09" text-anchor="middle">POG</text>
+</svg>

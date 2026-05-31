@@ -6,6 +6,11 @@ import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { PublicFooter } from "@/components/sections";
 import { editorJsToHtml, sanitizeHtml } from "@/lib/editorjs-renderer";
+import {
+  CommentMediaBar,
+  CommentMediaPreview,
+  type CommentMedia,
+} from "@/components/gif-sticker-picker";
 
 interface Post {
   id: number;
@@ -31,6 +36,8 @@ interface Post {
 interface Comment {
   id: number;
   content: string;
+  media_url?: string | null;
+  media_type?: "gif" | "sticker" | null;
   display_name: string;
   author_name: string;
   avatar: string;
@@ -137,6 +144,7 @@ function CommentCard({
   const [dislikes, setDislikes] = useState(comment.dislikes ?? 0);
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [replyMedia, setReplyMedia] = useState<CommentMedia | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
   const [localReplies, setLocalReplies] = useState<Comment[]>(
@@ -180,7 +188,7 @@ function CommentCard({
   }
 
   async function submitReply() {
-    if (!replyText.trim() || submitting) return;
+    if ((!replyText.trim() && !replyMedia) || submitting) return;
     setSubmitting(true);
     try {
       const r = await fetch(`/api/blog/posts/${postId}/comments`, {
@@ -190,6 +198,8 @@ function CommentCard({
         body: JSON.stringify({
           content: replyText,
           parent_id: comment.id,
+          media_url: replyMedia?.url,
+          media_type: replyMedia?.type,
         }),
       });
       if (r.ok) {
@@ -199,6 +209,7 @@ function CommentCard({
           { ...nr, likes: 0, dislikes: 0, parent_id: comment.id, replies: [] },
         ]);
         setReplyText("");
+        setReplyMedia(null);
         setShowReply(false);
         setShowReplies(true);
       }
@@ -239,7 +250,21 @@ function CommentCard({
           )}
         </div>
 
-        <p className="cmt-text">{comment.content}</p>
+        {comment.content && <p className="cmt-text">{comment.content}</p>}
+
+        {comment.media_url && (
+          <div
+            className={`cmt-media${
+              comment.media_type === "sticker" ? " is-sticker" : ""
+            }`}
+          >
+            <img
+              src={comment.media_url}
+              alt={comment.media_type === "sticker" ? "sticker" : "gif"}
+              loading="lazy"
+            />
+          </div>
+        )}
 
         <div className="cmt-actions">
           <button
@@ -283,17 +308,24 @@ function CommentCard({
               onChange={(e) => setReplyText(e.target.value)}
               autoFocus
             />
+            {replyMedia && (
+              <CommentMediaPreview
+                media={replyMedia}
+                onClear={() => setReplyMedia(null)}
+              />
+            )}
             <div className="cmt-reply-btns">
+              <CommentMediaBar setMedia={setReplyMedia} />
               <button
                 className="btn btn-primary btn-sm"
                 onClick={submitReply}
-                disabled={submitting || !replyText.trim()}
+                disabled={submitting || (!replyText.trim() && !replyMedia)}
               >
                 {submitting ? "Posting…" : "Post reply"}
               </button>
               <button
                 className="cmt-cancel-btn"
-                onClick={() => { setShowReply(false); setReplyText(""); }}
+                onClick={() => { setShowReply(false); setReplyText(""); setReplyMedia(null); }}
               >
                 Cancel
               </button>
@@ -350,6 +382,7 @@ export function BlogPost({ slug }: Props) {
   const [likeCount, setLikeCount] = useState(0);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
+  const [composeMedia, setComposeMedia] = useState<CommentMedia | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
@@ -428,13 +461,17 @@ export function BlogPost({ slug }: Props) {
   }
 
   async function submitComment() {
-    if (!post || !user || !commentText.trim() || submitting) return;
+    if (!post || !user || (!commentText.trim() && !composeMedia) || submitting) return;
     setSubmitting(true);
     const r = await fetch(`/api/blog/posts/${post.id}/comments`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: commentText }),
+      body: JSON.stringify({
+        content: commentText,
+        media_url: composeMedia?.url,
+        media_type: composeMedia?.type,
+      }),
     });
     setSubmitting(false);
     if (r.ok) {
@@ -444,6 +481,7 @@ export function BlogPost({ slug }: Props) {
         { ...c, likes: c.likes ?? 0, dislikes: c.dislikes ?? 0, parent_id: null, replies: [] },
       ]);
       setCommentText("");
+      setComposeMedia(null);
     }
   }
 
@@ -636,11 +674,18 @@ export function BlogPost({ slug }: Props) {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
               />
+              {composeMedia && (
+                <CommentMediaPreview
+                  media={composeMedia}
+                  onClear={() => setComposeMedia(null)}
+                />
+              )}
               <div className="cmt-compose-footer">
+                <CommentMediaBar setMedia={setComposeMedia} />
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={submitComment}
-                  disabled={submitting || !commentText.trim()}
+                  disabled={submitting || (!commentText.trim() && !composeMedia)}
                 >
                   {submitting ? "Posting…" : "Post"}
                 </button>
