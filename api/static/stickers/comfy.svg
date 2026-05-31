@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe6d0"/><stop offset="1" stop-color="#ffb88c"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="112" height="112" rx="30" fill="url(#g)"/>
+  <rect x="4" y="4" width="112" height="56" rx="30" fill="#fff" opacity="0.2"/>
+  <path d="M28 58 q12 -10 24 0" fill="none" stroke="#8a4a22" stroke-width="6" stroke-linecap="round"/>
+  <path d="M68 58 q12 -10 24 0" fill="none" stroke="#8a4a22" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="33" cy="76" r="9" fill="#ff9a76" opacity="0.6"/>
+  <circle cx="87" cy="76" r="9" fill="#ff9a76" opacity="0.6"/>
+  <path d="M48 78 q12 14 24 0" fill="none" stroke="#8a4a22" stroke-width="6" stroke-linecap="round"/>
+  <text x="60" y="112" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#8a4a22" text-anchor="middle">&gt;w&lt; comfy</text>
+</svg>

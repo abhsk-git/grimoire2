@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="112" height="112" rx="30" fill="url(#g)"/>
+  <rect x="4" y="4" width="112" height="56" rx="30" fill="#fff" opacity="0.2"/>
+  <path d="M24 52 q14 -10 28 0" fill="none" stroke="#7a4e09" stroke-width="6" stroke-linecap="round"/>
+  <path d="M68 52 q14 -10 28 0" fill="none" stroke="#7a4e09" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="44" cy="66" rx="11" ry="9" fill="#fff"/><circle cx="49" cy="66" r="5" fill="#3b2606"/>
+  <ellipse cx="80" cy="66" rx="11" ry="9" fill="#fff"/><circle cx="85" cy="66" r="5" fill="#3b2606"/>
+  <path d="M46 90 q14 -6 28 0" fill="none" stroke="#7a4e09" stroke-width="6" stroke-linecap="round"/>
+  <text x="60" y="112" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#7a4e09" text-anchor="middle">sus…</text>
+</svg>

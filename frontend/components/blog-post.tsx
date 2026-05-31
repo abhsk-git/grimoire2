@@ -6,6 +6,12 @@ import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { PublicFooter } from "@/components/sections";
 import { editorJsToHtml, sanitizeHtml } from "@/lib/editorjs-renderer";
+import {
+  GifPanel,
+  CommentMediaPreview,
+  giphyLight,
+  type CommentMedia,
+} from "@/components/gif-sticker-picker";
 
 interface Post {
   id: number;
@@ -31,10 +37,13 @@ interface Post {
 interface Comment {
   id: number;
   content: string;
+  media_url?: string | null;
+  media_type?: "gif" | "sticker" | null;
   display_name: string;
   author_name: string;
   avatar: string;
   author_avatar: string;
+  handle?: string | null;
   user_id: number | null;
   created_at: string;
   parent_id: number | null;
@@ -52,6 +61,30 @@ function fmtDate(iso: string | null): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function relTime(iso: string | null): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  const secs = Math.max(0, (Date.now() - then) / 1000);
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  const wks = Math.floor(days / 7);
+  if (wks < 5) return `${wks}w ago`;
+  return fmtDate(iso);
+}
+
+// Total comments including nested replies.
+function countComments(list: Comment[]): number {
+  return list.reduce(
+    (n, c) => n + 1 + (c.replies ? countComments(c.replies) : 0),
+    0
+  );
 }
 
 function avatarFallback(name: string): string {
@@ -110,14 +143,58 @@ function buildCommentTree(flat: Comment[]): Comment[] {
   return roots;
 }
 
-// ── Comment card (recursive for replies) ─────────────────────────────────────
+function commentName(c: Comment): string {
+  return c.display_name || c.author_name || "Anonymous";
+}
+
+// Collapse a comment's whole subtree into one chronological list. The thread is
+// only ever one level deep: every descendant (reply, reply-to-reply, …) lives
+// in the single flat list under its root comment, so nothing keeps indenting.
+function flattenReplies(node: Comment): Comment[] {
+  const out: Comment[] = [];
+  const walk = (n: Comment) => {
+    for (const child of n.replies ?? []) {
+      out.push(child);
+      walk(child);
+    }
+  };
+  walk(node);
+  return out.sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+}
+
+// Collect a comment id + every descendant id within a flat list (by parent_id),
+// so an optimistic delete removes the whole subtree — matching the backend.
+function collectSubtree(flat: Comment[], rootId: number): Set<number> {
+  const remove = new Set<number>([rootId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const c of flat) {
+      if (c.parent_id != null && remove.has(c.parent_id) && !remove.has(c.id)) {
+        remove.add(c.id);
+        grew = true;
+      }
+    }
+  }
+  return remove;
+}
+
+// ── Comment card ──────────────────────────────────────────────────────────────
+// A root comment owns its entire thread; replies render flat (isReply) and bubble
+// any further reply up to the root via onReplyAdded so the tree never deepens.
 interface CommentCardProps {
   comment: Comment;
   postId: number;
   postIsOwner: boolean;
+  postAuthorId: number;
   currentUserId: number | null | undefined;
   isLoggedIn: boolean;
-  depth?: number;
+  isReply?: boolean;
+  parentName?: string;
+  onReplyAdded?: (c: Comment) => void;
   onDelete: (id: number) => void;
 }
 
@@ -125,26 +202,31 @@ function CommentCard({
   comment,
   postId,
   postIsOwner,
+  postAuthorId,
   currentUserId,
   isLoggedIn,
-  depth = 0,
+  isReply = false,
+  parentName,
+  onReplyAdded,
   onDelete,
 }: CommentCardProps) {
   const [vote, setVote] = useState<number>(() =>
     typeof window !== "undefined" ? getStoredVote(comment.id) : 0
   );
   const [likes, setLikes] = useState(comment.likes ?? 0);
-  const [dislikes, setDislikes] = useState(comment.dislikes ?? 0);
+  const [, setDislikes] = useState(comment.dislikes ?? 0);
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [replyMedia, setReplyMedia] = useState<CommentMedia | null>(null);
+  const [replyGifOpen, setReplyGifOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
-  const [localReplies, setLocalReplies] = useState<Comment[]>(
-    comment.replies ?? []
+  // Root-only: the single flat thread of all descendants.
+  const [threadReplies, setThreadReplies] = useState<Comment[]>(() =>
+    isReply ? [] : flattenReplies(comment)
   );
 
-  const displayName =
-    comment.display_name || comment.author_name || "Anonymous";
+  const displayName = commentName(comment);
   const avatar =
     comment.avatar || comment.author_avatar || avatarFallback(displayName);
   const canDelete = !!(
@@ -152,14 +234,78 @@ function CommentCard({
     (currentUserId === comment.user_id || postIsOwner)
   );
 
+  // Map id → author name so a flattened reply can show who it answered.
+  const nameById = useMemo(() => {
+    const m = new Map<number, string>();
+    m.set(comment.id, displayName);
+    for (const r of threadReplies) m.set(r.id, commentName(r));
+    return m;
+  }, [comment.id, displayName, threadReplies]);
+
+  const addToThread = (c: Comment) =>
+    setThreadReplies((prev) => [...prev, c]);
+
+  // The avatar is both a profile link (single click/tap) and the delete
+  // affordance for your own comments (double-click on desktop / long-press on
+  // touch → inline confirm). Single vs double click is disambiguated with a
+  // short timer; a long-press swallows the click that follows it.
+  const authorHref = comment.handle ? `/user/${comment.handle}` : null;
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const pressTimer = useRef<number | null>(null);
+  const clickTimer = useRef<number | null>(null);
+  const longPressedRef = useRef(false);
+
+  async function doDelete() {
+    setConfirmDelete(false);
+    try {
+      const r = await fetch(`/api/blog/comments/${comment.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (r.ok) onDelete(comment.id);
+    } catch {}
+  }
+  function goToProfile() {
+    if (authorHref) window.location.href = authorHref;
+  }
+  function handleAvatarClick() {
+    if (longPressedRef.current) { longPressedRef.current = false; return; }
+    if (!authorHref) return;
+    if (!canDelete) { goToProfile(); return; } // no delete gesture to wait on
+    if (clickTimer.current != null) return;
+    clickTimer.current = window.setTimeout(() => {
+      clickTimer.current = null;
+      goToProfile();
+    }, 250);
+  }
+  function handleAvatarDoubleClick() {
+    if (clickTimer.current != null) {
+      window.clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    if (canDelete) setConfirmDelete(true);
+  }
+  function startPress() {
+    if (!canDelete) return;
+    longPressedRef.current = false;
+    pressTimer.current = window.setTimeout(() => {
+      longPressedRef.current = true;
+      setConfirmDelete(true);
+    }, 600);
+  }
+  function cancelPress() {
+    if (pressTimer.current != null) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
   async function castVote(v: 1 | -1) {
     const wasVote = vote;
     const newVote = wasVote === v ? 0 : v;
     setVote(newVote);
     if (wasVote === 1) setLikes((l) => Math.max(0, l - 1));
-    if (wasVote === -1) setDislikes((d) => Math.max(0, d - 1));
     if (newVote === 1) setLikes((l) => l + 1);
-    if (newVote === -1) setDislikes((d) => d + 1);
     saveVote(comment.id, newVote);
     try {
       const r = await fetch(`/api/blog/comments/${comment.id}/vote`, {
@@ -180,7 +326,7 @@ function CommentCard({
   }
 
   async function submitReply() {
-    if (!replyText.trim() || submitting) return;
+    if ((!replyText.trim() && !replyMedia) || submitting) return;
     setSubmitting(true);
     try {
       const r = await fetch(`/api/blog/posts/${postId}/comments`, {
@@ -190,17 +336,27 @@ function CommentCard({
         body: JSON.stringify({
           content: replyText,
           parent_id: comment.id,
+          media_url: replyMedia?.url,
+          media_type: replyMedia?.type,
         }),
       });
       if (r.ok) {
         const nr: Comment = await r.json();
-        setLocalReplies((prev) => [
-          ...prev,
-          { ...nr, likes: 0, dislikes: 0, parent_id: comment.id, replies: [] },
-        ]);
+        const reply: Comment = {
+          ...nr,
+          likes: 0,
+          dislikes: 0,
+          parent_id: comment.id,
+          replies: [],
+        };
+        // Replies always land in the root's single thread.
+        if (isReply) onReplyAdded?.(reply);
+        else addToThread(reply);
         setReplyText("");
+        setReplyMedia(null);
         setShowReply(false);
-        setShowReplies(true);
+        setReplyGifOpen(false);
+        if (!isReply) setShowReplies(true);
       }
     } finally {
       setSubmitting(false);
@@ -208,68 +364,93 @@ function CommentCard({
   }
 
   return (
-    <div className={`cmt-row${depth > 0 ? " cmt-reply" : ""}`}>
+    <div className={`cmt-row${isReply ? " cmt-reply" : ""}`}>
       <img
-        className="cmt-avatar"
+        className={`cmt-avatar${canDelete ? " cmt-deletable" : ""}${authorHref ? " cmt-clickable" : ""}`}
         src={avatar}
         alt={displayName}
+        draggable={false}
+        title={
+          canDelete
+            ? "Click to view profile · double-click or long-press to delete"
+            : authorHref
+            ? "View profile"
+            : undefined
+        }
         onError={(e) => {
           (e.target as HTMLImageElement).src = avatarFallback(displayName);
         }}
+        onClick={handleAvatarClick}
+        onDoubleClick={handleAvatarDoubleClick}
+        onTouchStart={startPress}
+        onTouchEnd={cancelPress}
+        onTouchMove={cancelPress}
+        onTouchCancel={cancelPress}
+        onContextMenu={(e) => canDelete && e.preventDefault()}
       />
       <div className="cmt-body">
         <div className="cmt-meta">
           <span className="cmt-author">{displayName}</span>
-          <span className="cmt-date">{fmtDate(comment.created_at)}</span>
-          {canDelete && (
-            <button
-              className="cmt-del"
-              onClick={async () => {
-                try {
-                  const r = await fetch(`/api/blog/comments/${comment.id}`, {
-                    method: "DELETE",
-                    credentials: "include",
-                  });
-                  if (r.ok) onDelete(comment.id);
-                } catch {}
-              }}
-            >
-              delete
-            </button>
+          {comment.user_id != null && comment.user_id === postAuthorId && (
+            <span className="cmt-author-badge">Author</span>
           )}
+          {parentName && (
+            <span className="cmt-reply-to">↳ {parentName}</span>
+          )}
+          <span className="cmt-date">{relTime(comment.created_at)}</span>
         </div>
 
-        <p className="cmt-text">{comment.content}</p>
+        {confirmDelete && (
+          <div className="cmt-confirm">
+            <span>Delete this comment?</span>
+            <button className="cmt-confirm-yes" onClick={doDelete}>Delete</button>
+            <button className="cmt-confirm-no" onClick={() => setConfirmDelete(false)}>Cancel</button>
+          </div>
+        )}
+
+        {comment.content && <p className="cmt-text">{comment.content}</p>}
+
+        {comment.media_url && (
+          <div
+            className={`cmt-media${
+              comment.media_type === "sticker" ? " is-sticker" : ""
+            }`}
+          >
+            <img
+              src={comment.media_type === "sticker" ? comment.media_url : giphyLight(comment.media_url)}
+              alt={comment.media_type === "sticker" ? "sticker" : "gif"}
+              loading="lazy"
+              decoding="async"
+            />
+            {comment.media_type !== "sticker" && (
+              <span className="cmt-media-badge">GIF</span>
+            )}
+          </div>
+        )}
 
         <div className="cmt-actions">
           <button
-            className={`cmt-vote${vote === 1 ? " up" : ""}`}
+            className={`cmt-act${vote === 1 ? " is-liked" : ""}`}
             onClick={() => castVote(1)}
-            title="Upvote"
+            title="Like"
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3 22 21H2z" />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={vote === 1 ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             {likes > 0 && <span>{likes}</span>}
           </button>
           <button
-            className={`cmt-vote${vote === -1 ? " down" : ""}`}
-            onClick={() => castVote(-1)}
-            title="Downvote"
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 21 2 3h20z" />
-            </svg>
-            {dislikes > 0 && <span>{dislikes}</span>}
-          </button>
-          <button
-            className={`cmt-reply-btn${showReply ? " active" : ""}`}
+            className={`cmt-act${showReply ? " active" : ""}`}
             onClick={() => {
               if (!isLoggedIn) { window.location.href = "/login"; return; }
               setShowReply((p) => !p);
             }}
           >
-            ↩ Reply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="9 17 4 12 9 7" />
+              <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+            </svg>
+            Reply
           </button>
         </div>
 
@@ -283,47 +464,80 @@ function CommentCard({
               onChange={(e) => setReplyText(e.target.value)}
               autoFocus
             />
+            {replyMedia && (
+              <CommentMediaPreview
+                media={replyMedia}
+                onClear={() => setReplyMedia(null)}
+              />
+            )}
             <div className="cmt-reply-btns">
+              <div className="cmt-media-tools">
+                <button
+                  type="button"
+                  className={`cmt-media-btn${replyGifOpen ? " active" : ""}`}
+                  onClick={() => setReplyGifOpen((p) => !p)}
+                  aria-expanded={replyGifOpen}
+                >
+                  GIF
+                </button>
+              </div>
               <button
                 className="btn btn-primary btn-sm"
                 onClick={submitReply}
-                disabled={submitting || !replyText.trim()}
+                disabled={submitting || (!replyText.trim() && !replyMedia)}
               >
                 {submitting ? "Posting…" : "Post reply"}
               </button>
               <button
                 className="cmt-cancel-btn"
-                onClick={() => { setShowReply(false); setReplyText(""); }}
+                onClick={() => { setShowReply(false); setReplyText(""); setReplyMedia(null); setReplyGifOpen(false); }}
               >
                 Cancel
               </button>
             </div>
+            <GifPanel
+              open={replyGifOpen}
+              onSelect={(m) => {
+                setReplyMedia(m);
+                setReplyGifOpen(false);
+              }}
+            />
           </div>
         )}
 
-        {localReplies.length > 0 && depth < 2 && (
+        {!isReply && threadReplies.length > 0 && (
           <div className="cmt-thread">
             <button
               className="cmt-toggle"
               onClick={() => setShowReplies((p) => !p)}
             >
               <span className="cmt-toggle-arrow">{showReplies ? "▾" : "▸"}</span>
-              {showReplies ? "Hide" : "Show"} {localReplies.length}{" "}
-              {localReplies.length === 1 ? "reply" : "replies"}
+              {showReplies ? "Hide" : "Show"} {threadReplies.length}{" "}
+              {threadReplies.length === 1 ? "reply" : "replies"}
             </button>
             {showReplies && (
               <div className="cmt-replies">
-                {localReplies.map((r) => (
+                {threadReplies.map((r) => (
                   <CommentCard
                     key={r.id}
                     comment={r}
                     postId={postId}
                     postIsOwner={postIsOwner}
+                    postAuthorId={postAuthorId}
                     currentUserId={currentUserId}
                     isLoggedIn={isLoggedIn}
-                    depth={depth + 1}
+                    isReply
+                    parentName={
+                      r.parent_id != null && r.parent_id !== comment.id
+                        ? nameById.get(r.parent_id)
+                        : undefined
+                    }
+                    onReplyAdded={addToThread}
                     onDelete={(id) =>
-                      setLocalReplies((prev) => prev.filter((x) => x.id !== id))
+                      setThreadReplies((prev) => {
+                        const remove = collectSubtree(prev, id);
+                        return prev.filter((x) => !remove.has(x.id));
+                      })
                     }
                   />
                 ))}
@@ -350,10 +564,16 @@ export function BlogPost({ slug }: Props) {
   const [likeCount, setLikeCount] = useState(0);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
+  const [composeMedia, setComposeMedia] = useState<CommentMedia | null>(null);
+  const [gifOpen, setGifOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [justLiked, setJustLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [following, setFollowing] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
   const progressRef = useRef<HTMLDivElement>(null);
+  const discussRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/blog/posts/slug/${slug}`, { credentials: "include" })
@@ -377,6 +597,43 @@ export function BlogPost({ slug }: Props) {
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setComments(Array.isArray(data) ? data : []));
   }, [post]);
+
+  // Save/Follow have no backend yet — persist the toggle locally so it survives reloads.
+  useEffect(() => {
+    if (!post) return;
+    try {
+      const saves = JSON.parse(localStorage.getItem("grimoire_saved_posts") || "[]");
+      setSaved(Array.isArray(saves) && saves.includes(post.id));
+      const follows = JSON.parse(localStorage.getItem("grimoire_following") || "[]");
+      setFollowing(Array.isArray(follows) && follows.includes(post.user_id));
+    } catch {}
+  }, [post]);
+
+  function toggleSave() {
+    if (!post) return;
+    setSaved((prev) => {
+      const next = !prev;
+      try {
+        const saves: number[] = JSON.parse(localStorage.getItem("grimoire_saved_posts") || "[]");
+        const updated = next ? [...new Set([...saves, post.id])] : saves.filter((x) => x !== post.id);
+        localStorage.setItem("grimoire_saved_posts", JSON.stringify(updated));
+      } catch {}
+      return next;
+    });
+  }
+
+  function toggleFollow() {
+    if (!post) return;
+    setFollowing((prev) => {
+      const next = !prev;
+      try {
+        const follows: number[] = JSON.parse(localStorage.getItem("grimoire_following") || "[]");
+        const updated = next ? [...new Set([...follows, post.user_id])] : follows.filter((x) => x !== post.user_id);
+        localStorage.setItem("grimoire_following", JSON.stringify(updated));
+      } catch {}
+      return next;
+    });
+  }
 
   useEffect(() => {
     function onScroll() {
@@ -415,41 +672,41 @@ export function BlogPost({ slug }: Props) {
     });
     if (r.ok) {
       const data = await r.json();
-      setLiked(data.action === "liked");
-      setLikeCount(data.likes ?? (data.action === "liked" ? likeCount + 1 : Math.max(0, likeCount - 1)));
+      const nowLiked = data.action === "liked";
+      setLiked(nowLiked);
+      if (nowLiked) {
+        setJustLiked(true);
+        setTimeout(() => setJustLiked(false), 360);
+      }
+      setLikeCount(data.likes ?? (nowLiked ? likeCount + 1 : Math.max(0, likeCount - 1)));
     }
   }
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 1400);
     });
   }
 
-  function shareTwitter() {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(post?.title || "")}&url=${encodeURIComponent(window.location.href)}`;
-    window.open(url, "_blank", "noopener");
-  }
-
-  function shareReddit() {
-    const url = `https://www.reddit.com/submit?url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent(post?.title || "")}`;
-    window.open(url, "_blank", "noopener");
-  }
-
-  function shareLinkedIn() {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`;
-    window.open(url, "_blank", "noopener");
+  function scrollToDiscuss() {
+    if (!discussRef.current) return;
+    const y = discussRef.current.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: y, behavior: "smooth" });
   }
 
   async function submitComment() {
-    if (!post || !user || !commentText.trim() || submitting) return;
+    if (!post || !user || (!commentText.trim() && !composeMedia) || submitting) return;
     setSubmitting(true);
     const r = await fetch(`/api/blog/posts/${post.id}/comments`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: commentText }),
+      body: JSON.stringify({
+        content: commentText,
+        media_url: composeMedia?.url,
+        media_type: composeMedia?.type,
+      }),
     });
     setSubmitting(false);
     if (r.ok) {
@@ -459,6 +716,7 @@ export function BlogPost({ slug }: Props) {
         { ...c, likes: c.likes ?? 0, dislikes: c.dislikes ?? 0, parent_id: null, replies: [] },
       ]);
       setCommentText("");
+      setComposeMedia(null);
     }
   }
 
@@ -512,6 +770,9 @@ export function BlogPost({ slug }: Props) {
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
+  const authorHref = `/user/${
+    post.author_handle ?? post.author_name.toLowerCase().replace(/\s+/g, "-")
+  }`;
   const rawContent = post.content || "";
   const contentHtml = rawContent.trim().startsWith("{")
     ? editorJsToHtml(rawContent)
@@ -550,19 +811,32 @@ export function BlogPost({ slug }: Props) {
         </div>
       </header>
 
-      {/* Cover */}
-      {post.cover_image && (
-        <div className="post-cover-wrap">
-          <img src={post.cover_image} alt={post.title} />
-        </div>
-      )}
-
       {/* Article */}
       <article className={`post-article post-article--${readingMode}`}>
+        {post.cover_image && (
+          <div className="article-hero">
+            <img src={post.cover_image} alt={post.title} />
+          </div>
+        )}
+
+        {tagsList.length > 0 && (
+          <div className="post-tag-row">
+            {tagsList.map((t) => (
+              <Link
+                key={t}
+                href={`/explore?tag=${encodeURIComponent(t)}`}
+                className="post-article-tag"
+              >
+                #{t}
+              </Link>
+            ))}
+          </div>
+        )}
+
         <h1 className="post-title">{post.title}</h1>
 
-        <Link href={`/user/${post.author_handle ?? post.author_name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none", color: "inherit" }}>
-          <div className="post-byline">
+        <div className="post-byline">
+          <Link href={authorHref} className="byline-id">
             <img
               src={post.author_avatar || avatarFallback(post.author_name)}
               alt={post.author_name}
@@ -580,8 +854,16 @@ export function BlogPost({ slug }: Props) {
                 {post.reading_time} min read · {post.views} views
               </div>
             </div>
-          </div>
-        </Link>
+          </Link>
+          {!post.is_owner && (
+            <button
+              className={`byline-follow${following ? " is-following" : ""}`}
+              onClick={toggleFollow}
+            >
+              {following ? "Following" : "Follow"}
+            </button>
+          )}
+        </div>
 
         <div
           className="post-content"
@@ -591,46 +873,53 @@ export function BlogPost({ slug }: Props) {
 
       {/* Engagement bar */}
       <div className="post-engagement">
-        <button className={`eng-btn eng-like${liked ? " liked" : ""}`} onClick={toggleLike}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+        <button
+          className={`eng-btn eng-like${liked ? " is-liked" : ""}${justLiked ? " just-liked" : ""}`}
+          onClick={toggleLike}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
-          <span>{likeCount}</span>
+          <span className="eng-count">{likeCount}</span>
+        </button>
+        <button className="eng-btn" onClick={scrollToDiscuss} title="Jump to discussion">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+          <span className="eng-lbl">Discuss</span>
         </button>
         <div className="eng-sep" />
         <button className="eng-btn" onClick={copyLink} title="Copy link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
           </svg>
-          <span>{copied ? "Copied!" : "Copy"}</span>
+          <span className="eng-lbl">{copied ? "Copied!" : "Share"}</span>
         </button>
-        <button className="eng-btn" onClick={shareTwitter} title="Share on X">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.736-8.836L2.25 2.25h6.917l4.254 5.622 4.823-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        <button
+          className={`eng-btn${saved ? " is-active" : ""}`}
+          onClick={toggleSave}
+          title={saved ? "Saved" : "Save"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
           </svg>
-          <span className="eng-label">X</span>
+          <span className="eng-lbl">{saved ? "Saved" : "Save"}</span>
         </button>
-        <button className="eng-btn" onClick={shareReddit} title="Share on Reddit">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="12" r="10" opacity=".15"/>
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5.19 10.34c.05.22.08.45.08.68 0 2.77-3.22 5.01-7.19 5.01-3.97 0-7.19-2.24-7.19-5.01 0-.23.03-.46.08-.68a1.44 1.44 0 0 1-.57-1.16c0-.8.65-1.44 1.44-1.44.38 0 .73.15.99.39C6.01 9.4 7.88 8.66 10 8.57l1.02-4.8.01-.04c.04-.19.21-.33.4-.3l3.37.7c.18-.36.55-.61.98-.61.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1c-.6 0-1.08-.48-1.1-1.07l-3-.62-.9 4.24c2.1.1 3.94.84 5.22 2.06.26-.24.6-.39.98-.39.8 0 1.44.65 1.44 1.44 0 .46-.22.87-.57 1.16zM9.5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm5 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-2.5 3c-1.1 0-2-.3-2.5-.75.14.97 1.18 1.75 2.5 1.75s2.36-.78 2.5-1.75c-.5.45-1.4.75-2.5.75z"/>
-          </svg>
-          <span className="eng-label">Reddit</span>
-        </button>
-        <button className="eng-btn" onClick={shareLinkedIn} title="Share on LinkedIn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-          </svg>
-          <span className="eng-label">LinkedIn</span>
-        </button>
+        <div className="eng-spacer" />
         {post.is_owner && (
-          <Link href={`/write/${post.id}`} className="eng-edit">✎ Edit</Link>
+          <Link href={`/write/${post.id}`} className="eng-btn eng-owner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span className="eng-lbl eng-lbl-keep">Edit</span>
+          </Link>
         )}
       </div>
 
       {/* Comments */}
-      <div className="comments-wrap">
+      <div className="comments-wrap" ref={discussRef}>
         <div className="cmt-header">
           <div className="cmt-header-left">
             <h3 className="cmt-title">Discussion</h3>
@@ -639,14 +928,16 @@ export function BlogPost({ slug }: Props) {
             )}
           </div>
           {comments.length > 1 && (
-            <select
+            <button
               className="cmt-sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "newest" | "top")}
+              onClick={() => setSortBy((p) => (p === "newest" ? "top" : "newest"))}
+              title="Toggle sort order"
             >
-              <option value="newest">Newest</option>
-              <option value="top">Top rated</option>
-            </select>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" />
+              </svg>
+              {sortBy === "newest" ? "Newest" : "Top"}
+            </button>
           )}
         </div>
 
@@ -670,15 +961,38 @@ export function BlogPost({ slug }: Props) {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
               />
+              {composeMedia && (
+                <CommentMediaPreview
+                  media={composeMedia}
+                  onClear={() => setComposeMedia(null)}
+                />
+              )}
               <div className="cmt-compose-footer">
+                <div className="cmt-media-tools">
+                  <button
+                    type="button"
+                    className={`cmt-media-btn${gifOpen ? " active" : ""}`}
+                    onClick={() => setGifOpen((p) => !p)}
+                    aria-expanded={gifOpen}
+                  >
+                    GIF
+                  </button>
+                </div>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={submitComment}
-                  disabled={submitting || !commentText.trim()}
+                  disabled={submitting || (!commentText.trim() && !composeMedia)}
                 >
                   {submitting ? "Posting…" : "Post"}
                 </button>
               </div>
+              <GifPanel
+                open={gifOpen}
+                onSelect={(m) => {
+                  setComposeMedia(m);
+                  setGifOpen(false);
+                }}
+              />
             </div>
           </div>
         ) : (
@@ -690,7 +1004,12 @@ export function BlogPost({ slug }: Props) {
 
         {sortedComments.length === 0 ? (
           <div className="cmt-empty">
-            No comments yet — be the first to share your thoughts.
+            <div className="cmt-empty-ico">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
+            </div>
+            Be the first to share your thoughts.
           </div>
         ) : (
           <div className="cmt-list">
@@ -700,11 +1019,14 @@ export function BlogPost({ slug }: Props) {
                 comment={c}
                 postId={post.id}
                 postIsOwner={post.is_owner}
+                postAuthorId={post.user_id}
                 currentUserId={user?.id}
                 isLoggedIn={!!user}
-                depth={0}
                 onDelete={(id) =>
-                  setComments((prev) => prev.filter((x) => x.id !== id && x.parent_id !== id))
+                  setComments((prev) => {
+                    const remove = collectSubtree(prev, id);
+                    return prev.filter((x) => !remove.has(x.id));
+                  })
                 }
               />
             ))}

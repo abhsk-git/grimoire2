@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c8f7e2"/><stop offset="1" stop-color="#6ee7b7"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="112" height="112" rx="30" fill="url(#g)"/>
+  <rect x="4" y="4" width="112" height="56" rx="30" fill="#fff" opacity="0.2"/>
+  <path d="M60 30 l7 18 18 7 -18 7 -7 18 -7 -18 -18 -7 18 -7z" fill="#fff"/>
+  <path d="M30 78 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4z" fill="#fff" opacity="0.9"/>
+  <path d="M92 36 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z" fill="#fff" opacity="0.85"/>
+  <text x="60" y="108" font-family="Arial, sans-serif" font-size="17" font-weight="800" fill="#0b6b4f" text-anchor="middle">vibes</text>
+</svg>

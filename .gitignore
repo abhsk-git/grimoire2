@@ -18,5 +18,17 @@ SECURITY_AUDIT.md
 static/
 api/static/uploads/
 
+# …but DO track the bundled weeb sticker pack (source assets)
+!api/static/
+api/static/*
+!api/static/stickers/
+!api/static/stickers/**
+
+# DB backups (contain comment data — never commit)
+api/backups/
+
 # One-off local scripts
 restore_posts.py
+
+# Design references / handoffs (local-only, not tracked)
+references/
