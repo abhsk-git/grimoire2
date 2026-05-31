@@ -43,6 +43,7 @@ interface Comment {
   author_name: string;
   avatar: string;
   author_avatar: string;
+  handle?: string | null;
   user_id: number | null;
   created_at: string;
   parent_id: number | null;
@@ -142,7 +143,48 @@ function buildCommentTree(flat: Comment[]): Comment[] {
   return roots;
 }
 
-// ── Comment card (recursive for replies) ─────────────────────────────────────
+function commentName(c: Comment): string {
+  return c.display_name || c.author_name || "Anonymous";
+}
+
+// Collapse a comment's whole subtree into one chronological list. The thread is
+// only ever one level deep: every descendant (reply, reply-to-reply, …) lives
+// in the single flat list under its root comment, so nothing keeps indenting.
+function flattenReplies(node: Comment): Comment[] {
+  const out: Comment[] = [];
+  const walk = (n: Comment) => {
+    for (const child of n.replies ?? []) {
+      out.push(child);
+      walk(child);
+    }
+  };
+  walk(node);
+  return out.sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+}
+
+// Collect a comment id + every descendant id within a flat list (by parent_id),
+// so an optimistic delete removes the whole subtree — matching the backend.
+function collectSubtree(flat: Comment[], rootId: number): Set<number> {
+  const remove = new Set<number>([rootId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const c of flat) {
+      if (c.parent_id != null && remove.has(c.parent_id) && !remove.has(c.id)) {
+        remove.add(c.id);
+        grew = true;
+      }
+    }
+  }
+  return remove;
+}
+
+// ── Comment card ──────────────────────────────────────────────────────────────
+// A root comment owns its entire thread; replies render flat (isReply) and bubble
+// any further reply up to the root via onReplyAdded so the tree never deepens.
 interface CommentCardProps {
   comment: Comment;
   postId: number;
@@ -150,7 +192,9 @@ interface CommentCardProps {
   postAuthorId: number;
   currentUserId: number | null | undefined;
   isLoggedIn: boolean;
-  depth?: number;
+  isReply?: boolean;
+  parentName?: string;
+  onReplyAdded?: (c: Comment) => void;
   onDelete: (id: number) => void;
 }
 
@@ -161,26 +205,28 @@ function CommentCard({
   postAuthorId,
   currentUserId,
   isLoggedIn,
-  depth = 0,
+  isReply = false,
+  parentName,
+  onReplyAdded,
   onDelete,
 }: CommentCardProps) {
   const [vote, setVote] = useState<number>(() =>
     typeof window !== "undefined" ? getStoredVote(comment.id) : 0
   );
   const [likes, setLikes] = useState(comment.likes ?? 0);
-  const [dislikes, setDislikes] = useState(comment.dislikes ?? 0);
+  const [, setDislikes] = useState(comment.dislikes ?? 0);
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replyMedia, setReplyMedia] = useState<CommentMedia | null>(null);
   const [replyGifOpen, setReplyGifOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
-  const [localReplies, setLocalReplies] = useState<Comment[]>(
-    comment.replies ?? []
+  // Root-only: the single flat thread of all descendants.
+  const [threadReplies, setThreadReplies] = useState<Comment[]>(() =>
+    isReply ? [] : flattenReplies(comment)
   );
 
-  const displayName =
-    comment.display_name || comment.author_name || "Anonymous";
+  const displayName = commentName(comment);
   const avatar =
     comment.avatar || comment.author_avatar || avatarFallback(displayName);
   const canDelete = !!(
@@ -188,14 +234,78 @@ function CommentCard({
     (currentUserId === comment.user_id || postIsOwner)
   );
 
+  // Map id → author name so a flattened reply can show who it answered.
+  const nameById = useMemo(() => {
+    const m = new Map<number, string>();
+    m.set(comment.id, displayName);
+    for (const r of threadReplies) m.set(r.id, commentName(r));
+    return m;
+  }, [comment.id, displayName, threadReplies]);
+
+  const addToThread = (c: Comment) =>
+    setThreadReplies((prev) => [...prev, c]);
+
+  // The avatar is both a profile link (single click/tap) and the delete
+  // affordance for your own comments (double-click on desktop / long-press on
+  // touch → inline confirm). Single vs double click is disambiguated with a
+  // short timer; a long-press swallows the click that follows it.
+  const authorHref = comment.handle ? `/user/${comment.handle}` : null;
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const pressTimer = useRef<number | null>(null);
+  const clickTimer = useRef<number | null>(null);
+  const longPressedRef = useRef(false);
+
+  async function doDelete() {
+    setConfirmDelete(false);
+    try {
+      const r = await fetch(`/api/blog/comments/${comment.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (r.ok) onDelete(comment.id);
+    } catch {}
+  }
+  function goToProfile() {
+    if (authorHref) window.location.href = authorHref;
+  }
+  function handleAvatarClick() {
+    if (longPressedRef.current) { longPressedRef.current = false; return; }
+    if (!authorHref) return;
+    if (!canDelete) { goToProfile(); return; } // no delete gesture to wait on
+    if (clickTimer.current != null) return;
+    clickTimer.current = window.setTimeout(() => {
+      clickTimer.current = null;
+      goToProfile();
+    }, 250);
+  }
+  function handleAvatarDoubleClick() {
+    if (clickTimer.current != null) {
+      window.clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    if (canDelete) setConfirmDelete(true);
+  }
+  function startPress() {
+    if (!canDelete) return;
+    longPressedRef.current = false;
+    pressTimer.current = window.setTimeout(() => {
+      longPressedRef.current = true;
+      setConfirmDelete(true);
+    }, 600);
+  }
+  function cancelPress() {
+    if (pressTimer.current != null) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
   async function castVote(v: 1 | -1) {
     const wasVote = vote;
     const newVote = wasVote === v ? 0 : v;
     setVote(newVote);
     if (wasVote === 1) setLikes((l) => Math.max(0, l - 1));
-    if (wasVote === -1) setDislikes((d) => Math.max(0, d - 1));
     if (newVote === 1) setLikes((l) => l + 1);
-    if (newVote === -1) setDislikes((d) => d + 1);
     saveVote(comment.id, newVote);
     try {
       const r = await fetch(`/api/blog/comments/${comment.id}/vote`, {
@@ -232,14 +342,21 @@ function CommentCard({
       });
       if (r.ok) {
         const nr: Comment = await r.json();
-        setLocalReplies((prev) => [
-          ...prev,
-          { ...nr, likes: 0, dislikes: 0, parent_id: comment.id, replies: [] },
-        ]);
+        const reply: Comment = {
+          ...nr,
+          likes: 0,
+          dislikes: 0,
+          parent_id: comment.id,
+          replies: [],
+        };
+        // Replies always land in the root's single thread.
+        if (isReply) onReplyAdded?.(reply);
+        else addToThread(reply);
         setReplyText("");
         setReplyMedia(null);
         setShowReply(false);
-        setShowReplies(true);
+        setReplyGifOpen(false);
+        if (!isReply) setShowReplies(true);
       }
     } finally {
       setSubmitting(false);
@@ -247,14 +364,29 @@ function CommentCard({
   }
 
   return (
-    <div className={`cmt-row${depth > 0 ? " cmt-reply" : ""}`}>
+    <div className={`cmt-row${isReply ? " cmt-reply" : ""}`}>
       <img
-        className="cmt-avatar"
+        className={`cmt-avatar${canDelete ? " cmt-deletable" : ""}${authorHref ? " cmt-clickable" : ""}`}
         src={avatar}
         alt={displayName}
+        draggable={false}
+        title={
+          canDelete
+            ? "Click to view profile · double-click or long-press to delete"
+            : authorHref
+            ? "View profile"
+            : undefined
+        }
         onError={(e) => {
           (e.target as HTMLImageElement).src = avatarFallback(displayName);
         }}
+        onClick={handleAvatarClick}
+        onDoubleClick={handleAvatarDoubleClick}
+        onTouchStart={startPress}
+        onTouchEnd={cancelPress}
+        onTouchMove={cancelPress}
+        onTouchCancel={cancelPress}
+        onContextMenu={(e) => canDelete && e.preventDefault()}
       />
       <div className="cmt-body">
         <div className="cmt-meta">
@@ -262,24 +394,19 @@ function CommentCard({
           {comment.user_id != null && comment.user_id === postAuthorId && (
             <span className="cmt-author-badge">Author</span>
           )}
-          <span className="cmt-date">{relTime(comment.created_at)}</span>
-          {canDelete && (
-            <button
-              className="cmt-del"
-              onClick={async () => {
-                try {
-                  const r = await fetch(`/api/blog/comments/${comment.id}`, {
-                    method: "DELETE",
-                    credentials: "include",
-                  });
-                  if (r.ok) onDelete(comment.id);
-                } catch {}
-              }}
-            >
-              delete
-            </button>
+          {parentName && (
+            <span className="cmt-reply-to">↳ {parentName}</span>
           )}
+          <span className="cmt-date">{relTime(comment.created_at)}</span>
         </div>
+
+        {confirmDelete && (
+          <div className="cmt-confirm">
+            <span>Delete this comment?</span>
+            <button className="cmt-confirm-yes" onClick={doDelete}>Delete</button>
+            <button className="cmt-confirm-no" onClick={() => setConfirmDelete(false)}>Cancel</button>
+          </div>
+        )}
 
         {comment.content && <p className="cmt-text">{comment.content}</p>}
 
@@ -312,21 +439,19 @@ function CommentCard({
             </svg>
             {likes > 0 && <span>{likes}</span>}
           </button>
-          {depth === 0 && (
-            <button
-              className={`cmt-act${showReply ? " active" : ""}`}
-              onClick={() => {
-                if (!isLoggedIn) { window.location.href = "/login"; return; }
-                setShowReply((p) => !p);
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="9 17 4 12 9 7" />
-                <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
-              </svg>
-              Reply
-            </button>
-          )}
+          <button
+            className={`cmt-act${showReply ? " active" : ""}`}
+            onClick={() => {
+              if (!isLoggedIn) { window.location.href = "/login"; return; }
+              setShowReply((p) => !p);
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="9 17 4 12 9 7" />
+              <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+            </svg>
+            Reply
+          </button>
         </div>
 
         {showReply && (
@@ -380,19 +505,19 @@ function CommentCard({
           </div>
         )}
 
-        {localReplies.length > 0 && depth < 2 && (
+        {!isReply && threadReplies.length > 0 && (
           <div className="cmt-thread">
             <button
               className="cmt-toggle"
               onClick={() => setShowReplies((p) => !p)}
             >
               <span className="cmt-toggle-arrow">{showReplies ? "▾" : "▸"}</span>
-              {showReplies ? "Hide" : "Show"} {localReplies.length}{" "}
-              {localReplies.length === 1 ? "reply" : "replies"}
+              {showReplies ? "Hide" : "Show"} {threadReplies.length}{" "}
+              {threadReplies.length === 1 ? "reply" : "replies"}
             </button>
             {showReplies && (
               <div className="cmt-replies">
-                {localReplies.map((r) => (
+                {threadReplies.map((r) => (
                   <CommentCard
                     key={r.id}
                     comment={r}
@@ -401,9 +526,18 @@ function CommentCard({
                     postAuthorId={postAuthorId}
                     currentUserId={currentUserId}
                     isLoggedIn={isLoggedIn}
-                    depth={depth + 1}
+                    isReply
+                    parentName={
+                      r.parent_id != null && r.parent_id !== comment.id
+                        ? nameById.get(r.parent_id)
+                        : undefined
+                    }
+                    onReplyAdded={addToThread}
                     onDelete={(id) =>
-                      setLocalReplies((prev) => prev.filter((x) => x.id !== id))
+                      setThreadReplies((prev) => {
+                        const remove = collectSubtree(prev, id);
+                        return prev.filter((x) => !remove.has(x.id));
+                      })
                     }
                   />
                 ))}
@@ -888,9 +1022,11 @@ export function BlogPost({ slug }: Props) {
                 postAuthorId={post.user_id}
                 currentUserId={user?.id}
                 isLoggedIn={!!user}
-                depth={0}
                 onDelete={(id) =>
-                  setComments((prev) => prev.filter((x) => x.id !== id && x.parent_id !== id))
+                  setComments((prev) => {
+                    const remove = collectSubtree(prev, id);
+                    return prev.filter((x) => !remove.has(x.id));
+                  })
                 }
               />
             ))}

@@ -2856,14 +2856,40 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   color: var(--accent); background: var(--accent-soft);
   padding: 2px 6px; border-radius: 4px;
 }
+.cmt-reply-to {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  color: var(--fg-soft);
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .cmt-date   { font-size: 12px; color: var(--fg-soft); }
 .cmt-date::before { content: "· "; }
-.cmt-del {
-  margin-left: auto; background: none; border: none; cursor: pointer;
-  color: var(--fg-muted); font-size: 11px; padding: 1px 5px;
-  border-radius: 4px; transition: all .15s; opacity: 0.55;
+/* Owner avatar is the delete affordance: dbl-click (desktop) / long-press (mobile).
+   Suppress text selection + the iOS image callout so the long-press is clean. */
+.cmt-clickable { cursor: pointer; }
+.cmt-deletable {
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none;
 }
-.cmt-del:hover { color: #ef4444; opacity: 1; }
+/* Inline delete confirmation */
+.cmt-confirm {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 2px 0 10px; padding: 7px 11px; border-radius: 8px;
+  background: color-mix(in srgb, #ef4444 9%, transparent);
+  border: 1px solid color-mix(in srgb, #ef4444 32%, transparent);
+  font-size: 12.5px; color: var(--fg);
+}
+.cmt-confirm-yes {
+  border: none; cursor: pointer; border-radius: 6px; padding: 4px 12px;
+  font-size: 12px; font-weight: 700; color: #fff; background: #ef4444;
+  transition: background .15s;
+}
+.cmt-confirm-yes:hover { background: #dc2626; }
+.cmt-confirm-no {
+  border: none; cursor: pointer; background: none; color: var(--fg-muted);
+  font-size: 12px; font-weight: 600; padding: 4px 6px; transition: color .15s;
+}
+.cmt-confirm-no:hover { color: var(--fg); }
 .cmt-text {
   font-size: 14px; line-height: 1.7; color: var(--fg);
   white-space: pre-wrap; margin: 0 0 10px;

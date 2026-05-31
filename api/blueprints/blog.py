@@ -727,7 +727,7 @@ def get_comments(post_id):
         cur.execute('''
             SELECT c.id, c.content, c.media_url, c.media_type, c.author_name,
                    c.user_id, c.created_at, c.parent_id, c.likes, c.dislikes,
-                   u.name as user_name, u.avatar as user_avatar
+                   u.name as user_name, u.avatar as user_avatar, u.handle as user_handle
             FROM blog_comments c
             LEFT JOIN users u ON c.user_id=u.id
             WHERE c.post_id=%s ORDER BY c.created_at ASC LIMIT 500
@@ -746,6 +746,7 @@ def get_comments(post_id):
         c['avatar']        = c.get('user_avatar') or \
             f"https://ui-avatars.com/api/?name={_q(display[:2])}&size=40&background=6366f1&color=fff"
         c['author_avatar'] = c['avatar']
+        c['handle']        = c.get('user_handle')
         c['parent_id']     = c.get('parent_id')
         c['likes']         = c.get('likes') or 0
         c['dislikes']      = c.get('dislikes') or 0
@@ -801,7 +802,7 @@ def add_comment(post_id):
             cur.execute('''
                 SELECT c.id, c.content, c.media_url, c.media_type, c.author_name,
                        c.user_id, c.created_at, c.parent_id, c.likes, c.dislikes,
-                       u.name as user_name, u.avatar as user_avatar
+                       u.name as user_name, u.avatar as user_avatar, u.handle as user_handle
                 FROM blog_comments c JOIN users u ON c.user_id=u.id WHERE c.id=%s
             ''', (cid,))
         else:
@@ -821,6 +822,7 @@ def add_comment(post_id):
         c['avatar']        = c.get('user_avatar') or \
             f"https://ui-avatars.com/api/?name={_q(display[:2])}&size=40&background=6366f1&color=fff"
         c['author_avatar'] = c['avatar']
+        c['handle']        = c.get('user_handle')
         c['parent_id']     = c.get('parent_id')
         c['likes']         = c.get('likes') or 0
         c['dislikes']      = c.get('dislikes') or 0
@@ -844,10 +846,26 @@ def delete_comment(comment_id):
         ''', (comment_id, request.user_id, request.user_id))
         if not cur.fetchone():
             return jsonify({'error': 'Not found'}), 404
-        cur.execute(
-            'DELETE FROM blog_comments WHERE id=%s OR parent_id=%s',
-            (comment_id, comment_id)
-        )
+
+        # Delete the whole subtree, not just one level — replies can chain
+        # (reply→reply→…), and leaving descendants behind orphans them.
+        # Gathered iteratively so this works regardless of MySQL CTE support.
+        ids      = [comment_id]
+        frontier = [comment_id]
+        while frontier:
+            placeholders = ','.join(['%s'] * len(frontier))
+            cur.execute(
+                f'SELECT id FROM blog_comments WHERE parent_id IN ({placeholders})',
+                frontier
+            )
+            children = [row['id'] for row in cur.fetchall()]
+            new      = [c for c in children if c not in ids]
+            ids.extend(new)
+            frontier = new
+
+        placeholders = ','.join(['%s'] * len(ids))
+        cur.execute(f'DELETE FROM comment_votes WHERE comment_id IN ({placeholders})', ids)
+        cur.execute(f'DELETE FROM blog_comments WHERE id IN ({placeholders})', ids)
         db.commit()
     finally:
         db.close()
