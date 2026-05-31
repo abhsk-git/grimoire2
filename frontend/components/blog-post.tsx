@@ -7,8 +7,9 @@ import { useSettings } from "@/lib/settings";
 import { PublicFooter } from "@/components/sections";
 import { editorJsToHtml, sanitizeHtml } from "@/lib/editorjs-renderer";
 import {
-  CommentMediaBar,
+  GifPanel,
   CommentMediaPreview,
+  giphyLight,
   type CommentMedia,
 } from "@/components/gif-sticker-picker";
 
@@ -59,6 +60,30 @@ function fmtDate(iso: string | null): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function relTime(iso: string | null): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  const secs = Math.max(0, (Date.now() - then) / 1000);
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  const wks = Math.floor(days / 7);
+  if (wks < 5) return `${wks}w ago`;
+  return fmtDate(iso);
+}
+
+// Total comments including nested replies.
+function countComments(list: Comment[]): number {
+  return list.reduce(
+    (n, c) => n + 1 + (c.replies ? countComments(c.replies) : 0),
+    0
+  );
 }
 
 function avatarFallback(name: string): string {
@@ -122,6 +147,7 @@ interface CommentCardProps {
   comment: Comment;
   postId: number;
   postIsOwner: boolean;
+  postAuthorId: number;
   currentUserId: number | null | undefined;
   isLoggedIn: boolean;
   depth?: number;
@@ -132,6 +158,7 @@ function CommentCard({
   comment,
   postId,
   postIsOwner,
+  postAuthorId,
   currentUserId,
   isLoggedIn,
   depth = 0,
@@ -145,6 +172,7 @@ function CommentCard({
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replyMedia, setReplyMedia] = useState<CommentMedia | null>(null);
+  const [replyGifOpen, setReplyGifOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
   const [localReplies, setLocalReplies] = useState<Comment[]>(
@@ -231,7 +259,10 @@ function CommentCard({
       <div className="cmt-body">
         <div className="cmt-meta">
           <span className="cmt-author">{displayName}</span>
-          <span className="cmt-date">{fmtDate(comment.created_at)}</span>
+          {comment.user_id != null && comment.user_id === postAuthorId && (
+            <span className="cmt-author-badge">Author</span>
+          )}
+          <span className="cmt-date">{relTime(comment.created_at)}</span>
           {canDelete && (
             <button
               className="cmt-del"
@@ -259,43 +290,43 @@ function CommentCard({
             }`}
           >
             <img
-              src={comment.media_url}
+              src={comment.media_type === "sticker" ? comment.media_url : giphyLight(comment.media_url)}
               alt={comment.media_type === "sticker" ? "sticker" : "gif"}
               loading="lazy"
+              decoding="async"
             />
+            {comment.media_type !== "sticker" && (
+              <span className="cmt-media-badge">GIF</span>
+            )}
           </div>
         )}
 
         <div className="cmt-actions">
           <button
-            className={`cmt-vote${vote === 1 ? " up" : ""}`}
+            className={`cmt-act${vote === 1 ? " is-liked" : ""}`}
             onClick={() => castVote(1)}
-            title="Upvote"
+            title="Like"
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3 22 21H2z" />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={vote === 1 ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             {likes > 0 && <span>{likes}</span>}
           </button>
-          <button
-            className={`cmt-vote${vote === -1 ? " down" : ""}`}
-            onClick={() => castVote(-1)}
-            title="Downvote"
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 21 2 3h20z" />
-            </svg>
-            {dislikes > 0 && <span>{dislikes}</span>}
-          </button>
-          <button
-            className={`cmt-reply-btn${showReply ? " active" : ""}`}
-            onClick={() => {
-              if (!isLoggedIn) { window.location.href = "/login"; return; }
-              setShowReply((p) => !p);
-            }}
-          >
-            ↩ Reply
-          </button>
+          {depth === 0 && (
+            <button
+              className={`cmt-act${showReply ? " active" : ""}`}
+              onClick={() => {
+                if (!isLoggedIn) { window.location.href = "/login"; return; }
+                setShowReply((p) => !p);
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="9 17 4 12 9 7" />
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+              </svg>
+              Reply
+            </button>
+          )}
         </div>
 
         {showReply && (
@@ -315,7 +346,16 @@ function CommentCard({
               />
             )}
             <div className="cmt-reply-btns">
-              <CommentMediaBar setMedia={setReplyMedia} />
+              <div className="cmt-media-tools">
+                <button
+                  type="button"
+                  className={`cmt-media-btn${replyGifOpen ? " active" : ""}`}
+                  onClick={() => setReplyGifOpen((p) => !p)}
+                  aria-expanded={replyGifOpen}
+                >
+                  GIF
+                </button>
+              </div>
               <button
                 className="btn btn-primary btn-sm"
                 onClick={submitReply}
@@ -325,11 +365,18 @@ function CommentCard({
               </button>
               <button
                 className="cmt-cancel-btn"
-                onClick={() => { setShowReply(false); setReplyText(""); setReplyMedia(null); }}
+                onClick={() => { setShowReply(false); setReplyText(""); setReplyMedia(null); setReplyGifOpen(false); }}
               >
                 Cancel
               </button>
             </div>
+            <GifPanel
+              open={replyGifOpen}
+              onSelect={(m) => {
+                setReplyMedia(m);
+                setReplyGifOpen(false);
+              }}
+            />
           </div>
         )}
 
@@ -351,6 +398,7 @@ function CommentCard({
                     comment={r}
                     postId={postId}
                     postIsOwner={postIsOwner}
+                    postAuthorId={postAuthorId}
                     currentUserId={currentUserId}
                     isLoggedIn={isLoggedIn}
                     depth={depth + 1}
@@ -383,10 +431,15 @@ export function BlogPost({ slug }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [composeMedia, setComposeMedia] = useState<CommentMedia | null>(null);
+  const [gifOpen, setGifOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [justLiked, setJustLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [following, setFollowing] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
   const progressRef = useRef<HTMLDivElement>(null);
+  const discussRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/blog/posts/slug/${slug}`, { credentials: "include" })
@@ -410,6 +463,43 @@ export function BlogPost({ slug }: Props) {
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setComments(Array.isArray(data) ? data : []));
   }, [post]);
+
+  // Save/Follow have no backend yet — persist the toggle locally so it survives reloads.
+  useEffect(() => {
+    if (!post) return;
+    try {
+      const saves = JSON.parse(localStorage.getItem("grimoire_saved_posts") || "[]");
+      setSaved(Array.isArray(saves) && saves.includes(post.id));
+      const follows = JSON.parse(localStorage.getItem("grimoire_following") || "[]");
+      setFollowing(Array.isArray(follows) && follows.includes(post.user_id));
+    } catch {}
+  }, [post]);
+
+  function toggleSave() {
+    if (!post) return;
+    setSaved((prev) => {
+      const next = !prev;
+      try {
+        const saves: number[] = JSON.parse(localStorage.getItem("grimoire_saved_posts") || "[]");
+        const updated = next ? [...new Set([...saves, post.id])] : saves.filter((x) => x !== post.id);
+        localStorage.setItem("grimoire_saved_posts", JSON.stringify(updated));
+      } catch {}
+      return next;
+    });
+  }
+
+  function toggleFollow() {
+    if (!post) return;
+    setFollowing((prev) => {
+      const next = !prev;
+      try {
+        const follows: number[] = JSON.parse(localStorage.getItem("grimoire_following") || "[]");
+        const updated = next ? [...new Set([...follows, post.user_id])] : follows.filter((x) => x !== post.user_id);
+        localStorage.setItem("grimoire_following", JSON.stringify(updated));
+      } catch {}
+      return next;
+    });
+  }
 
   useEffect(() => {
     function onScroll() {
@@ -448,16 +538,27 @@ export function BlogPost({ slug }: Props) {
     });
     if (r.ok) {
       const data = await r.json();
-      setLiked(data.action === "liked");
-      setLikeCount(data.likes ?? (data.action === "liked" ? likeCount + 1 : Math.max(0, likeCount - 1)));
+      const nowLiked = data.action === "liked";
+      setLiked(nowLiked);
+      if (nowLiked) {
+        setJustLiked(true);
+        setTimeout(() => setJustLiked(false), 360);
+      }
+      setLikeCount(data.likes ?? (nowLiked ? likeCount + 1 : Math.max(0, likeCount - 1)));
     }
   }
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 1400);
     });
+  }
+
+  function scrollToDiscuss() {
+    if (!discussRef.current) return;
+    const y = discussRef.current.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: y, behavior: "smooth" });
   }
 
   async function submitComment() {
@@ -535,6 +636,9 @@ export function BlogPost({ slug }: Props) {
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
+  const authorHref = `/user/${
+    post.author_handle ?? post.author_name.toLowerCase().replace(/\s+/g, "-")
+  }`;
   const rawContent = post.content || "";
   const contentHtml = rawContent.trim().startsWith("{")
     ? editorJsToHtml(rawContent)
@@ -573,19 +677,32 @@ export function BlogPost({ slug }: Props) {
         </div>
       </header>
 
-      {/* Cover */}
-      {post.cover_image && (
-        <div className="post-cover-wrap">
-          <img src={post.cover_image} alt={post.title} />
-        </div>
-      )}
-
       {/* Article */}
       <article className={`post-article post-article--${readingMode}`}>
+        {post.cover_image && (
+          <div className="article-hero">
+            <img src={post.cover_image} alt={post.title} />
+          </div>
+        )}
+
+        {tagsList.length > 0 && (
+          <div className="post-tag-row">
+            {tagsList.map((t) => (
+              <Link
+                key={t}
+                href={`/explore?tag=${encodeURIComponent(t)}`}
+                className="post-article-tag"
+              >
+                #{t}
+              </Link>
+            ))}
+          </div>
+        )}
+
         <h1 className="post-title">{post.title}</h1>
 
-        <Link href={`/user/${post.author_handle ?? post.author_name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none", color: "inherit" }}>
-          <div className="post-byline">
+        <div className="post-byline">
+          <Link href={authorHref} className="byline-id">
             <img
               src={post.author_avatar || avatarFallback(post.author_name)}
               alt={post.author_name}
@@ -603,8 +720,16 @@ export function BlogPost({ slug }: Props) {
                 {post.reading_time} min read · {post.views} views
               </div>
             </div>
-          </div>
-        </Link>
+          </Link>
+          {!post.is_owner && (
+            <button
+              className={`byline-follow${following ? " is-following" : ""}`}
+              onClick={toggleFollow}
+            >
+              {following ? "Following" : "Follow"}
+            </button>
+          )}
+        </div>
 
         <div
           className="post-content"
@@ -614,27 +739,53 @@ export function BlogPost({ slug }: Props) {
 
       {/* Engagement bar */}
       <div className="post-engagement">
-        <button className={`eng-btn eng-like${liked ? " liked" : ""}`} onClick={toggleLike}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+        <button
+          className={`eng-btn eng-like${liked ? " is-liked" : ""}${justLiked ? " just-liked" : ""}`}
+          onClick={toggleLike}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
-          <span>{likeCount}</span>
+          <span className="eng-count">{likeCount}</span>
+        </button>
+        <button className="eng-btn" onClick={scrollToDiscuss} title="Jump to discussion">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+          <span className="eng-lbl">Discuss</span>
         </button>
         <div className="eng-sep" />
         <button className="eng-btn" onClick={copyLink} title="Copy link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
           </svg>
-          <span>{copied ? "Copied!" : "Copy"}</span>
+          <span className="eng-lbl">{copied ? "Copied!" : "Share"}</span>
         </button>
+        <button
+          className={`eng-btn${saved ? " is-active" : ""}`}
+          onClick={toggleSave}
+          title={saved ? "Saved" : "Save"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+          <span className="eng-lbl">{saved ? "Saved" : "Save"}</span>
+        </button>
+        <div className="eng-spacer" />
         {post.is_owner && (
-          <Link href={`/write/${post.id}`} className="eng-edit">✎ Edit</Link>
+          <Link href={`/write/${post.id}`} className="eng-btn eng-owner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span className="eng-lbl eng-lbl-keep">Edit</span>
+          </Link>
         )}
       </div>
 
       {/* Comments */}
-      <div className="comments-wrap">
+      <div className="comments-wrap" ref={discussRef}>
         <div className="cmt-header">
           <div className="cmt-header-left">
             <h3 className="cmt-title">Discussion</h3>
@@ -643,14 +794,16 @@ export function BlogPost({ slug }: Props) {
             )}
           </div>
           {comments.length > 1 && (
-            <select
+            <button
               className="cmt-sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "newest" | "top")}
+              onClick={() => setSortBy((p) => (p === "newest" ? "top" : "newest"))}
+              title="Toggle sort order"
             >
-              <option value="newest">Newest</option>
-              <option value="top">Top rated</option>
-            </select>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" />
+              </svg>
+              {sortBy === "newest" ? "Newest" : "Top"}
+            </button>
           )}
         </div>
 
@@ -681,7 +834,16 @@ export function BlogPost({ slug }: Props) {
                 />
               )}
               <div className="cmt-compose-footer">
-                <CommentMediaBar setMedia={setComposeMedia} />
+                <div className="cmt-media-tools">
+                  <button
+                    type="button"
+                    className={`cmt-media-btn${gifOpen ? " active" : ""}`}
+                    onClick={() => setGifOpen((p) => !p)}
+                    aria-expanded={gifOpen}
+                  >
+                    GIF
+                  </button>
+                </div>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={submitComment}
@@ -690,6 +852,13 @@ export function BlogPost({ slug }: Props) {
                   {submitting ? "Posting…" : "Post"}
                 </button>
               </div>
+              <GifPanel
+                open={gifOpen}
+                onSelect={(m) => {
+                  setComposeMedia(m);
+                  setGifOpen(false);
+                }}
+              />
             </div>
           </div>
         ) : (
@@ -701,7 +870,12 @@ export function BlogPost({ slug }: Props) {
 
         {sortedComments.length === 0 ? (
           <div className="cmt-empty">
-            No comments yet — be the first to share your thoughts.
+            <div className="cmt-empty-ico">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
+            </div>
+            Be the first to share your thoughts.
           </div>
         ) : (
           <div className="cmt-list">
@@ -711,6 +885,7 @@ export function BlogPost({ slug }: Props) {
                 comment={c}
                 postId={post.id}
                 postIsOwner={post.is_owner}
+                postAuthorId={post.user_id}
                 currentUserId={user?.id}
                 isLoggedIn={!!user}
                 depth={0}
