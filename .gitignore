@@ -29,3 +29,6 @@ api/backups/
 
 # One-off local scripts
 restore_posts.py
+
+# Design references / handoffs (local-only, not tracked)
+references/
