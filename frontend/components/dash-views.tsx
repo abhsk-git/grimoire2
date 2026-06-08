@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Icon } from "./icons";
 import type { DashView } from "./dash-shell";
 import { NewCollectionModal } from "./collection-modal";
@@ -282,15 +282,46 @@ export function AllLinksView({
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [collectionModalOpen, setCollectionModalOpen] = useState(false);
   const [collectionsVersion, setCollectionsVersion] = useState(0);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
+  const [tagDropOpen, setTagDropOpen] = useState(false);
+  const tagDropRef = useRef<HTMLDivElement>(null);
 
   const titles: Record<DashView, string> = {
     all:   "Bookmarks",
     posts: "My Posts",
   };
 
+  // debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // fetch user's tags for the picker
+  useEffect(() => {
+    fetch("/api/tags", { credentials: "include" })
+      .then(r => r.ok ? r.json() : [])
+      .then(setAvailableTags)
+      .catch(() => {});
+  }, [version]);
+
+  // close tag dropdown on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (tagDropRef.current && !tagDropRef.current.contains(e.target as Node)) {
+        setTagDropOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
   const fetchLinks = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams({ per_page: "50" });
+    if (debouncedSearch) params.set("q", debouncedSearch);
     if (activeTag) params.set("tag", activeTag);
     if (collectionId) params.set("collection", String(collectionId));
 
@@ -301,7 +332,7 @@ export function AllLinksView({
         setTotal(data.total ?? 0);
       })
       .finally(() => setLoading(false));
-  }, [filter, activeTag, version, collectionId]);
+  }, [filter, debouncedSearch, activeTag, version, collectionId]);
 
   useEffect(() => {
     fetchLinks();
@@ -365,33 +396,53 @@ export function AllLinksView({
 
       {filter === "all" && <StatStrip stats={stats} />}
 
-      <div className="filter-bar">
-        <button className="filter-chip">
-          <Icon name="folder" size={12} /> Collection: All
-        </button>
-        <button className="filter-chip">
-          <Icon name="tag" size={12} /> Any tag
-        </button>
-        <span className="sep">·</span>
-        <button className="filter-chip">
-          Sort: Recently saved{" "}
-          <Icon
-            name="chevron-right"
-            size={11}
-            style={{ transform: "rotate(90deg)" }}
+      <div className="dash-search-row">
+        <div className="dash-search">
+          <Icon name="search" size={13} />
+          <input
+            className="dash-search-input"
+            placeholder="Search bookmarks, tags…"
+            value={search}
+            onChange={e => { setSearch(e.target.value); setActiveTag(null); }}
           />
-        </button>
-        {activeTag && (
-          <>
-            <span className="sep">·</span>
-            <button
-              className="filter-chip active"
-              onClick={() => setActiveTag(null)}
-            >
-              #{activeTag} <span className="close">×</span>
-            </button>
-          </>
-        )}
+          {search && (
+            <button className="dash-search-clear" onClick={() => setSearch("")}>×</button>
+          )}
+        </div>
+      </div>
+
+      <div className="filter-bar">
+        <div className="tag-drop-wrap" ref={tagDropRef}>
+          <button
+            className={`filter-chip${activeTag ? " active" : ""}${tagDropOpen ? " open" : ""}`}
+            onClick={() => setTagDropOpen(o => !o)}
+          >
+            <Icon name="tag" size={12} />
+            {activeTag ? `#${activeTag}` : "Any tag"}
+            {activeTag && (
+              <span
+                className="close"
+                onClick={e => { e.stopPropagation(); setActiveTag(null); setTagDropOpen(false); }}
+              >
+                ×
+              </span>
+            )}
+          </button>
+          {tagDropOpen && availableTags.length > 0 && (
+            <div className="tag-drop">
+              {availableTags.map(t => (
+                <button
+                  key={t.name}
+                  className={`tag-drop-item${activeTag === t.name ? " active" : ""}`}
+                  onClick={() => { setActiveTag(activeTag === t.name ? null : t.name); setTagDropOpen(false); setSearch(""); }}
+                >
+                  <span className="tag-drop-name">#{t.name}</span>
+                  <span className="tag-drop-count">{t.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -507,6 +558,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<PostFilter>("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetch("/api/blog/my-posts", { credentials: "include" })
@@ -516,9 +568,15 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
   }, []);
 
   const filtered = posts.filter((p) => {
-    if (filter === "all") return true;
-    if (filter === "published") return p.status === "published";
-    if (filter === "draft") return p.status === "draft";
+    if (filter === "published" && p.status !== "published") return false;
+    if (filter === "draft" && p.status !== "draft") return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (
+        p.title.toLowerCase().includes(q) ||
+        (p.tags || "").toLowerCase().includes(q)
+      );
+    }
     return true;
   });
 
@@ -573,6 +631,21 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
           <a href="/write" className="btn btn-primary btn-sm new-post-btn">
             <Icon name="pen" size={13} /> New Post
           </a>
+        </div>
+      </div>
+
+      <div className="dash-search-row">
+        <div className="dash-search">
+          <Icon name="search" size={13} />
+          <input
+            className="dash-search-input"
+            placeholder="Search posts by title or tag…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="dash-search-clear" onClick={() => setSearch("")}>×</button>
+          )}
         </div>
       </div>
 

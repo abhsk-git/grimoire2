@@ -96,10 +96,10 @@ export function AuthArt() {
             background: "linear-gradient(135deg,#b46a2a,#f4b860)",
           }}
         >
-          MC
+          SP
         </div>
         <span>
-          <b>Maya Chen</b> · from <i>Notes on plaintext, again</i>
+          <b>Sandy Pal</b> · from <i>Notes on plaintext, again</i>
         </span>
       </div>
     </div>

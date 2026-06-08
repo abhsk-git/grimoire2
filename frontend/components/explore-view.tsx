@@ -85,11 +85,14 @@ function getDomain(url: string): string {
   try { return new URL(url).hostname.replace("www.", ""); } catch { return url; }
 }
 
+const TAG_CLOUD_LIMIT = 15;
+
 export function ExploreView() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("stories");
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
+  const [showAllTags, setShowAllTags] = useState(false);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("q");
@@ -411,7 +414,7 @@ export function ExploreView() {
             <div className="explore-section">
               <h2>Topics</h2>
               <div className="tag-cloud">
-                {blogTags.map(t => (
+                {(showAllTags ? blogTags : blogTags.slice(0, TAG_CLOUD_LIMIT)).map(t => (
                   <span
                     key={t.name}
                     className={`tag${activeTag === t.name ? " active" : ""}`}
@@ -421,6 +424,15 @@ export function ExploreView() {
                     <Icon name="feather" size={11} /> {t.name} <span className="n">{t.count}</span>
                   </span>
                 ))}
+                {blogTags.length > TAG_CLOUD_LIMIT && (
+                  <span
+                    className="tag"
+                    onClick={() => setShowAllTags(s => !s)}
+                    style={{ cursor: "pointer", opacity: 0.7 }}
+                  >
+                    {showAllTags ? "show less" : `+${blogTags.length - TAG_CLOUD_LIMIT} more`}
+                  </span>
+                )}
               </div>
             </div>
           )}

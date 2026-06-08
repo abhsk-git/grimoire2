@@ -35,38 +35,6 @@ export function HeroLoggedOut({ onSignIn }: HeroLoggedOutProps) {
             </a>
           </div>
 
-          <div className="hero-meta">
-            <div className="stack">
-              <div
-                className="avatar"
-                style={{ background: "linear-gradient(135deg,#b46a2a,#f4b860)" }}
-              >
-                MC
-              </div>
-              <div
-                className="avatar"
-                style={{ background: "linear-gradient(135deg,#5563d0,#8e8df0)" }}
-              >
-                IR
-              </div>
-              <div
-                className="avatar"
-                style={{ background: "linear-gradient(135deg,#2f7d4d,#6abf85)" }}
-              >
-                AR
-              </div>
-              <div
-                className="avatar"
-                style={{ background: "linear-gradient(135deg,#d04f63,#f08197)" }}
-              >
-                SK
-              </div>
-            </div>
-            <span>
-              <b style={{ color: "var(--fg)" }}>1,240+</b> essays published
-              this month — and counting.
-            </span>
-          </div>
         </div>
 
         <div className="showcase">

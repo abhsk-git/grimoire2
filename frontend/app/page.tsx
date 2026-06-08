@@ -8,7 +8,6 @@ import { SearchModal, useSearchModal } from "@/components/search-modal";
 import {
   HowItWorks,
   Features,
-  Discover,
   CTAStrip,
   Footer,
 } from "@/components/sections";
@@ -48,7 +47,6 @@ function LandingContent() {
           <HeroLoggedOut onSignIn={() => (window.location.href = "/login?signup=1")} />
           <HowItWorks />
           <Features />
-          <Discover />
           <CTAStrip onSignIn={() => (window.location.href = "/login?signup=1")} />
           <Footer />
         </>
