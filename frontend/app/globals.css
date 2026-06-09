@@ -3608,10 +3608,12 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 .about-grid {
   display: grid; grid-template-columns: 2fr 1fr; gap: 24px;
+  min-width: 0; width: 100%;
 }
 .about-col-l {
   background: var(--bg-elev); border: 1px solid var(--border);
   border-radius: 14px; padding: 26px 28px;
+  min-width: 0;
 }
 .about-col-l h2 {
   font-family: var(--font-display);
@@ -3622,8 +3624,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .about-col-l p {
   margin: 0 0 1em;
   font-size: 15px; line-height: 1.65; color: var(--fg);
+  overflow-wrap: break-word; word-break: break-word;
 }
-.about-side { display: flex; flex-direction: column; gap: 14px; }
+.about-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .about-card {
   background: var(--bg-elev); border: 1px solid var(--border);
   border-radius: 14px; padding: 18px;
