@@ -4157,6 +4157,21 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 /* ── Notification badge ──────────────────────────────────────────────────────── */
 .sett-notif-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 7px; border-radius: var(--radius-pill); background: color-mix(in oklab, var(--accent-2) 16%, var(--bg)); color: var(--accent-2); border: 1px solid color-mix(in oklab, var(--accent-2) 35%, transparent); }
 
+/* ── Two-factor auth ─────────────────────────────────────────────────────────── */
+.sett-tfa-row { display: flex; align-items: flex-start; gap: 14px; }
+.sett-tfa-info { flex: 1; }
+.sett-tfa-status { display: flex; align-items: center; gap: 8px; }
+.sett-tfa-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--bg-inset); color: var(--fg-muted);
+  border: 1px solid var(--border);
+}
+.sett-tfa-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--fg-muted); }
+.sett-tfa-badge.on { background: color-mix(in oklab, #22c55e 12%, var(--bg-elev)); color: #22c55e; border-color: color-mix(in oklab, #22c55e 30%, transparent); }
+.sett-tfa-badge.on::before { background: #22c55e; }
+
 /* ── Danger zone ─────────────────────────────────────────────────────────────── */
 .sett-danger { border: 1.5px solid color-mix(in oklab, #ef4444 45%, transparent); border-radius: var(--radius-lg); overflow: hidden; }
 .sett-danger-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px; background: color-mix(in oklab, #ef4444 6%, var(--bg-elev)); border-bottom: 1px solid color-mix(in oklab, #ef4444 25%, transparent); }

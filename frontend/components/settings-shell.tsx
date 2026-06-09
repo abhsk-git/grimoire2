@@ -715,6 +715,29 @@ function AccountTab() {
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailMsg,   setEmailMsg]   = useState("");
 
+  // 2FA
+  const [tfaPw,    setTfaPw]    = useState("");
+  const [tfaSaving, setTfaSaving] = useState(false);
+  const [tfaMsg,   setTfaMsg]   = useState("");
+  const twoFactorEnabled = !!(user as any)?.two_factor_enabled;
+
+  async function toggle2FA() {
+    if (!tfaPw && user?.has_password) { setTfaMsg("Enter your password to confirm"); return; }
+    setTfaSaving(true); setTfaMsg("");
+    const endpoint = twoFactorEnabled ? "/api/auth/2fa/disable" : "/api/auth/2fa/enable";
+    try {
+      const r = await fetch(endpoint, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: tfaPw }),
+      });
+      const d = await r.json();
+      if (r.ok) { setTfaMsg(twoFactorEnabled ? "Two-factor auth disabled" : "Two-factor auth enabled"); setTfaPw(""); refetch(); }
+      else setTfaMsg(d.error ?? "Failed");
+    } catch { setTfaMsg("Failed"); }
+    finally { setTfaSaving(false); }
+  }
+
   // Delete
   const [delConfirm, setDelConfirm] = useState("");
   const [delPw,      setDelPw]      = useState("");
@@ -825,6 +848,42 @@ function AccountTab() {
           </Section>
         )}
       </div>
+
+      {/* Two-factor authentication */}
+      <Section title="Two-factor authentication">
+        <div className="sett-tfa-row">
+          <div className="sett-tfa-info">
+            <div className="sett-tfa-status">
+              <span className={`sett-tfa-badge${twoFactorEnabled ? " on" : ""}`}>
+                {twoFactorEnabled ? "Enabled" : "Disabled"}
+              </span>
+            </div>
+            <p className="sett-label-soft" style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.5 }}>
+              {twoFactorEnabled
+                ? "A verification code will be emailed to you each time you sign in."
+                : "Add an extra layer of security. A code will be emailed to you on each sign-in."}
+            </p>
+          </div>
+        </div>
+        {user?.has_password && (
+          <div className="sett-field">
+            <label className="sett-label">
+              {twoFactorEnabled ? "Enter password to disable" : "Enter password to enable"}
+            </label>
+            <PasswordInput className="sett-input" value={tfaPw} onChange={e => setTfaPw(e.target.value)} autoComplete="current-password" />
+          </div>
+        )}
+        <div className="sett-save-row">
+          <SaveMsg msg={tfaMsg} />
+          <button
+            className={`btn btn-sm ${twoFactorEnabled ? "btn-ghost" : "btn-primary"}`}
+            onClick={toggle2FA}
+            disabled={tfaSaving}
+          >
+            {tfaSaving ? "Saving…" : twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
+          </button>
+        </div>
+      </Section>
 
       {/* Danger zone */}
       <div className="sett-section">

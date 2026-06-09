@@ -291,6 +291,144 @@ If you didn't create a Grimoire account, simply ignore this email.
         return False
 
 
+def _send_otp_email(to_email: str, code: str, name: str = '') -> bool:
+    host    = os.environ.get('SMTP_HOST', 'localhost')
+    port    = int(os.environ.get('SMTP_PORT', 587))
+    user    = os.environ.get('SMTP_USER', '')
+    pw      = os.environ.get('SMTP_PASS', '')
+    from_   = os.environ.get('SMTP_FROM', f'Grimoire <{user}>')
+    app_url = os.environ.get('APP_URL', 'https://grimoire.sysnode.in')
+
+    if not user or not pw:
+        logger.warning('SMTP not configured — OTP email could not be sent to %s', to_email)
+        return False
+
+    greeting = f'Hi {name},' if name else 'Hi there,'
+    year     = datetime.datetime.utcnow().year
+
+    text = f"""{greeting}
+
+Your Grimoire verification code is:
+
+  {code}
+
+It expires in 10 minutes and can only be used once.
+
+If you didn't try to sign in, your account is safe — ignore this email.
+
+— The Grimoire Team
+{app_url}
+"""
+
+    # Split code into individual digit spans for the big display
+    digit_cells = ''.join(
+        f'<td style="width:48px;height:60px;text-align:center;vertical-align:middle;'
+        f'font-size:32px;font-weight:800;color:#0f0f0f;letter-spacing:0;'
+        f'background:#f8f8ff;border:1.5px solid #e0e0ff;border-radius:10px;">{d}</td>'
+        for d in code
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your Grimoire sign-in code</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5;padding:40px 0;">
+  <tr><td align="center">
+    <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;">
+
+      <!-- Logo -->
+      <tr><td align="center" style="padding-bottom:24px;">
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="background:#6366f1;width:36px;height:36px;border-radius:10px;text-align:center;vertical-align:middle;">
+            <span style="color:#fff;font-size:18px;font-weight:800;line-height:36px;display:block;">G</span>
+          </td>
+          <td style="padding-left:10px;font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:-0.5px;">Grimoire</td>
+        </tr></table>
+      </td></tr>
+
+      <!-- Card -->
+      <tr><td style="background:#ffffff;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td style="background:#6366f1;height:4px;font-size:0;">&nbsp;</td></tr>
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td style="padding:40px 48px 36px;">
+
+            <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#6366f1;text-transform:uppercase;letter-spacing:0.8px;">Verification code</p>
+            <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0f0f0f;letter-spacing:-0.5px;line-height:1.2;">Your sign-in code</h1>
+            <p style="margin:0 0 28px;font-size:15px;color:#444;line-height:1.6;">{greeting} Enter this code to complete sign-in.</p>
+
+            <!-- Code display -->
+            <table cellpadding="0" cellspacing="6" border="0" style="margin:0 auto 28px;">
+              <tr>{digit_cells}</tr>
+            </table>
+
+            <!-- Expiry note -->
+            <table cellpadding="0" cellspacing="0" border="0" style="background:#f8f8ff;border:1px solid #e0e0ff;border-radius:8px;width:100%;margin-bottom:24px;">
+              <tr><td style="padding:12px 16px;">
+                <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+                  <td style="width:20px;vertical-align:top;padding-right:10px;font-size:16px;">⏱</td>
+                  <td style="font-size:13px;color:#555;line-height:1.5;">
+                    <strong style="color:#0f0f0f;">Expires in 10 minutes.</strong>
+                    This code can only be used once. Do not share it with anyone.
+                  </td>
+                </tr></table>
+              </td></tr>
+            </table>
+
+            <!-- Not you -->
+            <table cellpadding="0" cellspacing="0" border="0" style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;width:100%;">
+              <tr><td style="padding:14px 16px;">
+                <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+                  <td style="width:20px;vertical-align:top;padding-right:10px;font-size:16px;">⚠️</td>
+                  <td>
+                    <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#92400e;">Didn't try to sign in?</p>
+                    <p style="margin:0;font-size:13px;color:#78350f;line-height:1.5;">
+                      Ignore this email — your account is safe and no one can sign in without the code.
+                      Consider changing your password if you're concerned.
+                    </p>
+                  </td>
+                </tr></table>
+              </td></tr>
+            </table>
+
+          </td></tr>
+        </table>
+      </td></tr>
+
+      <!-- Footer -->
+      <tr><td style="padding:24px 0 8px;" align="center">
+        <p style="margin:0 0 6px;font-size:12px;color:#999;">This is an automated email — please do not reply.</p>
+        <p style="margin:0;font-size:12px;color:#bbb;">
+          &copy; {year} Grimoire &nbsp;&middot;&nbsp;
+          <a href="{app_url}" style="color:#6366f1;text-decoration:none;">{app_url.replace('https://','')}</a>
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
+
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'{code} is your Grimoire sign-in code'
+    msg['From']    = from_
+    msg['To']      = to_email
+    msg.attach(MIMEText(text, 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+
+    try:
+        with smtplib.SMTP(host, port, timeout=10) as s:
+            s.ehlo(); s.starttls(); s.login(user, pw)
+            s.sendmail(from_, to_email, msg.as_string())
+        return True
+    except Exception:
+        logger.exception('Failed to send OTP email to %s', to_email)
+        return False
+
+
 from werkzeug.utils import secure_filename
 from utils import get_db, create_token, verify_token, login_required
 from extensions import oauth
@@ -428,6 +566,24 @@ def login():
             return jsonify({'error': 'Invalid credentials'}), 401
         if not user.get('email_verified'):
             return jsonify({'error': 'Please verify your email before signing in. Check your inbox for a verification link.', 'unverified': True}), 403
+
+        # 2FA: if enabled, issue a pending token and send OTP instead of creating session
+        if user.get('two_factor_enabled'):
+            import random
+            code          = f'{random.randint(100000, 999999)}'
+            code_hash     = bcrypt.hashpw(code.encode(), bcrypt.gensalt()).decode()
+            pending_token = secrets.token_urlsafe(48)
+            expires_at    = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+            # Clean up expired OTP rows for this user opportunistically
+            cur.execute('DELETE FROM email_otp WHERE user_id=%s AND expires_at < NOW()', (user['id'],))
+            cur.execute(
+                'INSERT INTO email_otp (user_id, pending_token, code_hash, expires_at, keep_signed_in) VALUES (%s,%s,%s,%s,%s)',
+                (user['id'], pending_token, code_hash, expires_at, int(keep_signed_in))
+            )
+            db.commit()
+            _send_otp_email(user['email'], code, name=user.get('name', ''))
+            return jsonify({'two_factor_required': True, 'pending_token': pending_token})
+
         token = create_token(user['id'])
         _log_security_event('login_success', user_id=user['id'])
         resp  = jsonify({
@@ -445,6 +601,151 @@ def login():
         return resp
     finally:
         db.close()
+
+
+@bp.route('/api/auth/verify-2fa', methods=['POST'])
+@limiter.limit('10 per 15 minutes')
+def verify_2fa():
+    data          = request.json or {}
+    pending_token = data.get('pending_token', '').strip()
+    code          = data.get('code', '').strip()
+
+    if not pending_token or not code:
+        return jsonify({'error': 'Code required'}), 400
+
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute(
+            'SELECT * FROM email_otp WHERE pending_token=%s',
+            (pending_token,)
+        )
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'error': 'Invalid or expired session. Please sign in again.'}), 400
+        if row['used']:
+            return jsonify({'error': 'Code already used. Please sign in again.'}), 400
+        if row['expires_at'] < datetime.datetime.utcnow():
+            return jsonify({'error': 'Code has expired. Please sign in again.'}), 400
+        if row['attempts'] >= 5:
+            cur.execute('UPDATE email_otp SET used=1 WHERE id=%s', (row['id'],))
+            db.commit()
+            return jsonify({'error': 'Too many attempts. Please sign in again.'}), 429
+
+        if not bcrypt.checkpw(code.encode(), row['code_hash'].encode()):
+            cur.execute('UPDATE email_otp SET attempts=attempts+1 WHERE id=%s', (row['id'],))
+            db.commit()
+            remaining = 4 - row['attempts']
+            if remaining <= 0:
+                cur.execute('UPDATE email_otp SET used=1 WHERE id=%s', (row['id'],))
+                db.commit()
+                return jsonify({'error': 'Too many attempts. Please sign in again.'}), 429
+            return jsonify({'error': f'Incorrect code. {remaining} attempt{"s" if remaining != 1 else ""} left.'}), 400
+
+        # Code correct — mark used and issue session
+        cur.execute('UPDATE email_otp SET used=1 WHERE id=%s', (row['id'],))
+        db.commit()
+
+        cur.execute('SELECT id, name, email, avatar FROM users WHERE id=%s', (row['user_id'],))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'error': 'Account not found'}), 400
+
+        token   = create_token(user['id'])
+        max_age = 30 * 24 * 3600 if row['keep_signed_in'] else None
+        _log_security_event('login_success', user_id=user['id'], detail='2fa=email')
+        resp = jsonify({'success': True, 'user': {'id': user['id'], 'name': user['name'], 'email': user['email'], 'avatar': user['avatar']}})
+        resp.set_cookie('token', token, httponly=True, samesite='Lax', max_age=max_age, secure=_SECURE_COOKIE)
+        return resp
+    finally:
+        db.close()
+
+
+@bp.route('/api/auth/resend-otp', methods=['POST'])
+@limiter.limit('3 per 15 minutes')
+def resend_otp():
+    """Resend a fresh OTP for an existing pending 2FA session."""
+    data          = request.json or {}
+    pending_token = data.get('pending_token', '').strip()
+    if not pending_token:
+        return jsonify({'error': 'Missing session token'}), 400
+
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('SELECT * FROM email_otp WHERE pending_token=%s', (pending_token,))
+        row = cur.fetchone()
+        if not row or row['used'] or row['expires_at'] < datetime.datetime.utcnow():
+            return jsonify({'error': 'Session expired. Please sign in again.'}), 400
+
+        cur.execute('SELECT email, name FROM users WHERE id=%s', (row['user_id'],))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'error': 'Account not found'}), 400
+
+        import random
+        code       = f'{random.randint(100000, 999999)}'
+        code_hash  = bcrypt.hashpw(code.encode(), bcrypt.gensalt()).decode()
+        expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+        cur.execute(
+            'UPDATE email_otp SET code_hash=%s, expires_at=%s, attempts=0 WHERE id=%s',
+            (code_hash, expires_at, row['id'])
+        )
+        db.commit()
+        _send_otp_email(user['email'], code, name=user.get('name', ''))
+        return jsonify({'success': True})
+    finally:
+        db.close()
+
+
+@bp.route('/api/auth/2fa/enable', methods=['POST'])
+@login_required
+def enable_2fa():
+    data     = request.json or {}
+    password = data.get('password', '')
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('SELECT password_hash, two_factor_enabled FROM users WHERE id=%s', (request.user_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'error': 'User not found'}), 404
+        if row.get('password_hash'):
+            if not password or not bcrypt.checkpw(password.encode(), row['password_hash'].encode()):
+                return jsonify({'error': 'Password is incorrect'}), 400
+        if row.get('two_factor_enabled'):
+            return jsonify({'success': True})  # already on
+        cur.execute('UPDATE users SET two_factor_enabled=1 WHERE id=%s', (request.user_id,))
+        db.commit()
+        _log_security_event('2fa_enabled', user_id=request.user_id)
+    finally:
+        db.close()
+    return jsonify({'success': True})
+
+
+@bp.route('/api/auth/2fa/disable', methods=['POST'])
+@login_required
+def disable_2fa():
+    data     = request.json or {}
+    password = data.get('password', '')
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('SELECT password_hash, two_factor_enabled FROM users WHERE id=%s', (request.user_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'error': 'User not found'}), 404
+        if row.get('password_hash'):
+            if not password or not bcrypt.checkpw(password.encode(), row['password_hash'].encode()):
+                return jsonify({'error': 'Password is incorrect'}), 400
+        if not row.get('two_factor_enabled'):
+            return jsonify({'success': True})  # already off
+        cur.execute('UPDATE users SET two_factor_enabled=0 WHERE id=%s', (request.user_id,))
+        db.commit()
+        _log_security_event('2fa_disabled', user_id=request.user_id)
+    finally:
+        db.close()
+    return jsonify({'success': True})
 
 
 @bp.route('/api/auth/google')
@@ -573,7 +874,8 @@ def me():
     try:
         cur.execute(
             '''SELECT id, name, email, avatar, bio, created_at, settings,
-                      handle, website, social_links, banner, password_hash
+                      handle, website, social_links, banner, password_hash,
+                      two_factor_enabled
                FROM users WHERE id=%s''',
             (request.user_id,)
         )

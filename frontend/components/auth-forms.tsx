@@ -142,6 +142,14 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
   const [resent, setResent] = useState(false);
   const [resending, setResending] = useState(false);
 
+  // 2FA state
+  const [pendingToken, setPendingToken] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpResent, setOtpResent] = useState(false);
+  const [otpResending, setOtpResending] = useState(false);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(""); setUnverified(false);
@@ -159,6 +167,10 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
         setError(data.error || "Sign in failed. Please try again.");
         return;
       }
+      if (data.two_factor_required) {
+        setPendingToken(data.pending_token);
+        return;
+      }
       window.location.href = "/";
     } catch {
       setError("Network error. Please try again.");
@@ -167,10 +179,51 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
     }
   }
 
+  async function handleOtpSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setOtpError(""); setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ pending_token: pendingToken, code: otpCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(data.error || "Verification failed.");
+        if (data.error?.includes("sign in again")) {
+          setPendingToken(""); setOtpCode("");
+        }
+        return;
+      }
+      window.location.href = "/";
+    } catch {
+      setOtpError("Network error. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  async function handleOtpResend() {
+    if (otpResending) return;
+    setOtpResending(true); setOtpResent(false); setOtpError("");
+    try {
+      const res = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pending_token: pendingToken }),
+      });
+      const data = await res.json();
+      if (res.ok) { setOtpResent(true); setOtpCode(""); }
+      else { setOtpError(data.error || "Failed to resend."); }
+    } catch { setOtpError("Network error."); }
+    finally { setOtpResending(false); }
+  }
+
   async function handleResend() {
     if (resending) return;
-    setResending(true);
-    setResent(false);
+    setResending(true); setResent(false);
     try {
       const res = await fetch("/api/auth/resend-verification", {
         method: "POST",
@@ -179,9 +232,59 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
       });
       if (res.ok) setResent(true);
     } catch {}
-    finally {
-      setResending(false);
-    }
+    finally { setResending(false); }
+  }
+
+  // OTP verification step
+  if (pendingToken) {
+    return (
+      <div className="auth-form-wrap">
+        <form className="auth-form" onSubmit={handleOtpSubmit}>
+          <div className="brand-row">
+            <span className="brand-mark" style={{ color: "var(--accent)" }}><BrandMark size={26} /></span>
+            <span>Grimoire</span>
+          </div>
+          <h1>Check your email.</h1>
+          <p className="sub">
+            We sent a 6-digit code to <strong>{email}</strong>. Enter it below to sign in.
+          </p>
+
+          {otpError && <div className="auth-error">{otpError}</div>}
+          {otpResent && <div style={{ fontSize: 13, color: "var(--accent)", marginBottom: 12 }}>New code sent — check your inbox.</div>}
+
+          <div className="field">
+            <label>Verification code</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              placeholder="000000"
+              value={otpCode}
+              onChange={e => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              autoFocus
+              autoComplete="one-time-code"
+              style={{ letterSpacing: "0.25em", fontSize: 22, fontWeight: 700, textAlign: "center" }}
+              required
+            />
+          </div>
+
+          <button className="btn btn-primary" style={{ width: "100%" }} disabled={otpLoading || otpCode.length !== 6}>
+            {otpLoading ? "Verifying…" : "Verify code"}{" "}
+            {!otpLoading && <Icon name="arrow-right" size={14} />}
+          </button>
+
+          <div className="auth-foot" style={{ marginTop: 16 }}>
+            Didn't get it?{" "}
+            <a style={{ cursor: otpResending ? "default" : "pointer", color: "var(--accent)" }} onClick={handleOtpResend}>
+              {otpResending ? "Sending…" : "Resend code"}
+            </a>
+            {" · "}
+            <a onClick={() => { setPendingToken(""); setOtpCode(""); setOtpError(""); }}>Back</a>
+          </div>
+        </form>
+      </div>
+    );
   }
 
   return (
