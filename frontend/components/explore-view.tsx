@@ -125,12 +125,21 @@ export function ExploreView() {
   const [blogTags, setBlogTags]     = useState<Tag[]>([]);
   const [writers, setWriters]       = useState<Writer[]>([]);
   const [sidebarLinks, setSidebarLinks] = useState<Link_[]>([]);
+  const [mobileLinks, setMobileLinks] = useState<Link_[]>([]);
 
   useEffect(() => {
     fetch("/api/blog/writers").then(r => r.ok ? r.json() : []).then(setWriters).catch(() => {});
     fetch("/api/blog/tags").then(r => r.ok ? r.json() : []).then(setBlogTags).catch(() => {});
     fetch("/api/explore?per_page=5").then(r => r.ok ? r.json() : { links: [] }).then(d => setSidebarLinks(d.links || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!search && !activeTag) { setMobileLinks([]); return; }
+    const p = new URLSearchParams({ per_page: "5" });
+    if (search) p.set("q", search);
+    if (activeTag) p.set("tag", activeTag);
+    fetch(`/api/explore?${p}`).then(r => r.ok ? r.json() : { links: [] }).then(d => setMobileLinks(d.links || [])).catch(() => {});
+  }, [search, activeTag]);
 
   const fetchPosts = useCallback(async () => {
     setPostsLoading(true);
@@ -255,49 +264,29 @@ export function ExploreView() {
           </div>
         </div>
 
-        {/* Mobile discovery: writers, topics, references — hidden on desktop */}
-        {(writers.length > 0 || blogTags.length > 0 || sidebarLinks.length > 0) && (
+        {/* Mobile discovery: topics + filtered references — hidden on desktop */}
+        {blogTags.length > 0 && (
           <div className="explore-mobile-discover">
-            {writers.length > 0 && (
-              <div className="mob-disc-section">
-                <div className="mob-disc-label"><Icon name="users" size={10} /> Writers</div>
-                <div className="mob-writers-row">
-                  {writers.slice(0, 8).map(w => (
-                    <Link key={w.id} href={`/user/${w.handle || toHandle(w.name)}`} className="mob-writer-chip">
-                      <img
-                        src={w.avatar || avatarFallback(w.name)}
-                        onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
-                        alt={w.name}
-                      />
-                      <span>{w.name.split(" ")[0]}</span>
-                    </Link>
-                  ))}
-                </div>
+            <div className="mob-disc-section">
+              <div className="mob-disc-label"><Icon name="tag" size={10} /> Topics</div>
+              <div className="mob-tags-row">
+                {blogTags.slice(0, 14).map(t => (
+                  <span
+                    key={t.name}
+                    className={`mob-tag-chip${activeTag === t.name ? " active" : ""}`}
+                    onClick={() => handleTagClick(t.name)}
+                  >
+                    #{t.name}<span className="n">{t.count}</span>
+                  </span>
+                ))}
               </div>
-            )}
+            </div>
 
-            {blogTags.length > 0 && (
-              <div className="mob-disc-section">
-                <div className="mob-disc-label"><Icon name="tag" size={10} /> Topics</div>
-                <div className="mob-tags-row">
-                  {blogTags.slice(0, 14).map(t => (
-                    <span
-                      key={t.name}
-                      className={`mob-tag-chip${activeTag === t.name ? " active" : ""}`}
-                      onClick={() => handleTagClick(t.name)}
-                    >
-                      #{t.name}<span className="n">{t.count}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {sidebarLinks.length > 0 && (
+            {isFiltering && mobileLinks.length > 0 && (
               <div className="mob-disc-section">
                 <div className="mob-disc-label"><Icon name="bookmark" size={10} /> References</div>
                 <div className="mob-refs-list">
-                  {sidebarLinks.slice(0, SIDEBAR_LINKS).map(l => (
+                  {mobileLinks.map(l => (
                     <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="mob-ref-item">
                       {l.favicon ? (
                         <img src={l.favicon} style={{ width: 13, height: 13, borderRadius: 3, flexShrink: 0 }} alt=""
@@ -342,14 +331,6 @@ export function ExploreView() {
                 return (
                   <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
                     <article className="post-card">
-                      <div className="post-cover" style={coverStyle(p, i)}>
-                        <div className="post-cover-overlay" />
-                        {p.reading_time > 0 && (
-                          <span className="post-readtime">
-                            <Icon name="book" size={11} /> {p.reading_time} min
-                          </span>
-                        )}
-                      </div>
                       <div className="post-body">
                         {tagsList.length > 0 && (
                           <div className="lc-tags">
@@ -362,6 +343,11 @@ export function ExploreView() {
                           </div>
                         )}
                         <h3 className="post-title">{p.title}</h3>
+                        {p.reading_time > 0 && (
+                          <div className="post-readtime-inline">
+                            <Icon name="book" size={10} /> {p.reading_time} min read
+                          </div>
+                        )}
                         <div className="post-meta">
                           <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`}
                             onClick={e => e.stopPropagation()} className="post-author"
