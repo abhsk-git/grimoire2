@@ -302,13 +302,7 @@ export function SignInForm({ switchTo, banner, initialPendingToken }: { switchTo
         <h1>Welcome back.</h1>
         <p className="sub">Sign in to open your grimoire.</p>
 
-        <div className="auth-providers">
-          <a href="/api/auth/google" className="btn btn-ghost">
-            <GoogleIcon /> Continue with Google
-          </a>
-        </div>
-
-        <div className="divider">or with email</div>
+        <div className="divider">sign in with email</div>
 
         {error && <div className="auth-error">{error}</div>}
         {unverified && (
@@ -469,12 +463,7 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         <h1>Start writing.</h1>
         <p className="sub">Free forever for personal use. No credit card.</p>
 
-        <div className="auth-providers">
-          <a href="/api/auth/google" className="btn btn-ghost">
-            <GoogleIcon /> Sign up with Google
-          </a>
-        </div>
-        <div className="divider">or with email</div>
+        <div className="divider">create account with email</div>
 
         {error && <div className="auth-error">{error}</div>}
 
