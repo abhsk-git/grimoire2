@@ -926,7 +926,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .explore-app .public-header {
   flex-shrink: 0;
   position: relative;
-  background: var(--bg); /* solid — nothing scrolls behind it */
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
 }
 .explore-app-body {
   flex: 1;
@@ -979,7 +980,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   position: sticky;
   top: 0;
   z-index: 30;
-  background: var(--bg);
+  background: color-mix(in oklab, var(--bg) 82%, transparent);
+  backdrop-filter: blur(16px) saturate(150%);
   padding: 36px 0 16px;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border);
@@ -1312,8 +1314,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .explore-main-hero {
     position: sticky;
     top: 68px;
-    background: var(--bg);
-    box-shadow: 0 -20px 0 0 var(--bg);
+    background: color-mix(in oklab, var(--bg) 82%, transparent);
+    backdrop-filter: blur(16px) saturate(150%);
     padding: 20px 0 14px;
   }
 
@@ -1473,7 +1475,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .public-main { padding: 24px 0 60px; }
   .explore-cards { grid-template-columns: 1fr !important; }
   /* Header dropped to 60px — update hero sticky top to match */
-  .explore-main-hero { top: 60px; box-shadow: 0 -20px 0 0 var(--bg); }
+  .explore-main-hero { top: 60px; }
 }
 @media (max-width: 480px) {
   .public-header-right .avatar { display: none; }
