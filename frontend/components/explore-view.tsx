@@ -231,13 +231,89 @@ export function ExploreView() {
       {/* ── RIGHT MAIN ── */}
       <main className="explore-main">
 
-        {/* Hero: title only */}
+        {/* Hero: title + mobile search */}
         <div className="explore-main-hero">
           <h1 className="explore-main-title">
             Open the <span className="serif">Grimoire</span>.
           </h1>
           <p className="explore-main-sub">Read what the curious are writing.</p>
+
+          {/* Mobile search — replaces the hidden header search on small screens */}
+          <div className="explore-mobile-search">
+            <Icon name="search" size={13} />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === "Escape" && setSearch("")}
+              placeholder="Search stories, writers, tags…"
+            />
+            {search && (
+              <button className="explore-mobile-search-clear" onClick={() => setSearch("")}>
+                <Icon name="x" size={12} />
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Mobile discovery: writers, topics, references — hidden on desktop */}
+        {(writers.length > 0 || blogTags.length > 0 || sidebarLinks.length > 0) && (
+          <div className="explore-mobile-discover">
+            {writers.length > 0 && (
+              <div className="mob-disc-section">
+                <div className="mob-disc-label"><Icon name="users" size={10} /> Writers</div>
+                <div className="mob-writers-row">
+                  {writers.slice(0, 8).map(w => (
+                    <Link key={w.id} href={`/user/${w.handle || toHandle(w.name)}`} className="mob-writer-chip">
+                      <img
+                        src={w.avatar || avatarFallback(w.name)}
+                        onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
+                        alt={w.name}
+                      />
+                      <span>{w.name.split(" ")[0]}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {blogTags.length > 0 && (
+              <div className="mob-disc-section">
+                <div className="mob-disc-label"><Icon name="tag" size={10} /> Topics</div>
+                <div className="mob-tags-row">
+                  {blogTags.slice(0, 14).map(t => (
+                    <span
+                      key={t.name}
+                      className={`mob-tag-chip${activeTag === t.name ? " active" : ""}`}
+                      onClick={() => handleTagClick(t.name)}
+                    >
+                      #{t.name}<span className="n">{t.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {sidebarLinks.length > 0 && (
+              <div className="mob-disc-section">
+                <div className="mob-disc-label"><Icon name="bookmark" size={10} /> References</div>
+                <div className="mob-refs-list">
+                  {sidebarLinks.slice(0, SIDEBAR_LINKS).map(l => (
+                    <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="mob-ref-item">
+                      {l.favicon ? (
+                        <img src={l.favicon} style={{ width: 13, height: 13, borderRadius: 3, flexShrink: 0 }} alt=""
+                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      ) : (
+                        <Icon name="globe" size={11} style={{ flexShrink: 0, color: "var(--fg-muted)" }} />
+                      )}
+                      <span className="mob-ref-title">{l.title || getDomain(l.url)}</span>
+                      <span className="mob-ref-domain">{getDomain(l.url)}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {activeTag && (
           <div className="active-tag-row">

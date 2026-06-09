@@ -999,6 +999,10 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .explore-main-sub { font-size: 12px; color: var(--fg-muted); margin: 0; }
 
+/* Mobile-only explore elements — hidden on desktop */
+.explore-mobile-search { display: none; }
+.explore-mobile-discover { display: none; }
+
 .explore-main-search {
   flex: 1 1 280px;
   max-width: 460px;
@@ -1293,23 +1297,172 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   /* Revert app-layout to normal page scroll on mobile */
   .explore-app { height: auto; }
   .explore-app-body { overflow: visible; min-height: auto; }
-  .explore-app-container { overflow: visible; min-height: auto; padding-top: 32px; }
+  .explore-app-container { overflow: visible; min-height: auto; padding-top: 0; }
   .explore-layout { grid-template-columns: 1fr; flex: none; min-height: auto; }
   .explore-sidebar { display: none; }
   .explore-main { overflow-y: visible; min-height: auto; }
-  /* Restore sticky header — our desktop override (.explore-app .public-header) set position:relative */
+  /* Restore sticky header */
   .explore-app .public-header {
     position: sticky;
     top: 0;
     background: color-mix(in oklab, var(--bg) 78%, transparent);
     backdrop-filter: blur(14px) saturate(140%);
   }
-  /* Hero sticks just below the 68px sticky header; shadow covers the 36px top padding gap */
+  /* Hero sticks just below the 68px sticky header; reduced padding since search bar is inside */
   .explore-main-hero {
     position: sticky;
     top: 68px;
     background: var(--bg);
-    box-shadow: 0 -36px 0 0 var(--bg);
+    box-shadow: 0 -20px 0 0 var(--bg);
+    padding: 20px 0 14px;
+  }
+
+  /* ── Mobile search bar ── */
+  .explore-mobile-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    height: 40px;
+    padding: 0 13px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .explore-mobile-search input {
+    flex: 1;
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 14px;
+  }
+  .explore-mobile-search input::placeholder { color: var(--fg-muted); }
+  .explore-mobile-search-clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    color: var(--fg-muted);
+    display: flex;
+    align-items: center;
+  }
+
+  /* ── Mobile discovery strip ── */
+  .explore-mobile-discover {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .mob-disc-section { display: flex; flex-direction: column; gap: 9px; }
+  .mob-disc-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+
+  /* Writers horizontal scroll */
+  .mob-writers-row {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .mob-writers-row::-webkit-scrollbar { display: none; }
+  .mob-writer-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    color: var(--fg);
+    flex-shrink: 0;
+  }
+  .mob-writer-chip img {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    object-fit: cover;
+    border: 1.5px solid var(--border);
+  }
+  .mob-writer-chip span {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-soft);
+    white-space: nowrap;
+    max-width: 58px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Topics horizontal scroll */
+  .mob-tags-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .mob-tags-row::-webkit-scrollbar { display: none; }
+  .mob-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    color: var(--fg-soft);
+    flex-shrink: 0;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .mob-tag-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .mob-tag-chip .n { font-size: 10px; opacity: 0.5; margin-left: 2px; }
+
+  /* References list */
+  .mob-refs-list { display: flex; flex-direction: column; gap: 6px; }
+  .mob-ref-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--fg);
+    padding: 9px 11px;
+    background: var(--bg-elev);
+    border-radius: 9px;
+    border: 1px solid var(--border);
+  }
+  .mob-ref-title {
+    font-size: 12px;
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mob-ref-domain {
+    font-size: 10px;
+    color: var(--fg-muted);
+    flex-shrink: 0;
   }
 }
 @media (max-width: 720px) {
@@ -1320,7 +1473,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .public-main { padding: 24px 0 60px; }
   .explore-cards { grid-template-columns: 1fr !important; }
   /* Header dropped to 60px — update hero sticky top to match */
-  .explore-main-hero { top: 60px; }
+  .explore-main-hero { top: 60px; box-shadow: 0 -20px 0 0 var(--bg); }
 }
 @media (max-width: 480px) {
   .public-header-right .avatar { display: none; }
