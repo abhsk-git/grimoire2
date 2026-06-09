@@ -785,9 +785,11 @@ def google_callback():
                 user_id = user['id']
                 two_factor_enabled = bool(user.get('two_factor_enabled'))
                 if not user.get('google_id'):
+                    existing = user.get('avatar') or ''
+                    keep = existing and 'ui-avatars.com' not in existing
                     cur.execute(
                         'UPDATE users SET google_id=%s, avatar=%s WHERE id=%s',
-                        (google_id, avatar or user['avatar'], user_id)
+                        (google_id, existing if keep else (avatar or existing), user_id)
                     )
                     db.commit()
 
