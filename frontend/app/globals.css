@@ -807,15 +807,20 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background: var(--bg);
   display: flex; flex-direction: column;
 }
+/* Dark theme: deep nebula atmosphere */
+[data-theme="dark"] .explore-page {
+  background:
+    radial-gradient(ellipse 80% 55% at -5% 12%,  hsla(263, 58%, 28%, 0.65) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 108% 88%, hsla(215, 70%, 22%, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 95%  4%,  hsla(310, 50%, 18%, 0.4)  0%, transparent 50%),
+    radial-gradient(ellipse 55% 45% at 50% 55%,  hsla(250, 40%, 12%, 0.35) 0%, transparent 60%),
+    #06060e;
+}
 [data-theme="geek"] .explore-page {
   background:
     linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 28px 28px,
     linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 28px 28px,
-    var(--bg);
-}
-[data-theme="dark"] .explore-page {
-  background-image: radial-gradient(color-mix(in oklab, var(--fg) 6%, transparent) 1px, transparent 1px);
-  background-size: 22px 22px;
+    #0a0a0a;
 }
 
 .container-wide {
@@ -915,80 +920,47 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .pub-foot-inner { flex-direction: column; gap: 16px; }
 }
 
-/* ── Explore app layout: page doesn't scroll, only cards column does ── */
+/* ── Explore: normal page scroll, no sidebar, centered column ── */
 .explore-app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  /* no overflow:hidden here — that breaks position:sticky on the header */
+  min-height: 100vh;
 }
-/* header sits naturally at top; page never scrolls so sticky isn't needed */
 .explore-app .public-header {
-  flex-shrink: 0;
-  position: relative;
-  background: var(--bg);
-}
-.explore-app-body {
-  flex: 1;
-  min-height: 0; /* allow flex child to shrink below content size */
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-.explore-app-container {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-/* Two-column grid fills the app body */
-.explore-layout {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 32px;
-  /* no align-items:start — children must stretch so explore-main gets a bounded height */
-  flex: 1;
-  min-height: 0;
-}
-
-/* ── Left sidebar — static, never moves ── */
-.explore-sidebar {
-  padding: 28px 20px 20px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-.explore-sidebar::-webkit-scrollbar { display: none; }
-
-/* ── Right main column — the only thing that scrolls ── */
-.explore-main {
-  overflow-y: auto;
-  min-height: 0;
-  padding: 0 0 40px; /* no top padding — hero covers the top flush */
-  min-width: 0;
-  scrollbar-width: none; /* hide scrollbar */
-}
-.explore-main::-webkit-scrollbar { display: none; }
-
-/* Hero sticks flush at top of the main scroll container — no gap */
-.explore-main-hero {
   position: sticky;
   top: 0;
-  z-index: 30;
-  background: var(--bg);
-  padding: 32px 0 16px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  z-index: 40;
+  background: color-mix(in oklab, var(--bg) 82%, transparent);
+  backdrop-filter: blur(16px) saturate(150%);
 }
-[data-theme="dark"] .explore-main-hero,
+[data-theme="dark"] .explore-app .public-header {
+  background: rgba(6, 6, 14, 0.82);
+}
+.explore-app-body { flex: 1; display: flex; flex-direction: column; }
+.explore-app-container { flex: 1; display: flex; flex-direction: column; }
+.explore-layout {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+  width: 100%;
+}
+.explore-sidebar { display: none; }
+.explore-main { min-width: 0; }
+
+/* Hero: transparent so wallpaper shows through; gradient mask covers scroll-behind content */
+.explore-main-hero {
+  position: sticky;
+  top: 68px;
+  z-index: 30;
+  padding: 40px 0 24px;
+  margin-bottom: 24px;
+  background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+}
+[data-theme="dark"] .explore-main-hero {
+  background: linear-gradient(to bottom, #06060e 60%, transparent);
+}
 [data-theme="geek"] .explore-main-hero {
-  background: var(--bg);
+  background: linear-gradient(to bottom, #0a0a0a 60%, transparent);
 }
 .explore-hero-prefix {
   font-family: var(--font-mono);
@@ -1046,6 +1018,16 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  background: var(--bg-elev);
+}
+[data-theme="dark"] .feed-list {
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+[data-theme="geek"] .feed-list {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 .feed-row {
   display: flex;
@@ -1065,6 +1047,10 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background: var(--bg-soft);
   border-left-color: var(--accent);
 }
+[data-theme="dark"] .feed-row { border-bottom-color: rgba(255,255,255,0.05); }
+[data-theme="dark"] .feed-row:hover { background: rgba(255,255,255,0.04); }
+[data-theme="geek"] .feed-row { border-bottom-color: rgba(255,255,255,0.07); }
+[data-theme="geek"] .feed-row:hover { background: rgba(255,255,255,0.05); }
 .feed-row-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
@@ -1374,34 +1360,20 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 
 /* ── Explore breakpoints ── */
-@media (max-width: 1024px) {
-  .explore-layout { grid-template-columns: 180px 1fr; gap: 24px; }
-}
 @media (max-width: 900px) {
   .public-search { display: none; }
-  /* Revert app-layout to normal page scroll on mobile */
-  .explore-app { height: auto; }
-  .explore-app-body { overflow: visible; min-height: auto; }
-  .explore-app-container { overflow: visible; min-height: auto; padding-top: 0; }
-  .explore-layout { grid-template-columns: 1fr; flex: none; min-height: auto; }
-  .explore-sidebar { display: none; }
-  .explore-main { overflow-y: visible; min-height: auto; }
-  /* Restore sticky header */
-  .explore-app .public-header {
-    position: sticky;
-    top: 0;
-    background: color-mix(in oklab, var(--bg) 78%, transparent);
-    backdrop-filter: blur(14px) saturate(140%);
-  }
-  /* Hero sticks just below the 68px sticky header; reduced padding since search bar is inside */
+  .explore-layout { padding: 0 16px 60px; }
+  /* Hero: full bleed on mobile */
   .explore-main-hero {
-    position: sticky;
     top: 68px;
-    background: var(--bg);
-    padding: 20px 18px 14px;
-    margin-left: -18px;
-    margin-right: -18px;
+    padding: 20px 16px 14px;
+    margin-left: -16px;
+    margin-right: -16px;
     margin-bottom: 0;
+    background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+  }
+  [data-theme="dark"] .explore-main-hero {
+    background: linear-gradient(to bottom, #06060e 70%, transparent);
   }
 
   /* ── Mobile search bar ── */
