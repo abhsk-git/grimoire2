@@ -242,10 +242,11 @@ export function ExploreView() {
 
         {/* Hero: title + mobile search */}
         <div className="explore-main-hero">
+          <div className="explore-hero-prefix">grimoire://explore</div>
           <h1 className="explore-main-title">
             Open the <span className="serif">Grimoire</span>.
           </h1>
-          <p className="explore-main-sub">Read what the curious are writing.</p>
+          <p className="explore-main-sub">Read what the curious are writing<span className="hero-cursor">_</span></p>
 
           {/* Mobile search — replaces the hidden header search on small screens */}
           <div className="explore-mobile-search">
@@ -321,58 +322,49 @@ export function ExploreView() {
             <p>No stories found{search ? ` for "${search}"` : activeTag ? ` tagged #${activeTag}` : ""}.</p>
           </div>
         ) : (
-          <div className="explore-cards-wrap">
+          <div className="explore-feed-wrap">
             <div className="explore-feed-label">
-              {isFiltering ? "Results" : "All stories"}
+              {isFiltering ? `${posts.length} result${posts.length !== 1 ? "s" : ""}` : `${posts.length} stories`}
             </div>
-            <div className="cards explore-cards">
+            <div className="feed-list">
               {posts.map((p, i) => {
                 const tagsList = (p.tags || "").split(",").map(t => t.trim()).filter(Boolean);
                 return (
-                  <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
-                    <article className="post-card">
-                      <div className="post-body">
-                        {tagsList.length > 0 && (
-                          <div className="lc-tags">
-                            {tagsList.slice(0, 2).map(t => (
-                              <span key={t} className="lc-tag"
-                                onClick={e => { e.preventDefault(); handleTagClick(t); }}
-                                style={{ cursor: "pointer" }}
-                              >{t}</span>
-                            ))}
-                          </div>
-                        )}
-                        <h3 className="post-title">{p.title}</h3>
-                        {p.reading_time > 0 && (
-                          <div className="post-readtime-inline">
-                            <Icon name="book" size={10} /> {p.reading_time} min read
-                          </div>
-                        )}
-                        <div className="post-meta">
-                          <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`}
-                            onClick={e => e.stopPropagation()} className="post-author"
-                            style={{ textDecoration: "none", color: "inherit" }}>
-                            <img
-                              src={p.author_avatar || avatarFallback(p.author_name)}
-                              onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                              style={{ width: 18, height: 18, borderRadius: "5px", objectFit: "cover", flexShrink: 0 }}
-                              alt={p.author_name} loading="lazy"
-                            />
-                            {p.author_name}
-                          </Link>
-                          <span className="meta-dot">·</span>
-                          <span>{p.pub_date}</span>
-                          <span style={{ flex: 1 }} />
-                          <button
-                            onClick={e => toggleBookmark(e, p)}
-                            disabled={bookmarking.has(p.id)}
-                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", display: "flex", alignItems: "center", color: bookmarked.has(p.id) ? "var(--accent)" : "var(--fg-soft)" }}
-                          >
-                            <Icon name="bookmark" size={12} fill={bookmarked.has(p.id) ? "currentColor" : "none"} />
-                          </button>
-                        </div>
+                  <Link key={p.id} href={`/blog/${p.slug}`} className="feed-row" style={{ animationDelay: `${i * 35}ms` }}>
+                    <div className="feed-row-head">
+                      <div className="feed-tags">
+                        {tagsList.slice(0, 3).map(t => (
+                          <span key={t} className="feed-tag"
+                            onClick={e => { e.preventDefault(); handleTagClick(t); }}
+                          >#{t}</span>
+                        ))}
                       </div>
-                    </article>
+                      <button
+                        className="feed-bookmark"
+                        onClick={e => toggleBookmark(e, p)}
+                        disabled={bookmarking.has(p.id)}
+                        style={{ color: bookmarked.has(p.id) ? "var(--accent)" : "var(--fg-muted)" }}
+                      >
+                        <Icon name="bookmark" size={12} fill={bookmarked.has(p.id) ? "currentColor" : "none"} />
+                      </button>
+                    </div>
+                    <div className="feed-title">{p.title}</div>
+                    <div className="feed-meta">
+                      <img
+                        src={p.author_avatar || avatarFallback(p.author_name)}
+                        onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
+                        className="feed-avatar" alt={p.author_name} loading="lazy"
+                      />
+                      <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`}
+                        onClick={e => e.stopPropagation()} className="feed-author">
+                        {p.author_name}
+                      </Link>
+                      <span className="feed-dot">·</span>
+                      <span>{p.pub_date}</span>
+                      {p.reading_time > 0 && (
+                        <><span className="feed-dot">·</span><span>{p.reading_time} min read</span></>
+                      )}
+                    </div>
                   </Link>
                 );
               })}
