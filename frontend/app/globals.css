@@ -915,48 +915,173 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .pub-foot-inner { flex-direction: column; gap: 16px; }
 }
 
-/* explore hero + tabs */
-.explore-page .explore-tabs { margin: 26px auto 0; }
-.explore-page .explore-section { margin-top: 44px; }
-.explore-page .explore-section h2 {
-  font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--fg-soft); margin: 0 0 16px; font-weight: 600;
+/* ── Explore app layout: page doesn't scroll, only cards column does ── */
+.explore-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  /* no overflow:hidden here — that breaks position:sticky on the header */
+}
+/* header sits naturally at top; page never scrolls so sticky isn't needed */
+.explore-app .public-header {
+  flex-shrink: 0;
+  position: relative;
+  background: var(--bg); /* solid — nothing scrolls behind it */
+}
+.explore-app-body {
+  flex: 1;
+  min-height: 0; /* allow flex child to shrink below content size */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.explore-app-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
-.explore-hero {
-  text-align: center;
-  padding: 40px 0 32px;
+/* Two-column grid fills the app body */
+.explore-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 32px;
+  /* no align-items:start — children must stretch so explore-main gets a bounded height */
+  flex: 1;
+  min-height: 0;
 }
-.explore-hero h1 {
+
+/* ── Left sidebar — static, never moves ── */
+.explore-sidebar {
+  padding: 36px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-self: start; /* only as tall as content; doesn't stretch to grid height */
+  overflow: hidden;
+}
+
+/* ── Right main column — the only thing that scrolls ── */
+.explore-main {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0 0 40px; /* no top padding — hero covers the top flush */
+  min-width: 0;
+  scrollbar-width: none; /* hide scrollbar */
+}
+.explore-main::-webkit-scrollbar { display: none; }
+
+/* Hero sticks flush at top of the main scroll container — no gap */
+.explore-main-hero {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--bg);
+  padding: 36px 0 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.explore-main-hero-text { flex: 1 1 200px; }
+.explore-main-title {
   font-family: var(--font-display);
-  font-size: clamp(36px, 5vw, 56px);
-  letter-spacing: -0.03em; line-height: 1;
-  margin: 14px 0 12px; font-weight: 700;
+  font-size: clamp(22px, 2.6vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin: 0 0 3px;
 }
-.explore-hero h1 .serif {
+.explore-main-title .serif {
   font-family: var(--font-serif); font-style: italic; font-weight: 500;
   color: var(--accent);
 }
-[data-theme="geek"] .explore-hero h1 .serif { font-family: var(--font-mono); font-style: normal; }
-.explore-hero p { color: var(--fg-muted); font-size: 16px; margin: 0; }
+.explore-main-sub { font-size: 12px; color: var(--fg-muted); margin: 0; }
 
-.explore-tabs {
-  display: inline-flex; padding: 4px;
-  background: var(--bg-elev); border: 1px solid var(--border);
-  border-radius: 14px;
-  margin: 22px auto 0;
+.explore-main-search {
+  flex: 1 1 280px;
+  max-width: 460px;
+  margin: 0 !important;
 }
-.explore-tabs button {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 40px; padding: 0 18px; border-radius: 10px;
-  color: var(--fg-muted); font-weight: 600; font-size: 14px;
+
+/* Feed label + cards area */
+.explore-feed-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--fg-soft);
+  margin-bottom: 12px;
 }
-.explore-tabs button.active {
-  background: var(--bg);
-  color: var(--fg);
-  box-shadow: var(--shadow-sm);
+.explore-cards-wrap {
+  /* gives the grid a little room to breathe below the sticky hero */
+  padding-top: 2px;
 }
-.explore-tabs button .sub { font-size: 11px; color: var(--fg-soft); font-weight: 500; }
+
+/* 3-col post grid in explore */
+.explore-cards {
+  grid-template-columns: repeat(3, 1fr) !important;
+}
+
+/* Sidebar shared card */
+.sidebar-section {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+.sidebar-section-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--fg-soft);
+  margin-bottom: 12px;
+}
+
+/* Sidebar writer row */
+.sidebar-writer {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  text-decoration: none; color: inherit;
+}
+.sidebar-writer:first-of-type { border-top: none; padding-top: 0; }
+.sidebar-writer:last-of-type  { padding-bottom: 0; }
+.sidebar-writer:hover .sw-name { color: var(--accent); }
+.sw-name { font-size: 13px; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s; }
+.sw-meta { font-size: 10px; color: var(--fg-soft); margin-top: 1px; }
+
+/* Sidebar tags */
+.sidebar-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.sidebar-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; padding: 4px 9px; border-radius: 999px;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  color: var(--fg-muted); font-weight: 500; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.sidebar-tag:hover { color: var(--fg); border-color: var(--border-strong); }
+.sidebar-tag.active { background: var(--accent-soft); border-color: color-mix(in oklab, var(--accent) 35%, transparent); color: var(--accent-ink); font-weight: 600; }
+.sidebar-tag.muted  { opacity: 0.6; }
+.sidebar-tag .n { font-size: 10px; color: var(--fg-soft); }
+
+/* Sidebar reference row */
+.sidebar-ref {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  text-decoration: none; color: inherit;
+}
+.sidebar-ref:first-of-type { border-top: none; padding-top: 0; }
+.sidebar-ref:last-of-type  { padding-bottom: 0; }
+.sidebar-ref:hover .sr-title { color: var(--accent); }
+.sr-title { font-size: 12px; font-weight: 500; color: var(--fg); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: color .15s; }
+.sr-domain { font-size: 10px; color: var(--fg-soft); margin-top: 2px; font-family: var(--font-mono); }
+
+/* Active tag row */
+.active-tag-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 14px; font-size: 12px; color: var(--fg-soft);
+}
 
 .explore-section { margin-top: 36px; }
 .explore-section h2 {
@@ -1157,9 +1282,35 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   margin-top: 4px;
 }
 
-/* mobile explore */
+
+/* ── Explore breakpoints ── */
+@media (max-width: 1024px) {
+  .explore-layout { grid-template-columns: 180px 1fr; gap: 24px; }
+  .explore-cards { grid-template-columns: repeat(2, 1fr) !important; }
+}
 @media (max-width: 900px) {
   .public-search { display: none; }
+  /* Revert app-layout to normal page scroll on mobile */
+  .explore-app { height: auto; }
+  .explore-app-body { overflow: visible; min-height: auto; }
+  .explore-app-container { overflow: visible; min-height: auto; padding-top: 32px; }
+  .explore-layout { grid-template-columns: 1fr; flex: none; min-height: auto; }
+  .explore-sidebar { display: none; }
+  .explore-main { overflow-y: visible; min-height: auto; }
+  /* Restore sticky header — our desktop override (.explore-app .public-header) set position:relative */
+  .explore-app .public-header {
+    position: sticky;
+    top: 0;
+    background: color-mix(in oklab, var(--bg) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+  /* Hero sticks just below the 68px sticky header; shadow covers the 36px top padding gap */
+  .explore-main-hero {
+    position: sticky;
+    top: 68px;
+    background: var(--bg);
+    box-shadow: 0 -36px 0 0 var(--bg);
+  }
 }
 @media (max-width: 720px) {
   .container-wide { padding: 0 18px; }
@@ -1167,7 +1318,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .public-header .brand span:last-child { display: none; }
   .public-header-right .btn-ghost { display: none; }
   .public-main { padding: 24px 0 60px; }
-  .explore-tabs { width: 100%; }
+  .explore-cards { grid-template-columns: 1fr !important; }
+  /* Header dropped to 60px — update hero sticky top to match */
+  .explore-main-hero { top: 60px; }
 }
 @media (max-width: 480px) {
   .public-header-right .avatar { display: none; }

@@ -5,8 +5,6 @@ import Link from "next/link";
 import { Icon } from "./icons";
 import { useAuth } from "@/lib/auth";
 
-type Tab = "stories" | "writers" | "references";
-
 interface Post {
   id: number;
   title: string;
@@ -51,10 +49,7 @@ interface Link_ {
   author_handle?: string;
 }
 
-interface Tag {
-  name: string;
-  count: number;
-}
+interface Tag { name: string; count: number; }
 
 const COVER_GRADIENTS = [
   "linear-gradient(135deg,#1b3a6b,#5563d0 60%,#8e8df0)",
@@ -66,7 +61,8 @@ const COVER_GRADIENTS = [
 ];
 
 function coverStyle(post: Post, idx: number): React.CSSProperties {
-  if (post.cover_image) return { backgroundImage: `url(${post.cover_image})`, backgroundSize: "cover", backgroundPosition: "center" };
+  if (post.cover_image)
+    return { backgroundImage: `url(${post.cover_image})`, backgroundSize: "cover", backgroundPosition: "center" };
   return { background: COVER_GRADIENTS[idx % COVER_GRADIENTS.length] };
 }
 
@@ -74,7 +70,7 @@ function avatarFallback(name: string) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=44&background=6366f1&color=fff`;
 }
 
-const toHandle = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
+const toHandle = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
 function fmtViews(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -85,482 +81,244 @@ function getDomain(url: string): string {
   try { return new URL(url).hostname.replace("www.", ""); } catch { return url; }
 }
 
-const TAG_CLOUD_LIMIT = 15;
+const SIDEBAR_WRITERS  = 4;
+const SIDEBAR_TAGS     = 8;
+const SIDEBAR_LINKS    = 3;
 
 export function ExploreView() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>("stories");
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
-  const [showAllTags, setShowAllTags] = useState(false);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("q");
     if (q) setSearch(q);
   }, []);
 
-  // postId → saved linkId (undefined = not bookmarked)
   const [bookmarked, setBookmarked] = useState<Map<number, number>>(new Map());
   const [bookmarking, setBookmarking] = useState<Set<number>>(new Set());
 
   async function toggleBookmark(e: React.MouseEvent, post: Post) {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     if (!user) { window.location.href = "/login"; return; }
-
     const linkId = bookmarked.get(post.id);
     setBookmarking(prev => new Set(prev).add(post.id));
-
     try {
       if (linkId !== undefined) {
         const r = await fetch(`/api/links/${linkId}`, { method: "DELETE", credentials: "include" });
         if (r.ok) setBookmarked(prev => { const m = new Map(prev); m.delete(post.id); return m; });
       } else {
-        const postUrl = window.location.origin + "/blog/" + post.slug;
         const r = await fetch("/api/links", {
-          method: "POST",
-          credentials: "include",
+          method: "POST", credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: postUrl,
-            title: post.title,
-            description: post.excerpt || "",
-            image: post.cover_image || "",
-            favicon: "",
-            tags: post.tags || "",
-            is_public: false,
-          }),
+          body: JSON.stringify({ url: window.location.origin + "/blog/" + post.slug, title: post.title, description: post.excerpt || "", image: post.cover_image || "", favicon: "", tags: post.tags || "", is_public: false }),
         });
-        if (r.ok) {
-          const data = await r.json();
-          setBookmarked(prev => new Map(prev).set(post.id, data.id));
-        }
+        if (r.ok) { const d = await r.json(); setBookmarked(prev => new Map(prev).set(post.id, d.id)); }
       }
     } catch {}
-    finally {
-      setBookmarking(prev => { const s = new Set(prev); s.delete(post.id); return s; });
-    }
+    finally { setBookmarking(prev => { const s = new Set(prev); s.delete(post.id); return s; }); }
   }
 
-  // Stories
-  const [posts, setPosts] = useState<Post[]>([]);
+  // Data
+  const [posts, setPosts]           = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
-  const [blogTags, setBlogTags] = useState<Tag[]>([]);
+  const [blogTags, setBlogTags]     = useState<Tag[]>([]);
+  const [writers, setWriters]       = useState<Writer[]>([]);
+  const [sidebarLinks, setSidebarLinks] = useState<Link_[]>([]);
 
-  // Writers
-  const [writers, setWriters] = useState<Writer[]>([]);
-  const [writersLoading, setWritersLoading] = useState(false);
-
-  // References
-  const [links, setLinks] = useState<Link_[]>([]);
-  const [linksLoading, setLinksLoading] = useState(false);
-  const [linkTags, setLinkTags] = useState<Tag[]>([]);
-  const [linksTotal, setLinksTotal] = useState(0);
+  useEffect(() => {
+    fetch("/api/blog/writers").then(r => r.ok ? r.json() : []).then(setWriters).catch(() => {});
+    fetch("/api/blog/tags").then(r => r.ok ? r.json() : []).then(setBlogTags).catch(() => {});
+    fetch("/api/explore?per_page=5").then(r => r.ok ? r.json() : { links: [] }).then(d => setSidebarLinks(d.links || [])).catch(() => {});
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     setPostsLoading(true);
     try {
-      const params = new URLSearchParams({ per_page: "20" });
-      if (search) params.set("q", search);
-      if (activeTag) params.set("tag", activeTag);
-      const r = await fetch(`/api/blog/posts?${params}`);
-      if (r.ok) {
-        const data = await r.json();
-        setPosts(data.posts || []);
-      }
+      const p = new URLSearchParams({ per_page: "18" });
+      if (search) p.set("q", search);
+      if (activeTag) p.set("tag", activeTag);
+      const r = await fetch(`/api/blog/posts?${p}`);
+      if (r.ok) setPosts((await r.json()).posts || []);
     } catch {}
-    finally {
-      setPostsLoading(false);
-    }
+    finally { setPostsLoading(false); }
   }, [search, activeTag]);
 
-  const fetchBlogTags = useCallback(async () => {
-    try {
-      const r = await fetch("/api/blog/tags");
-      if (r.ok) setBlogTags(await r.json());
-    } catch {}
-  }, []);
-
-  const fetchWriters = useCallback(async () => {
-    setWritersLoading(true);
-    try {
-      const r = await fetch("/api/blog/writers");
-      if (r.ok) setWriters(await r.json());
-    } catch {}
-    finally {
-      setWritersLoading(false);
-    }
-  }, []);
-
-  const fetchLinks = useCallback(async () => {
-    setLinksLoading(true);
-    try {
-      const params = new URLSearchParams({ per_page: "24" });
-      if (search) params.set("q", search);
-      if (activeTag) params.set("tag", activeTag);
-      const r = await fetch(`/api/explore?${params}`);
-      if (r.ok) {
-        const data = await r.json();
-        setLinks(data.links || []);
-        setLinksTotal(data.total || 0);
-      }
-    } catch {}
-    finally {
-      setLinksLoading(false);
-    }
-  }, [search, activeTag]);
-
-  const fetchLinkTags = useCallback(async () => {
-    try {
-      const r = await fetch("/api/explore/trending-tags");
-      if (r.ok) setLinkTags(await r.json());
-    } catch {}
-  }, []);
-
-  // Initial load — tags only; posts/links are fetched by the filter effect below
-  useEffect(() => {
-    fetchBlogTags();
-  }, [fetchBlogTags]);
-
-  // Tab-specific fetches
-  useEffect(() => {
-    if (tab === "writers") fetchWriters();
-    if (tab === "references") { fetchLinks(); fetchLinkTags(); }
-  }, [tab, fetchWriters, fetchLinks, fetchLinkTags]);
-
-  // Re-fetch when search/tag changes
-  useEffect(() => {
-    if (tab === "stories") fetchPosts();
-    if (tab === "references") fetchLinks();
-  }, [search, activeTag, tab, fetchPosts, fetchLinks]);
+  useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
   function handleTagClick(tag: string) {
     setActiveTag(prev => prev === tag ? "" : tag);
+    setSearch("");
   }
 
-  const featured = posts.filter(p => p.featured);
-  const fresh = posts.filter(p => !p.featured);
-  // If no featured posts, treat top 2 as featured
-  const displayFeatured = featured.length > 0 ? featured.slice(0, 2) : posts.slice(0, 2);
-  const displayFresh = featured.length > 0 ? fresh : posts.slice(2);
+  const isFiltering = !!(search || activeTag);
 
   return (
-    <div>
-      <div className="explore-hero">
-        <span className="eyebrow">
-          <Icon name="feather" size={11} /> The reading room
-        </span>
-        <h1>Open the <span className="serif">Grimoire</span>.</h1>
-        <p>Read what the curious are writing · then close the tab.</p>
+    <div className="explore-layout">
 
-        <div className="explore-tabs">
-          {(["stories", "writers", "references"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              className={tab === t ? "active" : ""}
-              onClick={() => { setTab(t); setSearch(""); setActiveTag(""); }}
-            >
-              <Icon name={t === "stories" ? "feather" : t === "writers" ? "users" : "bookmark"} size={14} />
-              <div style={{ textAlign: "left" }}>
-                <div>{t.charAt(0).toUpperCase() + t.slice(1)}</div>
-                <div className="sub">
-                  {t === "stories" ? "Essays & posts" : t === "writers" ? "People to follow" : "Public links"}
+      {/* ── LEFT SIDEBAR — desktop only, never scrolls ── */}
+      <aside className="explore-sidebar">
+
+        {writers.length > 0 && (
+          <div className="sidebar-section">
+            <div className="sidebar-section-head">
+              <Icon name="users" size={11} /> Writers
+            </div>
+            {writers.slice(0, SIDEBAR_WRITERS).map(w => (
+              <Link key={w.id} href={`/user/${w.handle || toHandle(w.name)}`} className="sidebar-writer">
+                <img
+                  src={w.avatar || avatarFallback(w.name)}
+                  onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
+                  style={{ width: 30, height: 30, borderRadius: "7px", objectFit: "cover", flexShrink: 0 }}
+                  alt={w.name} loading="lazy"
+                />
+                <div style={{ minWidth: 0 }}>
+                  <div className="sw-name">{w.name}</div>
+                  <div className="sw-meta">{w.post_count} posts</div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Search bar for stories + references */}
-        {tab !== "writers" && (
-          <div className="explore-search">
-            <Icon name="search" size={15} />
-            <input
-              placeholder={tab === "stories" ? "Search stories, tags…" : "Search links, tags…"}
-              value={search}
-              onChange={e => { setSearch(e.target.value); setActiveTag(""); }}
-            />
-            {(search || activeTag) && (
-              <button className="explore-search-clear" onClick={() => { setSearch(""); setActiveTag(""); }}>
-                ✕
-              </button>
-            )}
+                <Icon name="arrow-right" size={11} style={{ flexShrink: 0, color: "var(--fg-soft)", marginLeft: "auto" }} />
+              </Link>
+            ))}
           </div>
         )}
-      </div>
 
-      {/* ── STORIES ── */}
-      {tab === "stories" && (
-        <>
-          {postsLoading ? (
-            <div className="explore-loading">Loading stories…</div>
-          ) : posts.length === 0 ? (
-            <div className="explore-empty">
-              <Icon name="feather" size={32} />
-              <p>No stories found{search ? ` for "${search}"` : activeTag ? ` tagged #${activeTag}` : ""}.</p>
+        {blogTags.length > 0 && (
+          <div className="sidebar-section">
+            <div className="sidebar-section-head">
+              <Icon name="tag" size={11} /> Topics
             </div>
-          ) : (
-            <>
-              {!search && !activeTag && displayFeatured.length > 0 && (
-                <div className="explore-section">
-                  <h2>Featured</h2>
-                  <div className="featured-grid">
-                    {displayFeatured.map((p, i) => (
-                      <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
-                        <article className="feature-post">
-                          <div className="cover" style={coverStyle(p, i)}>
-                            <div className="post-cover-overlay" />
-                            {p.featured ? <span className="pill">Featured</span> : null}
-                          </div>
-                          <div className="info">
-                            <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none" }}>
-                              <div className="by">
-                                <img
-                                  className="avatar"
-                                  src={p.author_avatar || avatarFallback(p.author_name)}
-                                  onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                                  style={{ width: 28, height: 28, borderRadius: "7px", objectFit: "cover", border: "none" }}
-                                  alt={p.author_name}
-                                  loading="lazy"
-                                />
-                                <div className="name">{p.author_name}</div>
-                              </div>
-                            </Link>
-                            <div className="feature-title">{p.title}</div>
-                            {p.excerpt && (
-                              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "var(--fg-soft)", margin: 0 }}>
-                                {p.excerpt.slice(0, 140)}{p.excerpt.length > 140 ? "…" : ""}
-                              </p>
-                            )}
-                            <div className="stats" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span>{p.pub_date} · {p.reading_time} min · {fmtViews(p.views)} views</span>
-                              <span style={{ flex: 1 }} />
-                              <button
-                                onClick={(e) => toggleBookmark(e, p)}
-                                disabled={bookmarking.has(p.id)}
-                                title={bookmarked.has(p.id) ? "Remove from bookmarks" : "Save to bookmarks"}
-                                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", display: "flex", alignItems: "center", color: bookmarked.has(p.id) ? "var(--accent)" : "rgba(255,255,255,0.6)" }}
-                              >
-                                <Icon name="bookmark" size={14} fill={bookmarked.has(p.id) ? "currentColor" : "none"} />
-                              </button>
-                            </div>
-                          </div>
-                        </article>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="explore-section">
-                <h2>{search || activeTag ? "Results" : "Fresh today"}</h2>
-                <div className="cards">
-                  {displayFresh.map((p, i) => {
-                    const tagsList = (p.tags || "").split(",").map(t => t.trim()).filter(Boolean);
-                    return (
-                      <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
-                        <article className="post-card">
-                          <div className="post-cover" style={coverStyle(p, i)}>
-                            <div className="post-cover-overlay" />
-                            {p.reading_time > 0 && (
-                              <span className="post-readtime">
-                                <Icon name="book" size={11} /> {p.reading_time} min
-                              </span>
-                            )}
-                          </div>
-                          <div className="post-body">
-                            {tagsList.length > 0 && (
-                              <div className="lc-tags">
-                                {tagsList.slice(0, 3).map(t => (
-                                  <span key={t} className="lc-tag">{t}</span>
-                                ))}
-                              </div>
-                            )}
-                            <h3 className="post-title">{p.title}</h3>
-                            <div className="post-meta">
-                              <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`} onClick={e => e.stopPropagation()} className="post-author" style={{ textDecoration: "none", color: "inherit" }}>
-                                <img
-                                  src={p.author_avatar || avatarFallback(p.author_name)}
-                                  onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                                  style={{ width: 20, height: 20, borderRadius: "5px", objectFit: "cover", flexShrink: 0 }}
-                                  alt={p.author_name}
-                                  loading="lazy"
-                                />
-                                {p.author_name}
-                              </Link>
-                              <span className="meta-dot">·</span>
-                              <span>{p.pub_date}</span>
-                              <span style={{ flex: 1 }} />
-                              <button
-                                onClick={(e) => toggleBookmark(e, p)}
-                                disabled={bookmarking.has(p.id)}
-                                title={bookmarked.has(p.id) ? "Remove from bookmarks" : "Save to bookmarks"}
-                                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", display: "flex", alignItems: "center", color: bookmarked.has(p.id) ? "var(--accent)" : "var(--fg-soft)" }}
-                              >
-                                <Icon name="bookmark" size={13} fill={bookmarked.has(p.id) ? "currentColor" : "none"} />
-                              </button>
-                            </div>
-                          </div>
-                        </article>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-
-          {blogTags.length > 0 && (
-            <div className="explore-section">
-              <h2>Topics</h2>
-              <div className="tag-cloud">
-                {(showAllTags ? blogTags : blogTags.slice(0, TAG_CLOUD_LIMIT)).map(t => (
-                  <span
-                    key={t.name}
-                    className={`tag${activeTag === t.name ? " active" : ""}`}
-                    onClick={() => handleTagClick(t.name)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <Icon name="feather" size={11} /> {t.name} <span className="n">{t.count}</span>
-                  </span>
-                ))}
-                {blogTags.length > TAG_CLOUD_LIMIT && (
-                  <span
-                    className="tag"
-                    onClick={() => setShowAllTags(s => !s)}
-                    style={{ cursor: "pointer", opacity: 0.7 }}
-                  >
-                    {showAllTags ? "show less" : `+${blogTags.length - TAG_CLOUD_LIMIT} more`}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── WRITERS ── */}
-      {tab === "writers" && (
-        <div className="explore-section">
-          <h2>Most-read writers</h2>
-          {writersLoading ? (
-            <div className="explore-loading">Loading writers…</div>
-          ) : writers.length === 0 ? (
-            <div className="explore-empty"><p>No writers yet.</p></div>
-          ) : (
-            <div className="writers-grid">
-              {writers.map((w, i) => (
-                <Link key={w.id} href={`/user/${w.handle || toHandle(w.name)}`} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div className="writer-card">
-                    <div className="rank">#{i + 1}</div>
-                    <img
-                      src={w.avatar || avatarFallback(w.name)}
-                      onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
-                      style={{ width: 48, height: 48, borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
-                      alt={w.name}
-                      loading="lazy"
-                    />
-                    <div className="info">
-                      <div className="name">{w.name}</div>
-                      <div className="counts">
-                        <span><b style={{ color: "var(--fg)" }}>{w.post_count}</b> posts</span>
-                        <span>·</span>
-                        <span><b style={{ color: "var(--fg)" }}>{fmtViews(w.total_views)}</b> views</span>
-                        <span>·</span>
-                        <span><b style={{ color: "var(--fg)" }}>{w.total_likes}</b> likes</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+            <div className="sidebar-tags">
+              {blogTags.slice(0, SIDEBAR_TAGS).map(t => (
+                <span
+                  key={t.name}
+                  className={`sidebar-tag${activeTag === t.name ? " active" : ""}`}
+                  onClick={() => handleTagClick(t.name)}
+                >
+                  {t.name}
+                  <span className="n">{t.count}</span>
+                </span>
               ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* ── REFERENCES ── */}
-      {tab === "references" && (
-        <>
-          {linksLoading ? (
-            <div className="explore-loading">Loading references…</div>
-          ) : links.length === 0 ? (
-            <div className="explore-empty">
-              <Icon name="bookmark" size={32} />
-              <p>No public links found{search ? ` for "${search}"` : activeTag ? ` tagged #${activeTag}` : ""}.</p>
+        {sidebarLinks.length > 0 && (
+          <div className="sidebar-section">
+            <div className="sidebar-section-head">
+              <Icon name="bookmark" size={11} /> Public links
             </div>
-          ) : (
-            <div className="explore-section">
-              <h2>
-                {search || activeTag
-                  ? `Results ${linksTotal > 0 ? `(${linksTotal})` : ""}`
-                  : `Public references${linksTotal > 0 ? ` · ${linksTotal}` : ""}`}
-              </h2>
-              <div className="cards">
-                {links.map(l => {
-                  const tagsList = (l.tags || "").split(",").map(t => t.trim()).filter(Boolean);
-                  const domain = getDomain(l.url);
-                  return (
-                    <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                      <article className="post-card ref-card">
-                        <div className="lc-stripe" style={{ background: `hsl(${(l.id * 47) % 360}, 55%, 50%)` }} />
-                        <div className="post-body">
-                          <div className="post-by">
-                            {l.favicon ? (
-                              <img src={l.favicon} style={{ width: 14, height: 14, borderRadius: 2 }} alt="" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                            ) : null}
-                            <span>{domain}</span>
-                          </div>
-                          <h3 className="post-title">{l.title || domain}</h3>
-                          {l.description && (
-                            <p className="post-excerpt">
-                              {l.description.slice(0, 120)}{l.description.length > 120 ? "…" : ""}
-                            </p>
-                          )}
-                          {tagsList.length > 0 && (
-                            <div className="lc-tags">
-                              {tagsList.slice(0, 3).map(t => (
-                                <span key={t} className="lc-tag">#{t}</span>
-                              ))}
-                            </div>
-                          )}
-                          <div className="post-meta">
-                            {l.author_name && (
-                              <span className="post-author">
-                                <span style={{ color: "var(--fg-soft)", fontFamily: "var(--font-mono)", fontSize: 10 }}>by</span>
-                                <Link href={`/user/${l.author_handle || toHandle(l.author_name)}`} onClick={e => e.stopPropagation()} style={{ color: "var(--accent)", fontWeight: 600 }}>{l.author_name}</Link>
-                              </span>
-                            )}
-                            <span style={{ flex: 1 }} />
-                            <span>{l.created_at ? new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</span>
-                          </div>
-                        </div>
-                      </article>
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {linkTags.length > 0 && (
-            <div className="explore-section">
-              <h2>Browse by tag</h2>
-              <div className="tag-cloud">
-                {linkTags.map(t => (
-                  <span
-                    key={t.name}
-                    className={`tag${activeTag === t.name ? " active" : ""}`}
-                    onClick={() => handleTagClick(t.name)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    #{t.name} <span className="n">{t.count}</span>
+            {sidebarLinks.slice(0, SIDEBAR_LINKS).map(l => (
+              <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="sidebar-ref">
+                {l.favicon ? (
+                  <img src={l.favicon} style={{ width: 13, height: 13, borderRadius: 3, flexShrink: 0, marginTop: 2 }} alt=""
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                ) : (
+                  <span style={{ width: 13, flexShrink: 0, marginTop: 2, color: "var(--fg-soft)" }}>
+                    <Icon name="globe" size={11} />
                   </span>
-                ))}
-              </div>
+                )}
+                <div style={{ minWidth: 0 }}>
+                  <div className="sr-title">{l.title || getDomain(l.url)}</div>
+                  <div className="sr-domain">{getDomain(l.url)}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+
+      </aside>
+
+      {/* ── RIGHT MAIN ── */}
+      <main className="explore-main">
+
+        {/* Hero: title only */}
+        <div className="explore-main-hero">
+          <h1 className="explore-main-title">
+            Open the <span className="serif">Grimoire</span>.
+          </h1>
+          <p className="explore-main-sub">Read what the curious are writing.</p>
+        </div>
+
+        {activeTag && (
+          <div className="active-tag-row">
+            <span className="active-tag-label">Tag:</span>
+            <span className="lc-tag" style={{ cursor: "pointer" }} onClick={() => setActiveTag("")}>
+              #{activeTag} <span style={{ opacity: 0.6 }}>×</span>
+            </span>
+          </div>
+        )}
+
+        {postsLoading ? (
+          <div className="explore-loading">Loading…</div>
+        ) : posts.length === 0 ? (
+          <div className="explore-empty">
+            <Icon name="feather" size={32} />
+            <p>No stories found{search ? ` for "${search}"` : activeTag ? ` tagged #${activeTag}` : ""}.</p>
+          </div>
+        ) : (
+          <div className="explore-cards-wrap">
+            <div className="explore-feed-label">
+              {isFiltering ? "Results" : "All stories"}
             </div>
-          )}
-        </>
-      )}
+            <div className="cards explore-cards">
+              {posts.map((p, i) => {
+                const tagsList = (p.tags || "").split(",").map(t => t.trim()).filter(Boolean);
+                return (
+                  <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
+                    <article className="post-card">
+                      <div className="post-cover" style={coverStyle(p, i)}>
+                        <div className="post-cover-overlay" />
+                        {p.reading_time > 0 && (
+                          <span className="post-readtime">
+                            <Icon name="book" size={11} /> {p.reading_time} min
+                          </span>
+                        )}
+                      </div>
+                      <div className="post-body">
+                        {tagsList.length > 0 && (
+                          <div className="lc-tags">
+                            {tagsList.slice(0, 2).map(t => (
+                              <span key={t} className="lc-tag"
+                                onClick={e => { e.preventDefault(); handleTagClick(t); }}
+                                style={{ cursor: "pointer" }}
+                              >{t}</span>
+                            ))}
+                          </div>
+                        )}
+                        <h3 className="post-title">{p.title}</h3>
+                        <div className="post-meta">
+                          <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`}
+                            onClick={e => e.stopPropagation()} className="post-author"
+                            style={{ textDecoration: "none", color: "inherit" }}>
+                            <img
+                              src={p.author_avatar || avatarFallback(p.author_name)}
+                              onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
+                              style={{ width: 18, height: 18, borderRadius: "5px", objectFit: "cover", flexShrink: 0 }}
+                              alt={p.author_name} loading="lazy"
+                            />
+                            {p.author_name}
+                          </Link>
+                          <span className="meta-dot">·</span>
+                          <span>{p.pub_date}</span>
+                          <span style={{ flex: 1 }} />
+                          <button
+                            onClick={e => toggleBookmark(e, p)}
+                            disabled={bookmarking.has(p.id)}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", display: "flex", alignItems: "center", color: bookmarked.has(p.id) ? "var(--accent)" : "var(--fg-soft)" }}
+                          >
+                            <Icon name="bookmark" size={12} fill={bookmarked.has(p.id) ? "currentColor" : "none"} />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </main>
+
     </div>
   );
 }
