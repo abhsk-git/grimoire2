@@ -938,29 +938,63 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .explore-app-body { flex: 1; display: flex; flex-direction: column; }
 .explore-app-container { flex: 1; display: flex; flex-direction: column; }
+/* Hide navbar search on explore — it lives in the sidebar instead */
+.explore-app .public-search { display: none; }
+
 .explore-layout {
-  max-width: 740px;
-  margin: 0 auto;
-  padding: 0 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 52px;
+  align-items: start;
+  padding-bottom: 80px;
   width: 100%;
 }
-.explore-sidebar { display: none; }
-.explore-main { min-width: 0; }
 
-/* Hero: transparent so wallpaper shows through; gradient mask covers scroll-behind content */
-.explore-main-hero {
+/* Right sidebar: search + references, sticks while feed scrolls */
+.explore-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   position: sticky;
-  top: 68px;
-  z-index: 30;
-  padding: 40px 0 24px;
-  margin-bottom: 24px;
-  background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+  top: 88px;
+  grid-column: 2;
+  grid-row: 1;
 }
-[data-theme="dark"] .explore-main-hero {
-  background: linear-gradient(to bottom, #06060e 60%, transparent);
+
+.explore-main { min-width: 0; grid-column: 1; grid-row: 1; }
+
+/* Hero: just padding + transparent — no sticky needed on desktop */
+.explore-main-hero {
+  padding: 44px 0 28px;
+  margin-bottom: 20px;
+  background: transparent;
 }
-[data-theme="geek"] .explore-main-hero {
-  background: linear-gradient(to bottom, #0a0a0a 60%, transparent);
+
+/* Sidebar search input */
+.explore-sidebar-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 42px;
+  padding: 0 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--fg-muted);
+}
+[data-theme="dark"] .explore-sidebar-search {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.09);
+}
+.explore-sidebar-search input {
+  flex: 1; background: none; border: 0; outline: none;
+  color: var(--fg); font-family: inherit; font-size: 14px;
+}
+.explore-sidebar-search input::placeholder { color: var(--fg-muted); }
+.explore-sidebar-search-clear {
+  background: none; border: none; cursor: pointer;
+  padding: 2px; color: var(--fg-muted);
+  display: flex; align-items: center;
 }
 .explore-hero-prefix {
   font-family: var(--font-mono);
@@ -1360,15 +1394,20 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 
 /* ── Explore breakpoints ── */
+@media (max-width: 1100px) {
+  .explore-layout { grid-template-columns: 1fr 250px; gap: 36px; }
+}
 @media (max-width: 900px) {
   .public-search { display: none; }
-  .explore-layout { padding: 0 16px 60px; }
-  /* Hero: full bleed on mobile */
+  /* Single column, sidebar hidden, mobile search shown */
+  .explore-layout { grid-template-columns: 1fr; padding: 0 0 60px; gap: 0; }
+  .explore-sidebar { display: none; }
+  /* Hero: sticky + full bleed on mobile */
   .explore-main-hero {
+    position: sticky;
     top: 68px;
-    padding: 20px 16px 14px;
-    margin-left: -16px;
-    margin-right: -16px;
+    z-index: 30;
+    padding: 20px 0 14px;
     margin-bottom: 0;
     background: linear-gradient(to bottom, var(--bg) 70%, transparent);
   }

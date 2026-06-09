@@ -165,58 +165,32 @@ export function ExploreView() {
   return (
     <div className="explore-layout">
 
-      {/* ── LEFT SIDEBAR — desktop only, never scrolls ── */}
+      {/* ── RIGHT SIDEBAR — desktop only: search + references ── */}
       <aside className="explore-sidebar">
 
-        {writers.length > 0 && (
-          <div className="sidebar-section">
-            <div className="sidebar-section-head">
-              <Icon name="users" size={11} /> Writers
-            </div>
-            {writers.slice(0, SIDEBAR_WRITERS).map(w => (
-              <Link key={w.id} href={`/user/${w.handle || toHandle(w.name)}`} className="sidebar-writer">
-                <img
-                  src={w.avatar || avatarFallback(w.name)}
-                  onError={e => { (e.target as HTMLImageElement).src = avatarFallback(w.name); }}
-                  style={{ width: 30, height: 30, borderRadius: "7px", objectFit: "cover", flexShrink: 0 }}
-                  alt={w.name} loading="lazy"
-                />
-                <div style={{ minWidth: 0 }}>
-                  <div className="sw-name">{w.name}</div>
-                  <div className="sw-meta">{w.post_count} posts</div>
-                </div>
-                <Icon name="arrow-right" size={11} style={{ flexShrink: 0, color: "var(--fg-soft)", marginLeft: "auto" }} />
-              </Link>
-            ))}
-          </div>
-        )}
+        {/* Search */}
+        <div className="explore-sidebar-search">
+          <Icon name="search" size={13} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => e.key === "Escape" && setSearch("")}
+            placeholder="Search stories, tags…"
+          />
+          {search && (
+            <button className="explore-sidebar-search-clear" onClick={() => setSearch("")}>
+              <Icon name="x" size={11} />
+            </button>
+          )}
+        </div>
 
-        {blogTags.length > 0 && (
+        {/* References — filtered when searching, latest otherwise */}
+        {(isFiltering ? mobileLinks : sidebarLinks).length > 0 && (
           <div className="sidebar-section">
             <div className="sidebar-section-head">
-              <Icon name="tag" size={11} /> Topics
+              <Icon name="bookmark" size={11} /> {isFiltering ? "Matching links" : "Public links"}
             </div>
-            <div className="sidebar-tags">
-              {blogTags.slice(0, SIDEBAR_TAGS).map(t => (
-                <span
-                  key={t.name}
-                  className={`sidebar-tag${activeTag === t.name ? " active" : ""}`}
-                  onClick={() => handleTagClick(t.name)}
-                >
-                  {t.name}
-                  <span className="n">{t.count}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {sidebarLinks.length > 0 && (
-          <div className="sidebar-section">
-            <div className="sidebar-section-head">
-              <Icon name="bookmark" size={11} /> Public links
-            </div>
-            {sidebarLinks.slice(0, SIDEBAR_LINKS).map(l => (
+            {(isFiltering ? mobileLinks : sidebarLinks).map(l => (
               <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="sidebar-ref">
                 {l.favicon ? (
                   <img src={l.favicon} style={{ width: 13, height: 13, borderRadius: 3, flexShrink: 0, marginTop: 2 }} alt=""
