@@ -807,15 +807,24 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background: var(--bg);
   display: flex; flex-direction: column;
 }
-/* Dark theme: deep nebula atmosphere */
+/* Light theme: subtle indigo dot grid — clean + techy */
+[data-theme="light"] .explore-page {
+  background-image: radial-gradient(circle, rgba(91, 84, 214, 0.09) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+/* Retro theme: warm dot grid */
+[data-theme="retro"] .explore-page {
+  background-image: radial-gradient(circle, rgba(122, 59, 30, 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+/* Dark theme: terminal green + deep blue glow */
 [data-theme="dark"] .explore-page {
   background:
-    radial-gradient(ellipse 80% 55% at -5% 12%,  hsla(263, 58%, 28%, 0.65) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 108% 88%, hsla(215, 70%, 22%, 0.55) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 95%  4%,  hsla(310, 50%, 18%, 0.4)  0%, transparent 50%),
-    radial-gradient(ellipse 55% 45% at 50% 55%,  hsla(250, 40%, 12%, 0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 65% 45% at 5% 8%,   hsla(150, 55%, 14%, 0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 95% 88%,  hsla(215, 65%, 16%, 0.45) 0%, transparent 55%),
     #06060e;
 }
+/* Geek theme: classic grid */
 [data-theme="geek"] .explore-page {
   background:
     linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 28px 28px,
@@ -963,12 +972,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 .explore-main { min-width: 0; grid-column: 1; grid-row: 1; }
 
-/* Hero: just padding + transparent — no sticky needed on desktop */
-.explore-main-hero {
-  padding: 44px 0 28px;
-  margin-bottom: 20px;
-  background: transparent;
-}
+/* Hero: desktop hidden — search lives in the sidebar */
+.explore-main-hero { display: none; }
 
 /* Sidebar search input */
 .explore-sidebar-search {
@@ -1404,15 +1409,15 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .explore-sidebar { display: none; }
   /* Hero: sticky + full bleed on mobile */
   .explore-main-hero {
+    display: block;
     position: sticky;
     top: 68px;
     z-index: 30;
-    padding: 20px 0 14px;
+    padding: 20px 18px 14px;
+    margin-left: -18px;
+    margin-right: -18px;
     margin-bottom: 0;
-    background: linear-gradient(to bottom, var(--bg) 70%, transparent);
-  }
-  [data-theme="dark"] .explore-main-hero {
-    background: linear-gradient(to bottom, #06060e 70%, transparent);
+    background: var(--bg);
   }
 
   /* ── Mobile search bar ── */
