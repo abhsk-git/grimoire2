@@ -132,7 +132,7 @@ export function PasswordStrength({ password }: { password: string }) {
   );
 }
 
-export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => void; banner?: { type: "success" | "error"; msg: string } | null }) {
+export function SignInForm({ switchTo, banner, initialPendingToken }: { switchTo: (v: FormView) => void; banner?: { type: "success" | "error"; msg: string } | null; initialPendingToken?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keepSignedIn, setKeepSignedIn] = useState(false);
@@ -143,7 +143,7 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
   const [resending, setResending] = useState(false);
 
   // 2FA state
-  const [pendingToken, setPendingToken] = useState("");
+  const [pendingToken, setPendingToken] = useState(initialPendingToken ?? "");
   const [otpCode, setOtpCode] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState("");
@@ -246,7 +246,7 @@ export function SignInForm({ switchTo, banner }: { switchTo: (v: FormView) => vo
           </div>
           <h1>Check your email.</h1>
           <p className="sub">
-            We sent a 6-digit code to <strong>{email}</strong>. Enter it below to sign in.
+            We sent a 6-digit code to {email ? <><strong>{email}</strong>. </> : "your registered email address. "}Enter it below to sign in.
           </p>
 
           {otpError && <div className="auth-error">{otpError}</div>}

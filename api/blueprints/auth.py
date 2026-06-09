@@ -767,6 +767,9 @@ def google_callback():
 
         db  = get_db()
         cur = db.cursor(dictionary=True)
+        two_factor_enabled = False
+        pending_token      = None
+        otp_code           = None
         try:
             cur.execute('SELECT * FROM users WHERE google_id=%s OR email=%s', (google_id, email))
             user = cur.fetchone()
@@ -780,14 +783,32 @@ def google_callback():
                 user_id = cur.lastrowid
             else:
                 user_id = user['id']
+                two_factor_enabled = bool(user.get('two_factor_enabled'))
                 if not user.get('google_id'):
                     cur.execute(
                         'UPDATE users SET google_id=%s, avatar=%s WHERE id=%s',
                         (google_id, avatar or user['avatar'], user_id)
                     )
                     db.commit()
+
+            if two_factor_enabled:
+                import random
+                otp_code      = f'{random.randint(100000, 999999)}'
+                code_hash     = bcrypt.hashpw(otp_code.encode(), bcrypt.gensalt()).decode()
+                pending_token = secrets.token_urlsafe(48)
+                expires_at    = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+                cur.execute('DELETE FROM email_otp WHERE user_id=%s AND expires_at < NOW()', (user_id,))
+                cur.execute(
+                    'INSERT INTO email_otp (user_id, pending_token, code_hash, expires_at, keep_signed_in) VALUES (%s,%s,%s,%s,0)',
+                    (user_id, pending_token, code_hash, expires_at)
+                )
+                db.commit()
         finally:
             db.close()
+
+        if two_factor_enabled:
+            _send_otp_email(email, otp_code, name=name)
+            return redirect(f'/login?pending_2fa={quote_plus(pending_token)}')
 
         jwt_token = create_token(user_id)
         resp = redirect('/')

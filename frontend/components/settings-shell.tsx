@@ -865,13 +865,17 @@ function AccountTab() {
             </p>
           </div>
         </div>
-        {user?.has_password && (
+        {user?.has_password ? (
           <div className="sett-field">
             <label className="sett-label">
               {twoFactorEnabled ? "Enter password to disable" : "Enter password to enable"}
             </label>
             <PasswordInput className="sett-input" value={tfaPw} onChange={e => setTfaPw(e.target.value)} autoComplete="current-password" />
           </div>
+        ) : (
+          <p className="sett-label-soft" style={{ fontSize: 12, margin: "4px 0 0" }}>
+            No password confirmation needed — your identity is verified by Google.
+          </p>
         )}
         <div className="sett-save-row">
           <SaveMsg msg={tfaMsg} />
