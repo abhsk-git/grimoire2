@@ -14,18 +14,20 @@ const ThemeContext = createContext<ThemeContextValue>({
   setTheme: () => {},
 });
 
+function readTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+  const saved = localStorage.getItem("grimoire-theme") as Theme | null;
+  if (saved) return saved;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>(readTheme);
 
   useEffect(() => {
-    const saved = localStorage.getItem("grimoire-theme") as Theme | null;
-    if (saved) {
-      setThemeState(saved);
-    } else {
-      const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      setThemeState(preferred);
-      document.documentElement.setAttribute("data-theme", preferred);
-    }
+    // Sync data-theme attribute in case the lazy initializer ran before hydration
+    document.documentElement.setAttribute("data-theme", theme);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function setTheme(t: Theme) {

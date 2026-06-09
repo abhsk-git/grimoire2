@@ -805,8 +805,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .explore-page {
   min-height: 100vh;
   background:
-    radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 60%),
-    radial-gradient(900px 500px at -10% 30%, color-mix(in oklab, var(--accent-3) 8%, transparent), transparent 60%),
+    radial-gradient(1200px 600px at 80% 45%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 60%),
+    radial-gradient(900px 500px at -10% 60%, color-mix(in oklab, var(--accent-3) 7%, transparent), transparent 60%),
     var(--bg);
   display: flex; flex-direction: column;
 }
@@ -814,7 +814,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background:
     linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 28px 28px,
     linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 28px 28px,
-    radial-gradient(1000px 500px at 80% -10%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 60%),
+    radial-gradient(1000px 500px at 80% 45%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 60%),
     var(--bg);
 }
 
@@ -926,8 +926,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .explore-app .public-header {
   flex-shrink: 0;
   position: relative;
-  background: color-mix(in oklab, var(--bg) 78%, transparent);
-  backdrop-filter: blur(14px) saturate(140%);
+  background: var(--bg);
 }
 .explore-app-body {
   flex: 1;
@@ -980,8 +979,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   position: sticky;
   top: 0;
   z-index: 30;
-  background: color-mix(in oklab, var(--bg) 82%, transparent);
-  backdrop-filter: blur(16px) saturate(150%);
+  background: var(--bg);
   padding: 36px 0 16px;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border);
@@ -1314,8 +1312,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   .explore-main-hero {
     position: sticky;
     top: 68px;
-    background: color-mix(in oklab, var(--bg) 82%, transparent);
-    backdrop-filter: blur(16px) saturate(150%);
+    background: var(--bg);
     padding: 20px 0 14px;
   }
 
