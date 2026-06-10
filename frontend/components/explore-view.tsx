@@ -96,6 +96,7 @@ export function ExploreView() {
   const [activeTag, setActiveTag] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
+  const [linkSortOrder, setLinkSortOrder] = useState<"recent" | "oldest">("recent");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -184,6 +185,12 @@ export function ExploreView() {
   const isFiltering = !!(search || activeTag);
   const typedQuery = useTypewriter(TYPED_QUERIES, !search && !searchFocused);
 
+  const sortedSidebarLinks = useMemo(() => {
+    return linkSortOrder === "oldest"
+      ? [...sidebarLinks].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      : [...sidebarLinks].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [sidebarLinks, linkSortOrder]);
+
   const displayPosts = useMemo(() => {
     const sorted = sortOrder === "oldest"
       ? [...posts].sort((a, b) => a.id - b.id)
@@ -259,16 +266,20 @@ export function ExploreView() {
           {/* Public links */}
           {sidebarLinks.length > 0 && (
             <>
-              <div className="feed-head" style={{ marginBottom: 6 }}>
+              <div className="feed-head">
                 <span className="feed-count-label">
                   <b>{String(sidebarLinks.length).padStart(2, "0")}</b>
                   <span>sites</span>
                 </span>
                 <span className="feed-head-grow" />
+                <button className="feed-sort-btn" onClick={() => setLinkSortOrder(o => o === "recent" ? "oldest" : "recent")}>
+                  {linkSortOrder === "recent" ? "Recent" : "Oldest"}
+                  <Icon name="chevron-right" size={12} style={{ transform: linkSortOrder === "recent" ? "rotate(90deg)" : "rotate(-90deg)" }} />
+                </button>
               </div>
               <div className="side-card">
               <div className="side-links-list">
-                {sidebarLinks.map(l => (
+                {sortedSidebarLinks.map(l => (
                   <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="side-link-row">
                     <span className="side-link-fav">
                       {l.favicon ? (
