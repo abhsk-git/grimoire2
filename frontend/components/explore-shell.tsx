@@ -32,22 +32,7 @@ export function PublicHeader({ loggedIn, username, handle, avatar, showNav }: Pu
           <span>Grimoire</span>
         </Link>
 
-        {showNav && (
-          <>
-            <span style={{ flex: 1 }} />
-            <nav className="explore-topnav">
-              <Link href="/explore" className="explore-topnav-link active">
-                <Icon name="feather" size={14} /> Explore
-              </Link>
-              <a href="#" className="explore-topnav-link">
-                <Icon name="bookmark" size={14} /> References
-              </a>
-              <a href="#" className="explore-topnav-link">
-                <Icon name="users" size={14} /> Writers
-              </a>
-            </nav>
-          </>
-        )}
+        {showNav && <span style={{ flex: 1 }} />}
 
         <div className="public-search">
           <Icon name="search" size={15} />
