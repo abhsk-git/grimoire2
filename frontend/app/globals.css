@@ -96,7 +96,6 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 4px;
 }
 :focus:not(:focus-visible) { outline: none; }
 
@@ -186,6 +185,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background: var(--bg-soft); border: 1px solid var(--border);
   color: var(--fg-muted);
 }
+button.kbd { transition: background .12s, color .12s; }
+button.kbd:hover { background: var(--bg-inset); color: var(--fg); }
 
 /* ---------- header ---------- */
 .header {
@@ -233,7 +234,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background: var(--bg-elev); border: 1px solid var(--border);
   color: var(--fg-muted); font-size: 13px; width: 240px;
   cursor: pointer; text-align: left;
+  transition: border-color .15s;
 }
+.search-input:hover { border-color: var(--border-strong); }
 .search-input input, .search-input-ph {
   flex: 1; background: none; border: 0; outline: none; color: var(--fg);
   font-family: inherit; font-size: 13px; pointer-events: none;
@@ -757,6 +760,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   font-weight: 500; border: 1px solid var(--border);
 }
 .lc-tag .h { color: var(--fg-soft); }
+button.lc-tag { transition: opacity .12s; }
+button.lc-tag:hover { opacity: 0.7; }
 
 /* utility */
 .spacer { flex: 1; }
@@ -2379,7 +2384,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background: var(--bg-elev); border: 1px solid var(--border);
   border-radius: 12px; color: var(--fg-muted);
   cursor: pointer; text-align: left;
+  transition: border-color .15s;
 }
+.main-search:hover { border-color: var(--border-strong); }
 .main-search input, .main-search-ph {
   flex: 1; background: none; border: 0; outline: none;
   color: var(--fg); font-family: inherit; font-size: 14px; pointer-events: none;
@@ -3542,9 +3549,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .comment-text   { font-size: 14px; color: var(--fg-soft); line-height: 1.65; white-space: pre-wrap; }
 .comment-delete {
   background: none; border: none; cursor: pointer; color: var(--fg-muted);
-  font-size: 12px; padding: 2px 6px; border-radius: 4px; transition: all .15s; margin-left: auto;
+  font-size: 12px; padding: 2px 6px; border-radius: 4px;
+  transition: color .15s, background .15s; margin-left: auto; min-height: 44px;
 }
-.comment-delete { min-height: 32px; }
 .comment-delete:hover { color: var(--error); background: var(--error-soft); }
 
 /* ── Discussion header ──────────────────────────────────────────────────────── */
@@ -5035,10 +5042,12 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 /* Blockquote */
 .tiptap-editor-body .ProseMirror blockquote {
-  border-left: 3px solid var(--accent);
   margin: 1.4em 0;
-  padding: 0.4em 0 0.4em 1.2em;
-  color: var(--fg-muted);
+  padding: 0.8em 1.2em;
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in oklab, var(--accent) 25%, var(--border));
+  border-radius: 8px;
+  color: var(--fg);
   font-style: italic;
 }
 .tiptap-editor-body .ProseMirror blockquote p { margin-bottom: 0; }
