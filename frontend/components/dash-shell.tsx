@@ -230,7 +230,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
             </button>
         </div>
 
-        <button className="icon-btn" title="Save bookmark (⌘S)" onClick={() => setBmOpen(true)}>
+        <button className="icon-btn" aria-label="Save bookmark (⌘S)" onClick={() => setBmOpen(true)}>
           <Icon name="bookmark" size={15} />
         </button>
 

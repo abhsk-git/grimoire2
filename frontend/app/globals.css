@@ -78,6 +78,14 @@ body {
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
 
+/* ── Keyboard focus ring ── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
 /* ── Global thin scrollbars ── */
 * {
   scrollbar-width: thin;
@@ -251,6 +259,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   letter-spacing: -0.035em;
   margin: 18px 0 18px;
   font-weight: 700;
+  text-wrap: balance;
 }
 [data-theme="geek"] .hero h1 { letter-spacing: -0.02em; font-weight: 700; }
 
@@ -406,8 +415,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 }
 .section-h h2 {
   font-size: 13px; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--fg-soft); margin: 0;
+  color: var(--fg-muted); margin: 0;
 }
 .section-h a { font-size: 13px; color: var(--accent); font-weight: 500; }
 
@@ -454,6 +462,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   letter-spacing: -0.03em; line-height: 1.05;
   margin: 0; max-width: 720px;
   font-weight: 700;
+  text-wrap: balance;
 }
 .section-title h2 .accent { color: var(--accent); }
 .section-title h2 .serif { font-family: var(--font-serif); font-style: italic; font-weight: 500; }
@@ -3255,7 +3264,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .read-progress {
   position: fixed; top: 0; left: 0; height: 3px;
   background: var(--accent); width: 0%; z-index: 100;
-  transition: width .1s linear; pointer-events: none;
+  transition: width .1s ease-out; pointer-events: none;
 }
 
 .post-topbar {
@@ -3370,7 +3379,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .post-content a:hover { opacity: .8; }
 .post-content blockquote {
   border-left: 4px solid var(--accent); margin: 2em 0;
-  padding: 1em 1.4em; background: var(--accent-subtle);
+  padding: 1em 1.4em; background: var(--accent-soft);
   border-radius: 0 8px 8px 0; font-style: italic; color: var(--fg-soft);
 }
 .post-content blockquote cite {
@@ -3785,11 +3794,12 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   margin-top: 8px;
   border: 1px solid var(--border); border-radius: 12px;
   background: var(--bg-inset);
-  max-height: 0; overflow: hidden; opacity: 0;
-  transition: max-height .28s ease, opacity .2s ease;
+  display: grid; grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows .28s ease, opacity .2s ease;
 }
-.gif-panel.open { max-height: 480px; opacity: 1; }
-.gif-panel-inner { padding: 12px; }
+.gif-panel.open { grid-template-rows: 1fr; opacity: 1; }
+.gif-panel-inner { overflow: hidden; min-height: 0; padding: 12px; }
 .gif-panel-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .gif-tabs {
   display: inline-flex; gap: 2px; padding: 3px;
@@ -5807,5 +5817,47 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
     justify-content: center;
     font-size: 0;
     gap: 0;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  /* Stop all continuous/looping background animations */
+  .desktop-hero-aurora,
+  .desktop-hero-grid,
+  .desktop-hero-scan,
+  .desktop-hero-live-dot,
+  .desktop-hero-ph .ph-caret,
+  .urlbar .pulse,
+  .editor-mock .cursor,
+  .hero-cursor {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Entry animations: show immediately, no slide */
+  .feed-row {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Interactive feedback: instant instead of animated */
+  .eng-btn.just-liked svg,
+  .we-cover-spinner {
+    animation: none !important;
+  }
+
+  /* Disable gif panel layout animation */
+  .gif-panel,
+  .gif-panel.open {
+    transition: opacity .15s ease !important;
+  }
+
+  /* Keep all other transitions short */
+  * {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

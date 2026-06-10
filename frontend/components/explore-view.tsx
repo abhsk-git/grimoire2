@@ -469,6 +469,7 @@ export function ExploreView() {
                           {/* Mobile bookmark (hidden on desktop via CSS) */}
                           <button
                             className="feed-bookmark"
+                            aria-label={isSaved ? "Remove bookmark" : "Save story"}
                             onClick={e => toggleBookmark(e, p)}
                             disabled={bookmarking.has(p.id)}
                             style={{ color: isSaved ? "var(--accent)" : "var(--fg-muted)" }}

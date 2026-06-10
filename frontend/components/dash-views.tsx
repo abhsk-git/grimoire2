@@ -158,7 +158,7 @@ function LinkCard({
           <span>{formatDate(link.created_at)}</span>
           <span style={{ flex: 1 }} />
           <button
-            title="Delete"
+            aria-label="Delete bookmark"
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--fg-muted)" }}
             onClick={(e) => { e.stopPropagation(); onDelete(link.id); }}
           >
@@ -216,7 +216,7 @@ function ListRow({
       </div>
       <span className="when">{formatDate(link.created_at)}</span>
       <button
-        title="Delete"
+        aria-label="Delete bookmark"
         style={{ background: "none", border: "none", cursor: "pointer", padding: "0 4px", color: "var(--fg-muted)", display: "flex", alignItems: "center" }}
         onClick={(e) => { e.stopPropagation(); onDelete(link.id); }}
       >
@@ -512,7 +512,7 @@ function PostCard({ post, onDelete }: { post: ApiPost; onDelete: (id: number) =>
           <span>{postDateLabel(post)}</span>
           <span style={{ flex: 1 }} />
           <button
-            title="Delete"
+            aria-label="Delete post"
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--fg-muted)" }}
             onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
           >
@@ -714,7 +714,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
                 </div>
               </div>
               <button
-                title="Delete"
+                aria-label="Delete post"
                 style={{ background: "none", border: "none", cursor: "pointer", padding: "0 4px", color: "var(--fg-muted)", display: "flex", alignItems: "center" }}
                 onClick={(e) => { e.stopPropagation(); deletePost(p.id); }}
               >

@@ -875,6 +875,7 @@ export function BlogPost({ slug }: Props) {
       <div className="post-engagement">
         <button
           className={`eng-btn eng-like${liked ? " is-liked" : ""}${justLiked ? " just-liked" : ""}`}
+          aria-label={liked ? "Unlike" : "Like"}
           onClick={toggleLike}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
