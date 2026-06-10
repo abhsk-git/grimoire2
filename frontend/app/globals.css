@@ -1421,7 +1421,6 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .desktop-feed-hero {
   position: relative; overflow: hidden;
   margin: 0 -32px;
-  border-bottom: 1px solid var(--border);
 }
 .desktop-feed-hero-inner {
   position: relative; z-index: 2;
@@ -1437,8 +1436,14 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
     linear-gradient(color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px);
   background-size: 40px 40px;
-  mask-image: radial-gradient(120% 90% at 50% 0%, #000 0%, transparent 72%);
-  -webkit-mask-image: radial-gradient(120% 90% at 50% 0%, #000 0%, transparent 72%);
+  mask-image:
+    linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%),
+    radial-gradient(120% 90% at 50% 0%, #000 0%, transparent 72%);
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%),
+    radial-gradient(120% 90% at 50% 0%, #000 0%, transparent 72%);
+  -webkit-mask-composite: source-in;
   animation: dhGridDrift 22s linear infinite;
 }
 @keyframes dhGridDrift {
@@ -1450,6 +1455,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background:
     radial-gradient(620px 280px at 22% 8%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%),
     radial-gradient(560px 300px at 82% 0%, color-mix(in srgb, var(--accent-3, #38bdf8) 10%, transparent), transparent 70%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 20%, #000 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 20%, #000 80%, transparent 100%);
   animation: dhAuroraFloat 16s ease-in-out infinite alternate;
 }
 @keyframes dhAuroraFloat {
