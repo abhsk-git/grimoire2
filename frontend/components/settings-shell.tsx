@@ -961,7 +961,7 @@ export function SettingsShell() {
     <div className="app">
       <div className="sett-page">
         <div className="sett-header">
-          <Link href="/dashboard" className="sett-back">
+          <Link href="/" className="sett-back">
             <Icon name="arrow-left" size={14} /> Dashboard
           </Link>
           <h1 className="sett-title">Settings</h1>

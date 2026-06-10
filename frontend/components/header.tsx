@@ -57,7 +57,7 @@ export function Header({ loggedIn, username, handle, avatar, onSignIn, onSignUp,
                 <input placeholder="Search your grimoire…" readOnly style={{ cursor: "pointer" }} onClick={onSearchOpen} />
                 <span className="kbd">⌘K</span>
               </div>
-              <a href="/dashboard" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
+              <a href="/" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
                 <Icon name="layout-grid" size={14} /> Dashboard
               </a>
               <div ref={menuRef} style={{ position: "relative" }}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "./icons";
 import { SearchModal, useSearchModal } from "./search-modal";
 import { BookmarkModal, useBookmarkModal } from "./bookmark-modal";
@@ -52,8 +52,6 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
   const [links, setLinks] = useState<SavedLink[]>([]);
   const [postsVersion, setPostsVersion] = useState(0);
   const [linksVersion, setLinksVersion] = useState(0);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const { open: searchOpen, setOpen: setSearchOpen } = useSearchModal();
   const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
@@ -72,14 +70,6 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
         setLinks(arr.slice(0, 8));
       });
   }, [linksVersion]);
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (!menuRef.current?.contains(e.target as Node)) setUserMenuOpen(false);
-    }
-    if (userMenuOpen) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [userMenuOpen]);
 
   async function deletePost(id: number) {
     if (!window.confirm("Delete this post? This can't be undone.")) return;
@@ -125,28 +115,12 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
             <a href="/settings" className="dw-icon-btn" title="Settings">
               <Icon name="settings" size={15} />
             </a>
-            <div ref={menuRef} className="dw-avatar-wrap">
-              <button
-                className={`dw-avatar${avatar ? " has-photo" : ""}`}
-                onClick={() => setUserMenuOpen(v => !v)}
-              >
-                {avatar ? <img src={avatar} alt={username} /> : initials}
-              </button>
-              {userMenuOpen && (
-                <div className="dw-user-menu">
-                  <a href={profileHref} className="dw-menu-item" onClick={() => setUserMenuOpen(false)}>
-                    <Icon name="users" size={13} /> Profile
-                  </a>
-                  <a href="/settings" className="dw-menu-item" onClick={() => setUserMenuOpen(false)}>
-                    <Icon name="settings" size={13} /> Settings
-                  </a>
-                  <div className="dw-menu-sep" />
-                  <button className="dw-menu-item dw-menu-signout" onClick={() => { setUserMenuOpen(false); onSignOut?.(); }}>
-                    <Icon name="arrow-right" size={13} /> Sign out
-                  </button>
-                </div>
-              )}
-            </div>
+            <a href={profileHref} className={`dw-avatar${avatar ? " has-photo" : ""}`} title="Profile">
+              {avatar ? <img src={avatar} alt={username} /> : initials}
+            </a>
+            <button className="dw-signout-btn" onClick={() => onSignOut?.()} title="Sign out">
+              <Icon name="arrow-right" size={14} />
+            </button>
           </div>
         </div>
 

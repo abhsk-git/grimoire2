@@ -5598,18 +5598,21 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 /* ── Dashboard Welcome (/) ───────────────────────────────────────────── */
 .dw-page {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
-  align-items: flex-start;
-  padding: 64px 32px 80px;
+  flex-direction: column;
+  padding: 52px 6vw 56px;
+  box-sizing: border-box;
 }
 .dw-wrap {
   width: 100%;
-  max-width: 1040px;
+  max-width: 1320px;
   margin: 0 auto;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 28px;
 }
 
 /* Top bar */
@@ -5672,31 +5675,33 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .dw-avatar.has-photo { padding: 0; background: none; }
 .dw-avatar.has-photo img { width: 100%; height: 100%; object-fit: cover; }
 .dw-avatar:hover { border-color: var(--accent); }
-.dw-user-menu {
-  position: absolute; right: 0; top: calc(100% + 6px);
-  min-width: 160px; background: var(--bg-elev);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow); overflow: hidden; z-index: 200;
+
+.dw-signout-btn {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--bg-elev); color: var(--fg-muted);
+  cursor: pointer; transition: background .14s, color .14s, border-color .14s;
 }
-[data-theme="dark"] .dw-user-menu { background: #1a1d24; border-color: rgba(255,255,255,0.1); }
-.dw-menu-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px; font-size: 13px; color: var(--fg-soft);
-  text-decoration: none; cursor: pointer;
-  background: none; border: none; width: 100%; text-align: left;
-  transition: background .12s, color .12s;
+.dw-signout-btn:hover {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.3);
+  color: #ef4444;
 }
-.dw-menu-item:hover { background: var(--bg-soft); color: var(--fg); }
-.dw-menu-sep { height: 1px; background: var(--border); margin: 3px 0; }
-.dw-menu-signout { color: var(--fg-muted); }
 
 /* Grid */
-.dw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.dw-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
 
 /* Cards — glass-ready */
 .dw-card {
   background: var(--bg-elev); border: 1px solid var(--border);
   border-radius: var(--radius-lg); overflow: hidden;
+  display: flex; flex-direction: column;
 }
 [data-theme="dark"] .dw-card {
   background: rgba(255,255,255,0.03);
@@ -5723,7 +5728,7 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   text-decoration: none; opacity: 0.75; transition: opacity .14s;
 }
 .dw-head-action:hover { opacity: 1; }
-.dw-card-body { display: flex; flex-direction: column; }
+.dw-card-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
 
 /* Rows */
 .dw-post-row, .dw-ref-row {
@@ -5787,8 +5792,9 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 /* Mobile */
 @media (max-width: 720px) {
-  .dw-page { padding: 40px 16px 60px; }
+  .dw-page { height: auto; min-height: 100vh; padding: 32px 18px 48px; }
   .dw-topbar { align-items: flex-start; }
-  .dw-grid { grid-template-columns: 1fr; }
+  .dw-grid { flex: none; grid-template-columns: 1fr; }
+  .dw-card-body { max-height: 340px; }
   .dw-actions { gap: 6px; }
 }

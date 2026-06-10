@@ -437,13 +437,13 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   }
 
   async function handleDelete() {
-    if (!postIdRef.current) { window.location.href = "/dashboard"; return; }
+    if (!postIdRef.current) { window.location.href = "/"; return; }
     try {
       const r = await fetch(`/api/blog/posts/${postIdRef.current}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (r.ok) window.location.href = "/dashboard";
+      if (r.ok) window.location.href = "/";
       else setSaveStatus("error");
     } catch {
       setSaveStatus("error");
@@ -510,7 +510,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
       {/* ── Topbar ── */}
       <div className="write-topbar">
-        <Link href="/dashboard" className="write-back">
+        <Link href="/" className="write-back">
           <Icon name="arrow-left" size={14} />
           Dashboard
         </Link>

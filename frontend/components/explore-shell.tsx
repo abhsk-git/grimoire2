@@ -43,7 +43,7 @@ export function PublicHeader({ loggedIn, username, handle, avatar, showNav }: Pu
         <div className="public-header-right">
           {loggedIn ? (
             <>
-              <Link href="/dashboard" className="btn btn-primary btn-sm public-dash">
+              <Link href="/" className="btn btn-primary btn-sm public-dash">
                 My Dashboard <Icon name="arrow-right" size={13} />
               </Link>
               <Link href="/write" className="btn btn-ghost btn-sm">
