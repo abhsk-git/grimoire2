@@ -1429,7 +1429,12 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   text-align: center;
 }
 /* animated bg layers */
-.desktop-hero-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.desktop-hero-bg {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  /* bottom fade clips all child animation layers uniformly */
+  mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
+}
 .desktop-hero-grid {
   position: absolute; inset: -2px;
   background-image:
@@ -1466,6 +1471,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 .desktop-hero-scan {
   position: absolute; left: 0; right: 0; height: 160px;
   background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 7%, transparent), transparent);
+  mask-image: linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%);
   animation: dhScanSweep 7s ease-in-out infinite;
 }
 @keyframes dhScanSweep {
