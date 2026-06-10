@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
 import { PublicHeader } from "@/components/explore-shell";
 import { ExploreView } from "@/components/explore-view";
+import { PublicFooter } from "@/components/sections";
 
 function ExploreContent() {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ function ExploreContent() {
           <ExploreView />
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }
