@@ -265,7 +265,7 @@ export function ExploreView() {
         <aside className="explore-sidebar">
           {/* Public links */}
           {sidebarLinks.length > 0 && (
-            <>
+            <div className="sidebar-feed-wrap">
               <div className="feed-head">
                 <span className="feed-count-label">
                   <b>{String(sidebarLinks.length).padStart(2, "0")}</b>
@@ -298,7 +298,7 @@ export function ExploreView() {
                 ))}
               </div>
             </div>
-            </>
+            </div>
           )}
 
           {/* Topics cloud */}

@@ -1673,9 +1673,8 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 
 /* ── Desktop feed: story-row format ── */
 @media (min-width: 901px) {
-  /* Align both column labels to the same 14px gap above their boxes */
+  /* Align both column labels — same margin-bottom, same block flow */
   .feed-head { margin-bottom: 14px; }
-  .explore-sidebar .feed-head { margin-bottom: 0; }
 
   /* Feed rows: horizontal layout inside the rounded container */
   .feed-row {
