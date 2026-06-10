@@ -182,7 +182,6 @@ export function Footer() {
   const themes = [
     { id: "light" as const, bg: "linear-gradient(135deg,#f6f5fa 50%,#5b54d6 50%)" },
     { id: "dark"  as const, bg: "linear-gradient(135deg,#0c0f14 50%,#3ee07a 50%)" },
-    { id: "retro" as const, bg: "linear-gradient(135deg,#fdf8ee 50%,#7a3b1e 50%)" },
   ];
 
   return (

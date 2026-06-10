@@ -452,7 +452,6 @@ function EditorTab() {
 const THEMES = [
   { id: "light", label: "Light", preview: "#f6f5fa", accent: "#5b54d6" },
   { id: "dark",  label: "Dark",  preview: "#0c0f14", accent: "#3ee07a" },
-  { id: "retro", label: "Retro", preview: "#fdf8ee", accent: "#7a3b1e" },
 ] as const;
 
 const READING_MODES = [

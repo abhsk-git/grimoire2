@@ -12,9 +12,6 @@ function DashContent() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [totalLinks, setTotalLinks] = useState(0);
   const [linksVersion, setLinksVersion] = useState(0);
-  const [selectedCollection, setSelectedCollection] = useState<number | null>(null);
-  const [selectedCollectionName, setSelectedCollectionName] = useState<string | null>(null);
-  const [collectionsKey, setCollectionsKey] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -47,19 +44,10 @@ function DashContent() {
         username={user.username}
         email={user.email}
         totalLinks={totalLinks}
-        selectedCollection={selectedCollection}
-        onSelectCollection={(id, name) => {
-          setSelectedCollection(id);
-          setSelectedCollectionName(name);
-        }}
-        collectionsKey={collectionsKey}
         onSignOut={handleSignOut}
       />
       {drawerOpen && (
-        <div
-          className="drawer-backdrop open"
-          onClick={() => setDrawerOpen(false)}
-        />
+        <div className="drawer-backdrop open" onClick={() => setDrawerOpen(false)} />
       )}
       <div className="main">
         <DashHeader
@@ -80,12 +68,7 @@ function DashContent() {
               viewMode={viewMode}
               filter={view}
               version={linksVersion}
-              onStatsLoaded={(s) => {
-                setTotalLinks(s.total);
-              }}
-              collectionId={selectedCollection}
-              collectionName={selectedCollectionName}
-              onCollectionCreated={() => setCollectionsKey(k => k + 1)}
+              onStatsLoaded={(s) => setTotalLinks(s.total)}
             />
           )}
         </div>
@@ -96,10 +79,8 @@ function DashContent() {
 
 export default function DashboardPage() {
   return (
-
-      <AuthProvider>
-        <DashContent />
-      </AuthProvider>
-
+    <AuthProvider>
+      <DashContent />
+    </AuthProvider>
   );
 }

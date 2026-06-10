@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Icon } from "./icons";
 import type { DashView } from "./dash-shell";
-import { NewCollectionModal } from "./collection-modal";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -42,7 +41,6 @@ interface ApiPost {
 interface ApiStats {
   total: number;
   total_visits: number;
-  collections: number;
 }
 
 function getDomain(url: string): string {
@@ -233,7 +231,6 @@ function ListRow({
 function StatStrip({ stats }: { stats: ApiStats | null }) {
   const items = [
     { l: "References", n: stats?.total ?? "—", ico: "bookmark" },
-    { l: "Collections", n: stats?.collections ?? "—", ico: "folder" },
     { l: "Total visits", n: stats?.total_visits ?? "—", ico: "zap" },
   ];
 
@@ -261,9 +258,6 @@ interface AllLinksViewProps {
   filter: DashView;
   version?: number;
   onStatsLoaded?: (stats: ApiStats) => void;
-  collectionId?: number | null;
-  collectionName?: string | null;
-  onCollectionCreated?: () => void;
 }
 
 export function AllLinksView({
@@ -271,17 +265,12 @@ export function AllLinksView({
   filter,
   version = 0,
   onStatsLoaded,
-  collectionId,
-  collectionName,
-  onCollectionCreated,
 }: AllLinksViewProps) {
   const [links, setLinks] = useState<ApiLink[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<ApiStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [collectionModalOpen, setCollectionModalOpen] = useState(false);
-  const [collectionsVersion, setCollectionsVersion] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
@@ -323,7 +312,6 @@ export function AllLinksView({
     const params = new URLSearchParams({ per_page: "50" });
     if (debouncedSearch) params.set("q", debouncedSearch);
     if (activeTag) params.set("tag", activeTag);
-    if (collectionId) params.set("collection", String(collectionId));
 
     fetch(`/api/links?${params}`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : { links: [], total: 0 }))
@@ -332,7 +320,7 @@ export function AllLinksView({
         setTotal(data.total ?? 0);
       })
       .finally(() => setLoading(false));
-  }, [filter, debouncedSearch, activeTag, version, collectionId]);
+  }, [filter, debouncedSearch, activeTag, version]);
 
   useEffect(() => {
     fetchLinks();
@@ -381,17 +369,9 @@ export function AllLinksView({
     <div>
       <div className="page-title">
         <h1>
-          {collectionId && collectionName ? collectionName : titles[filter]}
+          {titles[filter]}
           <span className="meta">{total} saved</span>
         </h1>
-        <div className="actions">
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => setCollectionModalOpen(true)}
-          >
-            <Icon name="folder" size={13} /> New collection
-          </button>
-        </div>
       </div>
 
       {filter === "all" && <StatStrip stats={stats} />}
@@ -478,12 +458,6 @@ export function AllLinksView({
         </div>
       )}
 
-      {collectionModalOpen && (
-        <NewCollectionModal
-          onClose={() => setCollectionModalOpen(false)}
-          onCreated={() => { setCollectionsVersion((v) => v + 1); onCollectionCreated?.(); }}
-        />
-      )}
     </div>
   );
 }

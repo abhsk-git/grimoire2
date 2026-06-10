@@ -1,21 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import Link from "next/link";
 import { BrandMark, Icon } from "./icons";
 import { SearchModal, useSearchModal } from "./search-modal";
 import { BookmarkModal, useBookmarkModal } from "./bookmark-modal";
-import { NewCollectionModal } from "./collection-modal";
-
 export type DashView = "posts" | "all";
-
-interface Collection {
-  id: number;
-  name: string;
-  color: string;
-  link_count: number;
-}
 
 interface Tag {
   name: string;
@@ -30,9 +20,6 @@ interface SidebarProps {
   username: string;
   email: string;
   totalLinks: number;
-  selectedCollection: number | null;
-  onSelectCollection: (id: number | null, name: string | null) => void;
-  collectionsKey?: number;
   onSignOut: () => void;
 }
 
@@ -41,32 +28,14 @@ const NAV: { id: DashView; label: string; ico: string }[] = [
   { id: "all",   label: "Bookmarks", ico: "bookmark" },
 ];
 
-export function DashSidebar({ view, setView, open, onClose, username, email, totalLinks, selectedCollection, onSelectCollection, collectionsKey = 0, onSignOut }: SidebarProps) {
-  const [collections, setCollections] = useState<Collection[]>([]);
+export function DashSidebar({ view, setView, open, onClose, username, email, totalLinks, onSignOut }: SidebarProps) {
   const [tags, setTags] = useState<Tag[]>([]);
-  const [collVersion, setCollVersion] = useState(0);
-  const [newCollOpen, setNewCollOpen] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/collections", { credentials: "include" })
-      .then((r) => r.ok ? r.json() : [])
-      .then((data) => setCollections(Array.isArray(data) ? data : []));
-  }, [collVersion, collectionsKey]);
 
   useEffect(() => {
     fetch("/api/tags", { credentials: "include" })
       .then((r) => r.ok ? r.json() : [])
       .then((data) => setTags(Array.isArray(data) ? data.slice(0, 12) : []));
   }, []);
-
-  async function deleteCollection(id: number) {
-    if (!window.confirm("Delete this collection? Links inside will not be deleted.")) return;
-    const r = await fetch(`/api/collections/${id}`, { method: "DELETE", credentials: "include" });
-    if (r.ok) {
-      setCollections(prev => prev.filter(c => c.id !== id));
-      if (selectedCollection === id) onSelectCollection(null, null);
-    }
-  }
 
   const counts: Record<DashView, number | null> = {
     posts: null,
@@ -86,8 +55,8 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
         {NAV.map((n) => (
           <div
             key={n.id}
-            className={`side-item ${view === n.id && !selectedCollection ? "active" : ""}`}
-            onClick={() => { setView(n.id); onSelectCollection(null, null); onClose(); }}
+            className={`side-item ${view === n.id ? "active" : ""}`}
+            onClick={() => { setView(n.id); onClose(); }}
           >
             <Icon name={n.ico} size={16} />
             <span>{n.label}</span>
@@ -97,45 +66,6 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
           </div>
         ))}
       </div>
-
-      <>
-        <div className="side-heading">
-          <span>Collections</span>
-          <button title="New collection" onClick={() => setNewCollOpen(true)}>
-            <Icon name="plus" size={13} />
-          </button>
-        </div>
-        {collections.length > 0 && (
-          <div>
-            {collections.map((c) => (
-              <div
-                key={c.id}
-                className={`side-coll ${selectedCollection === c.id ? "active" : ""}`}
-                onClick={() => { setView("all"); onSelectCollection(c.id, c.name); onClose(); }}
-              >
-                <span className="swatch" style={{ background: c.color }} />
-                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
-                <span className="count">{c.link_count}</span>
-                <button
-                  className="del-btn"
-                  title="Delete collection"
-                  onClick={e => { e.stopPropagation(); deleteCollection(c.id); }}
-                >
-                  <Icon name="trash" size={12} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </>
-
-      {newCollOpen && createPortal(
-        <NewCollectionModal
-          onClose={() => setNewCollOpen(false)}
-          onCreated={() => setCollVersion((v) => v + 1)}
-        />,
-        document.body
-      )}
 
       {tags.length > 0 && (
         <>

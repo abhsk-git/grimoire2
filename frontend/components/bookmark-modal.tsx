@@ -11,12 +11,6 @@ interface Meta {
   url: string;
 }
 
-interface Collection {
-  id: number;
-  name: string;
-  color: string;
-}
-
 interface BookmarkModalProps {
   onClose: () => void;
   onSaved: () => void;
@@ -30,20 +24,12 @@ export function BookmarkModal({ onClose, onSaved }: BookmarkModalProps) {
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [notes, setNotes] = useState("");
-  const [collectionId, setCollectionId] = useState<number | null>(null);
-  const [collections, setCollections] = useState<Collection[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const urlRef = useRef<HTMLInputElement>(null);
   const fetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { urlRef.current?.focus(); }, []);
-
-  useEffect(() => {
-    fetch("/api/collections", { credentials: "include" })
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setCollections(Array.isArray(data) ? data : []));
-  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -108,7 +94,6 @@ export function BookmarkModal({ onClose, onSaved }: BookmarkModalProps) {
           favicon: meta?.favicon || "",
           tags: tags.trim(),
           notes: notes.trim(),
-          collection_id: collectionId,
         }),
       });
       if (!r.ok) throw new Error();
@@ -190,29 +175,6 @@ export function BookmarkModal({ onClose, onSaved }: BookmarkModalProps) {
         )}
 
         <div className="bm-fields">
-          {collections.length > 0 && (
-            <div className="bm-coll-row">
-              <button
-                type="button"
-                className={`bm-coll-chip${collectionId === null ? " active" : ""}`}
-                onClick={() => setCollectionId(null)}
-              >
-                No collection
-              </button>
-              {collections.map(c => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`bm-coll-chip${collectionId === c.id ? " active" : ""}`}
-                  style={collectionId === c.id ? { borderColor: c.color, color: c.color } : {}}
-                  onClick={() => setCollectionId(collectionId === c.id ? null : c.id)}
-                >
-                  <span className="bm-coll-dot" style={{ background: c.color }} />
-                  {c.name}
-                </button>
-              ))}
-            </div>
-          )}
           <input
             className="bm-field-input"
             placeholder="Tags (comma separated)"
