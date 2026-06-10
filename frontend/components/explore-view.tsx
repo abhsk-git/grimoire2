@@ -394,7 +394,7 @@ export function ExploreView() {
 
               {isFiltering && mobileLinks.length > 0 && (
                 <div className="mob-disc-section">
-                  <div className="mob-disc-label"><Icon name="bookmark" size={10} /> References</div>
+                  <div className="mob-disc-label"><Icon name="bookmark" size={10} /> Bookmarks</div>
                   <div className="mob-refs-list">
                     {mobileLinks.map(l => (
                       <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="mob-ref-item">
@@ -469,7 +469,7 @@ export function ExploreView() {
                           {/* Mobile bookmark (hidden on desktop via CSS) */}
                           <button
                             className="feed-bookmark"
-                            aria-label={isSaved ? "Remove bookmark" : "Save story"}
+                            aria-label={isSaved ? "Remove bookmark" : "Bookmark"}
                             onClick={e => toggleBookmark(e, p)}
                             disabled={bookmarking.has(p.id)}
                             style={{ color: isSaved ? "var(--accent)" : "var(--fg-muted)" }}
@@ -509,7 +509,7 @@ export function ExploreView() {
                           className={`feed-bookmark-desktop${isSaved ? " saved" : ""}`}
                           onClick={e => toggleBookmark(e, p)}
                           disabled={bookmarking.has(p.id)}
-                          aria-label="Save story"
+                          aria-label={isSaved ? "Remove bookmark" : "Bookmark"}
                         >
                           <Icon name="bookmark" size={17} fill={isSaved ? "currentColor" : "none"} />
                         </button>

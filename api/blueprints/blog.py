@@ -1149,6 +1149,7 @@ def upload_image():
 
 
 @bp.route('/api/search', methods=['GET'])
+@optional_auth
 def search():
     q = request.args.get('q', '').strip()
     if not q or len(q) < 2:
@@ -1166,15 +1167,30 @@ def search():
             WHERE p.status = 'published'
               AND (p.title LIKE %s OR p.excerpt LIKE %s OR p.tags LIKE %s)
             ORDER BY p.published_at DESC
-            LIMIT 12
+            LIMIT 10
         ''', (like, like, like))
-        results = cur.fetchall()
+        posts = cur.fetchall()
+        for r in posts:
+            if r.get('published_at'):
+                r['published_at'] = r['published_at'].isoformat()
+            r['type'] = 'post'
+
+        bookmarks = []
+        if getattr(request, 'user_id', None):
+            cur.execute('''
+                SELECT id, title, url, description, favicon, tags
+                FROM links
+                WHERE user_id = %s
+                  AND (title LIKE %s OR description LIKE %s OR url LIKE %s OR tags LIKE %s)
+                ORDER BY created_at DESC
+                LIMIT 8
+            ''', (request.user_id, like, like, like, like))
+            bookmarks = cur.fetchall()
+            for b in bookmarks:
+                b['type'] = 'bookmark'
     finally:
         db.close()
-    for r in results:
-        if r.get('published_at'):
-            r['published_at'] = r['published_at'].isoformat()
-    return jsonify(results)
+    return jsonify(posts + bookmarks)
 
 
 @bp.route('/api/blog/rss.xml', methods=['GET'])

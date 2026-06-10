@@ -2325,6 +2325,12 @@ button.lc-tag:hover { opacity: 0.7; }
 }
 .side-tags .tag:hover { color: var(--fg); border-color: var(--border-strong); }
 .side-tags .tag .n { color: var(--fg-soft); font-size: 10px; }
+.side-tags-empty {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--fg-muted);
+  line-height: 1.4;
+}
 .side-foot {
   margin-top: auto;
   display: flex; flex-direction: column; gap: 2px;
@@ -2443,6 +2449,43 @@ button.lc-tag:hover { opacity: 0.7; }
 .stat .spark {
   position: absolute; right: 14px; bottom: 10px;
   color: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+@keyframes skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.stat-skel {
+  display: inline-block; width: 40px; height: 22px;
+  border-radius: 4px; background: var(--border);
+  animation: skel-pulse 1.4s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+/* ── Delete undo toast ──────────────────────────────────────────────────── */
+.delete-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  z-index: 9997;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; border-radius: 10px;
+  background: var(--fg); color: var(--bg);
+  font-size: 13px; font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  animation: toast-in 0.2s ease-out;
+  white-space: nowrap;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.delete-toast-msg { color: inherit; opacity: 0.8; }
+.delete-toast-undo {
+  color: var(--accent-light, #a78bfa);
+  font-weight: 700; font-size: 13px;
+  padding: 0; background: none; border: none; cursor: pointer;
+}
+[data-theme="light"] .delete-toast-undo { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .delete-toast { animation: none; }
 }
 
 /* ===== filter bar ===== */
@@ -4751,6 +4794,20 @@ button.lc-tag:hover { opacity: 0.7; }
   border-top-color: var(--accent);
   animation: spin 0.6s linear infinite;
   flex-shrink: 0;
+}
+.search-section-label {
+  display: flex; align-items: center; gap: 5px;
+  padding: 8px 14px 4px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--fg-soft);
+}
+.search-bm-fav {
+  width: 14px; height: 14px; border-radius: 3px;
+  object-fit: contain; flex-shrink: 0;
+}
+.search-bm-domain {
+  color: var(--fg-soft);
+  font-size: 11px;
 }
 
 /* ── Bookmark modal ──────────────────────────────────────────────────── */

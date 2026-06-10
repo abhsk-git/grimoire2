@@ -675,10 +675,7 @@ function NotificationsTab() {
   return (
     <>
       <div className="sett-section">
-        <div className="sett-section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          Email notifications
-          <span className="sett-notif-badge">Coming soon</span>
-        </div>
+        <div className="sett-section-title">Email notifications</div>
         <div className="sett-card">
           <SettRow label="New comment on your post" hint="Get notified when someone comments">
             <Toggle checked={notif.onComment} onChange={v => update({ notifications: { onComment: v } })} />
@@ -692,7 +689,7 @@ function NotificationsTab() {
         </div>
       </div>
       <div style={{ padding: "12px 2px", fontSize: 13, color: "var(--fg-soft)", lineHeight: 1.55 }}>
-        Preferences are saved and will take effect once email delivery is wired up.
+        Email delivery is in progress. Your preferences are saved and will activate automatically when it ships.
       </div>
     </>
   );

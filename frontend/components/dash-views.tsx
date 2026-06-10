@@ -230,8 +230,8 @@ function ListRow({
 
 function StatStrip({ stats }: { stats: ApiStats | null }) {
   const items = [
-    { l: "References", n: stats?.total ?? "—", ico: "bookmark" },
-    { l: "Total visits", n: stats?.total_visits ?? "—", ico: "zap" },
+    { l: "Bookmarks", n: stats?.total ?? null, ico: "bookmark" },
+    { l: "Total visits", n: stats?.total_visits ?? null, ico: "zap" },
   ];
 
   return (
@@ -242,7 +242,11 @@ function StatStrip({ stats }: { stats: ApiStats | null }) {
             <Icon name={s.ico} size={16} />
           </div>
           <div>
-            <div className="n">{String(s.n)}</div>
+            <div className="n">
+              {s.n === null
+                ? <span className="stat-skel" />
+                : String(s.n)}
+            </div>
             <div className="l">{s.l}</div>
           </div>
         </div>
@@ -276,6 +280,18 @@ export function AllLinksView({
   const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
   const [tagDropOpen, setTagDropOpen] = useState(false);
   const tagDropRef = useRef<HTMLDivElement>(null);
+  const [undoMsg, setUndoMsg] = useState<string | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingLinkRef = useRef<{ id: number; item: ApiLink; idx: number } | null>(null);
+
+  useEffect(() => () => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      if (pendingLinkRef.current) {
+        fetch(`/api/links/${pendingLinkRef.current.id}`, { method: "DELETE", credentials: "include" });
+      }
+    }
+  }, []);
 
   const titles: Record<DashView, string> = {
     all:   "Bookmarks",
@@ -353,16 +369,37 @@ export function AllLinksView({
     }
   }
 
-  async function deleteLink(linkId: number) {
-    if (!window.confirm("Delete this reference? This can't be undone.")) return;
-    const r = await fetch(`/api/links/${linkId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (r.ok) {
-      setLinks((prev) => prev.filter((l) => l.id !== linkId));
-      setTotal((t) => Math.max(0, t - 1));
+  function deleteLink(linkId: number) {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      if (pendingLinkRef.current) {
+        fetch(`/api/links/${pendingLinkRef.current.id}`, { method: "DELETE", credentials: "include" });
+      }
     }
+    const idx = links.findIndex(l => l.id === linkId);
+    const item = links[idx];
+    if (!item) return;
+    setLinks(prev => prev.filter(l => l.id !== linkId));
+    setTotal(t => Math.max(0, t - 1));
+    pendingLinkRef.current = { id: linkId, item, idx };
+    setUndoMsg(item.title || item.url);
+    undoTimerRef.current = setTimeout(() => {
+      fetch(`/api/links/${linkId}`, { method: "DELETE", credentials: "include" });
+      pendingLinkRef.current = null;
+      setUndoMsg(null);
+      undoTimerRef.current = null;
+    }, 5000);
+  }
+
+  function undoLinkDelete() {
+    if (!undoTimerRef.current || !pendingLinkRef.current) return;
+    clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = null;
+    const { item, idx } = pendingLinkRef.current;
+    pendingLinkRef.current = null;
+    setLinks(prev => { const a = [...prev]; a.splice(idx, 0, item); return a; });
+    setTotal(t => t + 1);
+    setUndoMsg(null);
   }
 
   return (
@@ -458,6 +495,12 @@ export function AllLinksView({
         </div>
       )}
 
+      {undoMsg !== null && (
+        <div className="delete-toast">
+          <span className="delete-toast-msg">Bookmark deleted</span>
+          <button className="delete-toast-undo" onClick={undoLinkDelete}>Undo</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -533,6 +576,18 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<PostFilter>("all");
   const [search, setSearch] = useState("");
+  const [undoMsg, setUndoMsg] = useState<string | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPostRef = useRef<{ id: number; item: ApiPost; idx: number } | null>(null);
+
+  useEffect(() => () => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      if (pendingPostRef.current) {
+        fetch(`/api/blog/posts/${pendingPostRef.current.id}`, { method: "DELETE", credentials: "include" });
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/blog/my-posts", { credentials: "include" })
@@ -572,15 +627,35 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
 
   const glyph = (title: string) => title.charAt(0).toUpperCase() || "·";
 
-  async function deletePost(postId: number) {
-    if (!window.confirm("Delete this post permanently? This can't be undone.")) return;
-    const r = await fetch(`/api/blog/posts/${postId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (r.ok) {
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
+  function deletePost(postId: number) {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      if (pendingPostRef.current) {
+        fetch(`/api/blog/posts/${pendingPostRef.current.id}`, { method: "DELETE", credentials: "include" });
+      }
     }
+    const idx = posts.findIndex(p => p.id === postId);
+    const item = posts[idx];
+    if (!item) return;
+    setPosts(prev => prev.filter(p => p.id !== postId));
+    pendingPostRef.current = { id: postId, item, idx };
+    setUndoMsg(item.title || "Untitled");
+    undoTimerRef.current = setTimeout(() => {
+      fetch(`/api/blog/posts/${postId}`, { method: "DELETE", credentials: "include" });
+      pendingPostRef.current = null;
+      setUndoMsg(null);
+      undoTimerRef.current = null;
+    }, 5000);
+  }
+
+  function undoPostDelete() {
+    if (!undoTimerRef.current || !pendingPostRef.current) return;
+    clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = null;
+    const { item, idx } = pendingPostRef.current;
+    pendingPostRef.current = null;
+    setPosts(prev => { const a = [...prev]; a.splice(idx, 0, item); return a; });
+    setUndoMsg(null);
   }
 
   return (
@@ -722,6 +797,13 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
               </button>
             </a>
           ))}
+        </div>
+      )}
+
+      {undoMsg !== null && (
+        <div className="delete-toast">
+          <span className="delete-toast-msg">Post deleted</span>
+          <button className="delete-toast-undo" onClick={undoPostDelete}>Undo</button>
         </div>
       )}
     </div>

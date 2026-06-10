@@ -67,17 +67,19 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
         ))}
       </div>
 
-      {tags.length > 0 && (
-        <>
-          <div className="side-heading"><span>Tags</span></div>
-          <div className="side-tags">
-            {tags.map((t) => (
-              <span key={t.name} className="tag">
-                #{t.name} <span className="n">{t.count}</span>
-              </span>
-            ))}
-          </div>
-        </>
+      <div className="side-heading"><span>Tags</span></div>
+      {tags.length > 0 ? (
+        <div className="side-tags">
+          {tags.map((t) => (
+            <span key={t.name} className="tag">
+              #{t.name} <span className="n">{t.count}</span>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="side-tags-empty">
+          Tag your posts to build your archive
+        </div>
       )}
 
       <div className="side-foot">
