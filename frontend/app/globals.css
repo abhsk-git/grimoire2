@@ -5793,8 +5793,28 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
 /* Mobile */
 @media (max-width: 720px) {
   .dw-page { height: auto; min-height: 100vh; padding: 32px 18px 48px; }
-  .dw-topbar { align-items: flex-start; }
+  .dw-topbar { flex-direction: column; align-items: stretch; gap: 16px; }
   .dw-grid { flex: none; grid-template-columns: 1fr; }
   .dw-card-body { max-height: 340px; }
-  .dw-actions { gap: 6px; }
+
+  /* Actions: primary buttons 2×2, account controls right-aligned below */
+  .dw-actions { width: 100%; flex-wrap: wrap; gap: 8px; }
+
+  /* Flex line-break between primary row and account row */
+  .dw-actions::after {
+    content: ''; display: block;
+    flex-basis: 100%; height: 0; order: 1;
+  }
+
+  /* Primary action buttons — 2-column grid */
+  .dw-actions .dw-btn {
+    order: 0;
+    flex: 0 0 calc(50% - 4px);
+    justify-content: center;
+  }
+
+  /* Account controls — own row, pushed to the right */
+  .dw-actions .dw-icon-btn { order: 2; margin-left: auto; }
+  .dw-actions .dw-avatar   { order: 2; }
+  .dw-actions .dw-signout-btn { order: 2; }
 }

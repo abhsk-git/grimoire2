@@ -171,7 +171,7 @@ export function SignInForm({ switchTo, banner, initialPendingToken }: { switchTo
         setPendingToken(data.pending_token);
         return;
       }
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -197,7 +197,7 @@ export function SignInForm({ switchTo, banner, initialPendingToken }: { switchTo
         }
         return;
       }
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     } catch {
       setOtpError("Network error. Please try again.");
     } finally {
@@ -395,7 +395,7 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         return;
       }
       if (data.verify) { setVerifyPending(true); return; }
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     } catch {
       setError("Network error. Please try again.");
     } finally {
