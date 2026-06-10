@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { Icon } from "./icons";
 import { useAuth } from "@/lib/auth";
@@ -95,6 +95,7 @@ export function ExploreView() {
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -182,6 +183,13 @@ export function ExploreView() {
 
   const isFiltering = !!(search || activeTag);
   const typedQuery = useTypewriter(TYPED_QUERIES, !search && !searchFocused);
+
+  const displayPosts = useMemo(() => {
+    const sorted = sortOrder === "oldest"
+      ? [...posts].sort((a, b) => a.id - b.id)
+      : [...posts].sort((a, b) => b.id - a.id);
+    return isFiltering ? sorted : sorted.slice(0, 5);
+  }, [posts, sortOrder, isFiltering]);
 
   const EXAMPLES = [
     { label: "claude code", q: "claude code" },
@@ -418,13 +426,14 @@ export function ExploreView() {
                     : <span>posts <span style={{color:"var(--fg-soft)"}}>· latest · {totalPosts || posts.length} total</span></span>}
                 </span>
                 <span className="feed-head-grow" />
-                <button className="feed-sort-btn">
-                  Recent <Icon name="chevron-right" size={12} style={{ transform: "rotate(90deg)" }} />
+                <button className="feed-sort-btn" onClick={() => setSortOrder(o => o === "recent" ? "oldest" : "recent")}>
+                  {sortOrder === "recent" ? "Recent" : "Oldest"}
+                  <Icon name="chevron-right" size={12} style={{ transform: sortOrder === "recent" ? "rotate(90deg)" : "rotate(-90deg)" }} />
                 </button>
               </div>
 
-              <div className="feed-list" key={search + activeTag}>
-                {posts.map((p, i) => {
+              <div className="feed-list" key={search + activeTag + sortOrder}>
+                {displayPosts.map((p, i) => {
                   const tagsList = (p.tags || "").split(",").map(t => t.trim()).filter(Boolean);
                   const isSaved = bookmarked.has(p.id);
                   return (
@@ -494,13 +503,6 @@ export function ExploreView() {
                 })}
               </div>
 
-              {!isFiltering && (
-                <div style={{display:"flex",justifyContent:"flex-end",padding:"14px 16px 0"}}>
-                  <span style={{display:"inline-flex",alignItems:"center",gap:6,color:"var(--accent-ink)",fontSize:13,fontFamily:"var(--font-mono)",opacity:0.85,cursor:"pointer"}}>
-                    Explore all posts <Icon name="arrow-right" size={13} />
-                  </span>
-                </div>
-              )}
             </div>
           )}
         </main>
