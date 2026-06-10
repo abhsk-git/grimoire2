@@ -256,34 +256,17 @@ export function ExploreView() {
 
         {/* ── RIGHT SIDEBAR — desktop only ── */}
         <aside className="explore-sidebar">
-          {/* Topics cloud */}
-          {blogTags.length > 0 && (
-            <div className="side-card">
-              <div className="side-card-head">
-                <Icon name="tag" size={13} /> Browse topics
-                <span className="sc-grow" />
-                <span className="sc-n">{blogTags.length}</span>
-              </div>
-              <div className="side-card-body">
-                <div className="topic-cloud-wrap">
-                  {blogTags.slice(0, 12).map(t => (
-                    <button key={t.name} className="topic-chip" onClick={() => handleTagClick(t.name)}>
-                      #{t.name} <span className="topic-n">{t.count}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Public links */}
           {sidebarLinks.length > 0 && (
-            <div className="side-card">
-              <div className="side-card-head">
-                <Icon name="link" size={13} /> Public links
-                <span className="sc-grow" />
-                <span className="sc-n">{sidebarLinks.length}</span>
+            <>
+              <div className="feed-head" style={{ marginBottom: 6 }}>
+                <span className="feed-count-label">
+                  <b>{String(sidebarLinks.length).padStart(2, "0")}</b>
+                  <span>sites</span>
+                </span>
+                <span className="feed-head-grow" />
               </div>
+              <div className="side-card">
               <div className="side-links-list">
                 {sidebarLinks.map(l => (
                   <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="side-link-row">
@@ -302,6 +285,27 @@ export function ExploreView() {
                     <span className="side-link-ext"><Icon name="arrow-right" size={14} /></span>
                   </a>
                 ))}
+              </div>
+            </div>
+            </>
+          )}
+
+          {/* Topics cloud */}
+          {blogTags.length > 0 && (
+            <div className="side-card">
+              <div className="side-card-head">
+                <Icon name="tag" size={13} /> Browse topics
+                <span className="sc-grow" />
+                <span className="sc-n">{blogTags.length}</span>
+              </div>
+              <div className="side-card-body">
+                <div className="topic-cloud-wrap">
+                  {blogTags.slice(0, 12).map(t => (
+                    <button key={t.name} className="topic-chip" onClick={() => handleTagClick(t.name)}>
+                      #{t.name} <span className="topic-n">{t.count}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
