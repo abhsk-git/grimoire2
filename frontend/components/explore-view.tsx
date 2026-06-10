@@ -417,9 +417,9 @@ export function ExploreView() {
           {activeTag && (
             <div className="active-tag-row">
               <span className="active-tag-label">Tag:</span>
-              <span className="lc-tag" style={{ cursor: "pointer" }} onClick={() => setActiveTag("")}>
+              <button className="lc-tag" onClick={() => setActiveTag("")} aria-label={`Remove filter: ${activeTag}`}>
                 #{activeTag} <span style={{ opacity: 0.6 }}>×</span>
-              </span>
+              </button>
             </div>
           )}
 

@@ -701,7 +701,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
       ) : (
         <div>
           {filtered.map((p) => (
-            <div key={p.id} className="post-row" onClick={() => { window.location.href = `/blog/${p.slug}`; }} style={{ cursor: "pointer" }}>
+            <a key={p.id} href={`/blog/${p.slug}`} className="post-row">
               <div className="thumb" style={{ background: p.cover_image ? "none" : postGradient(p.id) }}>
                 {p.cover_image
                   ? <img src={p.cover_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -716,11 +716,11 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
               <button
                 aria-label="Delete post"
                 style={{ background: "none", border: "none", cursor: "pointer", padding: "0 4px", color: "var(--fg-muted)", display: "flex", alignItems: "center" }}
-                onClick={(e) => { e.stopPropagation(); deletePost(p.id); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); deletePost(p.id); }}
               >
                 <Icon name="trash" size={14} />
               </button>
-            </div>
+            </a>
           ))}
         </div>
       )}

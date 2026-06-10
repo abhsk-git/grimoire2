@@ -237,7 +237,7 @@ function ProfileTab() {
         {/* Identity card — left col */}
         <div className="sett-card sett-profile-identity">
           <div className="sett-identity-inner">
-            <div className="sett-avatar-clickable" onClick={() => avatarFileRef.current?.click()} title="Change avatar">
+            <button className="sett-avatar-clickable" onClick={() => avatarFileRef.current?.click()} aria-label="Change avatar" type="button">
               {avatarUrl
                 ? <img className="sett-avatar sett-avatar-photo" src={avatarUrl} alt={initials} />
                 : <div className="sett-avatar" style={{ background: "linear-gradient(135deg,var(--accent),var(--accent-3))" }}>{initials}</div>
@@ -248,7 +248,7 @@ function ProfileTab() {
                   <circle cx="12" cy="13" r="4"/>
                 </svg>
               </div>
-            </div>
+            </button>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{ display: "none" }}
               onChange={e => { const f = e.target.files?.[0]; if (f) { setPendingAvatarFile(f); if (avatarFileRef.current) avatarFileRef.current.value = ""; } }} />
             <div className="sett-identity-right">
@@ -271,27 +271,27 @@ function ProfileTab() {
         {/* Fields card — right col */}
         <div className="sett-card sett-profile-fields">
           <div className="sett-field">
-            <label className="sett-label">Display name</label>
-            <input className="sett-input" value={name} onChange={e => setName(e.target.value)} maxLength={100} />
+            <label className="sett-label" htmlFor="sett-name">Display name</label>
+            <input id="sett-name" className="sett-input" value={name} onChange={e => setName(e.target.value)} maxLength={100} />
           </div>
           <div className="sett-field">
-            <label className="sett-label">Handle <span className="sett-label-soft">(public URL)</span></label>
+            <label className="sett-label" htmlFor="sett-handle">Handle <span className="sett-label-soft">(public URL)</span></label>
             <div className="sett-handle-wrap">
               <span className="sett-handle-prefix">grimoire.sysnode.in/user/</span>
-              <input className="sett-handle-input" value={handle} onChange={e => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} placeholder="yourhandle" />
+              <input id="sett-handle" className="sett-handle-input" value={handle} onChange={e => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} placeholder="yourhandle" />
             </div>
             <span className="sett-handle-hint">2–30 chars · lowercase · hyphens ok</span>
           </div>
           <div className="sett-field">
-            <label className="sett-label">Bio <span className="sett-label-soft">(shown on profile)</span></label>
-            <textarea className="sett-input sett-textarea" value={bio} onChange={e => setBio(e.target.value)} maxLength={300} rows={2} placeholder="A short bio…" />
+            <label className="sett-label" htmlFor="sett-bio">Bio <span className="sett-label-soft">(shown on profile)</span></label>
+            <textarea id="sett-bio" className="sett-input sett-textarea" value={bio} onChange={e => setBio(e.target.value)} maxLength={300} rows={2} placeholder="A short bio…" />
             <span className="sett-char-count">{bio.length}/300</span>
           </div>
           <div className="sett-field" style={{ borderBottom: "none" }}>
-            <label className="sett-label">Website</label>
+            <label className="sett-label" htmlFor="sett-website">Website</label>
             <div className="sett-handle-wrap">
               <span className="sett-handle-prefix"><Icon name="globe" size={13} /></span>
-              <input className="sett-handle-input" value={website} onChange={e => setWebsite(e.target.value)} maxLength={300} placeholder="https://yoursite.com" />
+              <input id="sett-website" className="sett-handle-input" value={website} onChange={e => setWebsite(e.target.value)} maxLength={300} placeholder="https://yoursite.com" />
             </div>
           </div>
           <div className="sett-save-row">
@@ -385,6 +385,7 @@ function SocialLinksTab() {
               value={socials[p.key] ?? ""}
               onChange={e => setSocials(prev => ({ ...prev, [p.key]: e.target.value }))}
               maxLength={100}
+              aria-label={p.label}
             />
           </div>
         ))}

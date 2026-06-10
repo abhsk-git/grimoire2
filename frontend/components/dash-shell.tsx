@@ -196,11 +196,11 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
 
       {/* Desktop header */}
       <div className="main-header">
-        <div className="main-search" onClick={() => setOpen(true)} style={{ cursor: "pointer" }}>
+        <button className="main-search" onClick={() => setOpen(true)} aria-label="Search">
           <Icon name="search" size={15} />
-          <input placeholder="Search posts, links, tags…" readOnly style={{ cursor: "pointer" }} />
+          <span className="main-search-ph">Search posts, links, tags…</span>
           <span className="kbd">⌘K</span>
-        </div>
+        </button>
 
         <div style={{ flex: 1 }} />
 

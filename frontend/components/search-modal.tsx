@@ -79,7 +79,7 @@ export function SearchModal({ onClose }: SearchModalProps) {
             autoComplete="off"
           />
           {loading && <div className="search-spinner" />}
-          <span className="kbd" onClick={onClose} style={{ cursor: "pointer" }}>ESC</span>
+          <button className="kbd" onClick={onClose} aria-label="Close search">ESC</button>
         </div>
 
         {results.length > 0 && (

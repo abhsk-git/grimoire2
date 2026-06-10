@@ -52,11 +52,11 @@ export function Header({ loggedIn, username, handle, avatar, onSignIn, onSignUp,
         <div className="header-right">
           {loggedIn ? (
             <>
-              <div className="search-input" onClick={onSearchOpen} style={{ cursor: "pointer" }}>
+              <button className="search-input" onClick={onSearchOpen} aria-label="Search">
                 <Icon name="search" size={14} />
-                <input placeholder="Search your grimoire…" readOnly style={{ cursor: "pointer" }} onClick={onSearchOpen} />
+                <span className="search-input-ph">Search your grimoire…</span>
                 <span className="kbd">⌘K</span>
-              </div>
+              </button>
               <a href="/" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
                 <Icon name="layout-grid" size={14} /> Dashboard
               </a>

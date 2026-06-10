@@ -75,7 +75,7 @@ export function NewCollectionModal({
             onChange={e => setName(e.target.value)}
             autoComplete="off"
           />
-          <span className="kbd" onClick={onClose} style={{ cursor: "pointer" }}>ESC</span>
+          <button className="kbd" onClick={onClose} aria-label="Close">ESC</button>
         </div>
 
         {error && <div className="coll-error">{error}</div>}
