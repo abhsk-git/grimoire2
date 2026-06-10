@@ -16,7 +16,7 @@ function ExploreContent() {
 
   return (
     <div className="explore-page explore-app">
-      <PublicHeader loggedIn={!!user} username={user?.username} handle={user?.handle} avatar={user?.avatar} />
+      <PublicHeader loggedIn={!!user} username={user?.username} handle={user?.handle} avatar={user?.avatar} showNav />
 
       <div className="explore-app-body">
         <div className="container-wide explore-app-container">
