@@ -1595,6 +1595,15 @@ button { font-family: inherit; cursor: pointer; border: 0; background: none; col
   background: var(--bg-elev); border: 1px solid var(--border);
   border-radius: var(--radius-lg); overflow: hidden;
 }
+[data-theme="dark"] .side-card {
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+[data-theme="geek"] .side-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
 .side-card-head {
   display: flex; align-items: center; gap: 8px;
   padding: 13px 15px;
