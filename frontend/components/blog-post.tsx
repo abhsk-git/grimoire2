@@ -811,14 +811,14 @@ export function BlogPost({ slug }: Props) {
         </div>
       </header>
 
+      {post.cover_image && (
+        <div className="article-hero">
+          <img src={post.cover_image} alt={post.title} />
+        </div>
+      )}
+
       {/* Article */}
       <article className={`post-article post-article--${readingMode}`}>
-        {post.cover_image && (
-          <div className="article-hero">
-            <img src={post.cover_image} alt={post.title} />
-          </div>
-        )}
-
         {tagsList.length > 0 && (
           <div className="post-tag-row">
             {tagsList.map((t) => (

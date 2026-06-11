@@ -259,7 +259,7 @@ export function ExploreView() {
       </section>
 
       {/* ── Main layout: feed + sidebar ── */}
-      <div className="explore-layout">
+      <div className={`explore-layout${isFiltering ? " searching" : ""}`}>
 
         {/* ── RIGHT SIDEBAR — desktop only ── */}
         <aside className="explore-sidebar">
@@ -425,62 +425,98 @@ export function ExploreView() {
 
           {postsLoading ? (
             <div className="explore-loading">Loading…</div>
-          ) : posts.length === 0 ? (
-            <div className="explore-empty">
-              <Icon name="feather" size={32} />
-              <p>No stories found{search ? ` for "${search}"` : activeTag ? ` tagged #${activeTag}` : ""}.</p>
-            </div>
           ) : (
-            <div className="explore-feed-wrap">
-              {/* Feed head: count + sort (desktop) */}
-              <div className="feed-head">
-                <span className="feed-count-label">
-                  <b>{String(posts.length).padStart(2, "0")}</b>
-                  {isFiltering
-                    ? <span>results <span style={{color:"var(--fg-soft)"}}>· for &quot;{search || "#" + activeTag}&quot;</span></span>
-                    : <span>posts <span style={{color:"var(--fg-soft)"}}>· latest · {totalPosts || posts.length} total</span></span>}
-                </span>
-                <span className="feed-head-grow" />
-                <button className="feed-sort-btn" onClick={() => setSortOrder(o => o === "recent" ? "oldest" : "recent")}>
-                  {sortOrder === "recent" ? "Recent" : "Oldest"}
-                  <Icon name="chevron-right" size={12} style={{ transform: sortOrder === "recent" ? "rotate(90deg)" : "rotate(-90deg)" }} />
-                </button>
-              </div>
+            <>
+              {/* Site links come first — they're the genuine result when posts are empty */}
+              {isFiltering && mobileLinks.length > 0 && (
+                <div className="feed-links-section">
+                  <div className="feed-head">
+                    <span className="feed-count-label">
+                      <b>{String(mobileLinks.length).padStart(2, "0")}</b>
+                      <span>sites</span>
+                    </span>
+                  </div>
+                  <div className="feed-links-list">
+                    {mobileLinks.map(l => (
+                      <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="feed-link-row">
+                        <span className="feed-link-fav">
+                          {l.favicon ? (
+                            <img src={l.favicon} width={14} height={14} alt=""
+                              onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                          ) : (
+                            <Icon name="globe" size={14} />
+                          )}
+                        </span>
+                        <span className="feed-link-body">
+                          <span className="feed-link-title">{l.title || getDomain(l.url)}</span>
+                          <span className="feed-link-domain">{getDomain(l.url)}</span>
+                        </span>
+                        <Icon name="arrow-up-right" size={13} className="feed-link-ext" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="feed-list" key={search + activeTag + sortOrder}>
-                {displayPosts.map((p, i) => {
-                  const tagsList = (p.tags || "").split(",").map(t => t.trim()).filter(Boolean);
-                  const isSaved = bookmarked.has(p.id);
-                  return (
-                    <Link key={p.id} href={`/blog/${p.slug}`} className="feed-row" style={{ animationDelay: `${i * 35}ms` }}>
-                      {/* Desktop: index number */}
-                      <span className="feed-index">{String(i + 1).padStart(2, "0")}</span>
+              {/* Posts — or empty state only when links also came up empty */}
+              {posts.length === 0 ? (
+                mobileLinks.length === 0 && (
+                  <div className="explore-empty">
+                    <Icon name="feather" size={32} />
+                    <p>No stories found{search ? ` for "${search}"` : activeTag ? ` tagged #${activeTag}` : ""}.</p>
+                  </div>
+                )
+              ) : (
+                <div className={`explore-feed-wrap${isFiltering && mobileLinks.length > 0 ? " has-links-above" : ""}`}>
+                  {/* Feed head: count + sort (desktop) */}
+                  <div className="feed-head">
+                    <span className="feed-count-label">
+                      <b>{String(posts.length).padStart(2, "0")}</b>
+                      {isFiltering
+                        ? <span>posts <span style={{color:"var(--fg-soft)"}}>· for &quot;{search || "#" + activeTag}&quot;</span></span>
+                        : <span>posts <span style={{color:"var(--fg-soft)"}}>· latest · {totalPosts || posts.length} total</span></span>}
+                    </span>
+                    <span className="feed-head-grow" />
+                    <button className="feed-sort-btn" onClick={() => setSortOrder(o => o === "recent" ? "oldest" : "recent")}>
+                      {sortOrder === "recent" ? "Recent" : "Oldest"}
+                      <Icon name="chevron-right" size={12} style={{ transform: sortOrder === "recent" ? "rotate(90deg)" : "rotate(-90deg)" }} />
+                    </button>
+                  </div>
 
-                      {/* Content wrapper (flex col on both desktop and mobile) */}
-                      <div className="feed-row-content">
-                        <div className="feed-row-head">
-                          <div className="feed-tags">
-                            {tagsList.slice(0, 3).map(t => (
-                              <span key={t} className="feed-tag"
-                                onClick={e => { e.preventDefault(); handleTagClick(t); }}
-                              >#{t}</span>
-                            ))}
-                          </div>
-                          {/* Mobile bookmark (hidden on desktop via CSS) */}
-                          <button
-                            className="feed-bookmark"
-                            aria-label={isSaved ? "Remove bookmark" : "Bookmark"}
-                            onClick={e => toggleBookmark(e, p)}
-                            disabled={bookmarking.has(p.id)}
-                            style={{ color: isSaved ? "var(--accent)" : "var(--fg-muted)" }}
-                          >
-                            <Icon name="bookmark" size={12} fill={isSaved ? "currentColor" : "none"} />
-                          </button>
-                        </div>
+                  <div className="feed-list" key={search + activeTag + sortOrder}>
+                    {displayPosts.map((p, i) => {
+                      const tagsList = (p.tags || "").split(",").map(t => t.trim()).filter(Boolean);
+                      const isSaved = bookmarked.has(p.id);
+                      return (
+                        <Link key={p.id} href={`/blog/${p.slug}`} className="feed-row" style={{ animationDelay: `${i * 35}ms` }}>
+                          {/* Desktop: index number */}
+                          <span className="feed-index">{String(i + 1).padStart(2, "0")}</span>
 
-                        <div className="feed-title">{p.title}</div>
+                          {/* Content wrapper (flex col on both desktop and mobile) */}
+                          <div className="feed-row-content">
+                            <div className="feed-row-head">
+                              <div className="feed-tags">
+                                {tagsList.slice(0, 3).map(t => (
+                                  <span key={t} className="feed-tag"
+                                    onClick={e => { e.preventDefault(); handleTagClick(t); }}
+                                  >#{t}</span>
+                                ))}
+                              </div>
+                              {/* Mobile bookmark (hidden on desktop via CSS) */}
+                              <button
+                                className="feed-bookmark"
+                                aria-label={isSaved ? "Remove bookmark" : "Bookmark"}
+                                onClick={e => toggleBookmark(e, p)}
+                                disabled={bookmarking.has(p.id)}
+                                style={{ color: isSaved ? "var(--accent)" : "var(--fg-muted)" }}
+                              >
+                                <Icon name="bookmark" size={12} fill={isSaved ? "currentColor" : "none"} />
+                              </button>
+                            </div>
 
-                        {/* Desktop: excerpt */}
+                            <div className="feed-title">{p.title}</div>
+
+                            {/* Desktop: excerpt */}
                         {p.excerpt && (
                           <p className="feed-excerpt">{p.excerpt}</p>
                         )}
@@ -518,9 +554,10 @@ export function ExploreView() {
                   );
                 })}
               </div>
-
             </div>
           )}
+        </>
+        )}
         </main>
 
       </div>

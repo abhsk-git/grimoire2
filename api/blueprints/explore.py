@@ -31,9 +31,9 @@ def explore_links():
         if q:
             conditions.append(
                 '(MATCH(l.title, l.description, l.tags) AGAINST(%s IN BOOLEAN MODE)'
-                ' OR l.title LIKE %s)'
+                ' OR l.title LIKE %s OR l.tags LIKE %s OR l.description LIKE %s)'
             )
-            params += [f'{q}*', f'%{q}%']
+            params += [f'{q}*', f'%{q}%', f'%{q}%', f'%{q}%']
         if tag:
             conditions.append('FIND_IN_SET(%s, l.tags)')
             params.append(tag)
