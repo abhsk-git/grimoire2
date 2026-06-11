@@ -204,10 +204,14 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
                     <a href={l.url} target="_blank" rel="noopener noreferrer" className="dw-row-title">
                       {l.title || dom}
                     </a>
-                    <span className="dw-row-meta">{dom}</span>
-                    <button className="dw-row-btn dw-row-btn-danger" aria-label="Delete reference" onClick={() => deleteLink(l.id)}>
-                      <Icon name="trash" size={12} />
-                    </button>
+                    <div className="dw-row-end">
+                      <span className="dw-row-meta">{dom}</span>
+                      <div className="dw-row-actions">
+                        <button className="dw-row-btn dw-row-btn-danger" aria-label="Delete bookmark" onClick={() => deleteLink(l.id)}>
+                          <Icon name="trash" size={12} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

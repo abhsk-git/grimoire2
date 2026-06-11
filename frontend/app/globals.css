@@ -5943,8 +5943,10 @@ button.lc-tag:hover { opacity: 0.7; }
   opacity: 0;
   pointer-events: none;
 }
-.dw-post-row:hover .dw-row-meta { opacity: 0; }
-.dw-post-row:hover .dw-row-actions { opacity: 1; pointer-events: auto; }
+.dw-post-row:hover .dw-row-meta,
+.dw-ref-row:hover .dw-row-meta { opacity: 0; }
+.dw-post-row:hover .dw-row-actions,
+.dw-ref-row:hover .dw-row-actions { opacity: 1; pointer-events: auto; }
 
 .dw-row-btn {
   width: 26px; height: 26px; display: grid; place-items: center;
