@@ -52,6 +52,7 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
   const [links, setLinks] = useState<SavedLink[]>([]);
   const [postsVersion, setPostsVersion] = useState(0);
   const [linksVersion, setLinksVersion] = useState(0);
+  const [confirmPending, setConfirmPending] = useState<{ type: "post" | "link"; id: number; label: string } | null>(null);
 
   const { open: searchOpen, setOpen: setSearchOpen } = useSearchModal();
   const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
@@ -71,21 +72,53 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
       });
   }, [linksVersion]);
 
-  async function deletePost(id: number) {
-    if (!window.confirm("Delete this post? This can't be undone.")) return;
-    const r = await fetch(`/api/blog/posts/${id}`, { method: "DELETE", credentials: "include" });
-    if (r.ok) setPostsVersion(v => v + 1);
+  function deletePost(id: number) {
+    const post = posts.find(p => p.id === id);
+    setConfirmPending({ type: "post", id, label: post?.title || "this post" });
   }
 
-  async function deleteLink(id: number) {
-    const r = await fetch(`/api/links/${id}`, { method: "DELETE", credentials: "include" });
-    if (r.ok) setLinksVersion(v => v + 1);
+  function deleteLink(id: number) {
+    const link = links.find(l => l.id === id);
+    setConfirmPending({ type: "link", id, label: link?.title || "this bookmark" });
+  }
+
+  async function confirmDelete() {
+    if (!confirmPending) return;
+    const { type, id } = confirmPending;
+    setConfirmPending(null);
+    if (type === "post") {
+      const r = await fetch(`/api/blog/posts/${id}`, { method: "DELETE", credentials: "include" });
+      if (r.ok) setPostsVersion(v => v + 1);
+    } else {
+      const r = await fetch(`/api/links/${id}`, { method: "DELETE", credentials: "include" });
+      if (r.ok) setLinksVersion(v => v + 1);
+    }
   }
 
   return (
     <div className="dw-page">
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
       {bmOpen && <BookmarkModal onClose={() => setBmOpen(false)} onSaved={() => setLinksVersion(v => v + 1)} />}
+
+      {confirmPending && (
+        <div className="dw-confirm-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setConfirmPending(null); }}>
+          <div className="dw-confirm">
+            <div className="dw-confirm-icon">
+              <Icon name="trash" size={18} />
+            </div>
+            <div className="dw-confirm-body">
+              <p className="dw-confirm-title">Delete {confirmPending.type === "post" ? "post" : "bookmark"}?</p>
+              <p className="dw-confirm-sub">
+                &ldquo;{confirmPending.label.length > 48 ? confirmPending.label.slice(0, 48) + "…" : confirmPending.label}&rdquo; will be permanently removed.
+              </p>
+            </div>
+            <div className="dw-confirm-actions">
+              <button className="dw-confirm-cancel" onClick={() => setConfirmPending(null)}>Cancel</button>
+              <button className="dw-confirm-delete" onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="dw-wrap">
 
