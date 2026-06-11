@@ -5919,21 +5919,40 @@ button.lc-tag:hover { opacity: 0.7; }
 }
 .dw-row-title:hover { color: var(--accent-ink); }
 
+.dw-row-end {
+  display: grid;
+  flex-shrink: 0;
+  align-items: center;
+}
+.dw-row-meta,
+.dw-row-actions {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  transition: opacity .15s;
+}
 .dw-row-meta {
   font-size: 11px; color: var(--fg-muted);
-  font-family: var(--font-mono); flex-shrink: 0;
+  font-family: var(--font-mono);
   white-space: nowrap;
+  pointer-events: none;
 }
+.dw-row-actions {
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+.dw-post-row:hover .dw-row-meta { opacity: 0; }
+.dw-post-row:hover .dw-row-actions { opacity: 1; pointer-events: auto; }
 
 .dw-row-btn {
   width: 26px; height: 26px; display: grid; place-items: center;
   border-radius: 6px; border: none; background: none;
   color: var(--fg-soft); cursor: pointer; flex-shrink: 0;
-  opacity: 0; text-decoration: none;
-  transition: opacity .12s, background .12s, color .12s;
+  text-decoration: none;
+  transition: background .12s, color .12s;
 }
-.dw-post-row:hover .dw-row-btn,
-.dw-ref-row:hover .dw-row-btn { opacity: 1; }
 .dw-row-btn:hover { background: var(--bg-inset); color: var(--fg); }
 .dw-row-btn-danger:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
 

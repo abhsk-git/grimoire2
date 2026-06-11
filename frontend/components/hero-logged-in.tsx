@@ -156,13 +156,17 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
                   >
                     {p.title || "Untitled"}
                   </a>
-                  <span className="dw-row-meta">{p.views ?? 0} reads</span>
-                  <a href={`/write/${p.id}`} className="dw-row-btn" aria-label="Edit post">
-                    <Icon name="pen" size={12} />
-                  </a>
-                  <button className="dw-row-btn dw-row-btn-danger" aria-label="Delete post" onClick={() => deletePost(p.id)}>
-                    <Icon name="trash" size={12} />
-                  </button>
+                  <div className="dw-row-end">
+                    <span className="dw-row-meta">{p.views ?? 0} reads</span>
+                    <div className="dw-row-actions">
+                      <a href={`/write/${p.id}`} className="dw-row-btn" aria-label="Edit post">
+                        <Icon name="pen" size={12} />
+                      </a>
+                      <button className="dw-row-btn dw-row-btn-danger" aria-label="Delete post" onClick={() => deletePost(p.id)}>
+                        <Icon name="trash" size={12} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
