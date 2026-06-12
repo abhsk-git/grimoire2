@@ -5865,8 +5865,10 @@ button.lc-tag:hover { opacity: 0.7; }
 .dw-btn:hover { background: var(--bg-soft); color: var(--fg); border-color: var(--border-strong); }
 .dw-btn-primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 .dw-btn-primary:hover { opacity: 0.88; color: var(--accent-fg); background: var(--accent); }
-[data-theme="dark"] .dw-btn { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-[data-theme="dark"] .dw-btn:hover { background: rgba(255,255,255,0.09); }
+[data-theme="dark"] .dw-btn { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.16); color: var(--fg-muted); }
+[data-theme="dark"] .dw-btn:hover { background: rgba(255,255,255,0.13); color: var(--fg); border-color: rgba(255,255,255,0.26); }
+[data-theme="dark"] .dw-btn-primary { background: var(--accent); border-color: transparent; color: var(--accent-fg); }
+[data-theme="dark"] .dw-btn-primary:hover { background: var(--accent); opacity: 0.88; color: var(--accent-fg); }
 
 .dw-icon-btn {
   width: 32px; height: 32px; display: grid; place-items: center;
@@ -5876,6 +5878,8 @@ button.lc-tag:hover { opacity: 0.7; }
   transition: background .14s, color .14s;
 }
 .dw-icon-btn:hover { background: var(--bg-soft); color: var(--fg); }
+[data-theme="dark"] .dw-icon-btn { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.16); color: var(--fg-muted); }
+[data-theme="dark"] .dw-icon-btn:hover { background: rgba(255,255,255,0.13); color: var(--fg); }
 
 /* Avatar + dropdown */
 .dw-avatar-wrap { position: relative; }
