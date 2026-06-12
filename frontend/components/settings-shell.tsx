@@ -451,8 +451,9 @@ function EditorTab() {
 // ── Appearance Tab ────────────────────────────────────────────────────────────
 
 const THEMES = [
-  { id: "light", label: "Light", preview: "#f6f5fa", accent: "#5b54d6" },
-  { id: "dark",  label: "Dark",  preview: "#0c0f14", accent: "#3ee07a" },
+  { id: "light", label: "Light",    preview: "#f6f5fa", accent: "#5b54d6" },
+  { id: "dark",  label: "Dark",     preview: "#0c0f14", accent: "#3ee07a" },
+  { id: "glass", label: "Glass",    preview: "linear-gradient(135deg,#2d1b6e 0%,#0f2057 40%,#0a3d2e 100%)", accent: "#a78bfa" },
 ] as const;
 
 const READING_MODES = [
