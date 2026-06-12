@@ -57,6 +57,15 @@ function getDomain(url: string): string {
 
 const TYPED_QUERIES = ["claude code", "#linux", "sed and awk", "@abhishek", "wireshark filters", "#cloud", "deliverability"];
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState<T>(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
 function useTypewriter(words: string[], active: boolean) {
   const [text, setText] = useState("");
   const i = useRef(0);
@@ -108,6 +117,9 @@ export function ExploreView() {
   }, []);
 
 
+  const debouncedSearch = useDebounce(search, 300);
+  const debouncedTag = useDebounce(activeTag, 300);
+
   const [posts, setPosts]           = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [totalPosts, setTotalPosts] = useState(0);
@@ -121,19 +133,19 @@ export function ExploreView() {
   }, []);
 
   useEffect(() => {
-    if (!search && !activeTag) { setMobileLinks([]); return; }
+    if (!debouncedSearch && !debouncedTag) { setMobileLinks([]); return; }
     const p = new URLSearchParams({ per_page: "5" });
-    if (search) p.set("q", search);
-    if (activeTag) p.set("tag", activeTag);
+    if (debouncedSearch) p.set("q", debouncedSearch);
+    if (debouncedTag) p.set("tag", debouncedTag);
     fetch(`/api/explore?${p}`).then(r => r.ok ? r.json() : { links: [] }).then(d => setMobileLinks(d.links || [])).catch(() => {});
-  }, [search, activeTag]);
+  }, [debouncedSearch, debouncedTag]);
 
   const fetchPosts = useCallback(async () => {
     setPostsLoading(true);
     try {
       const p = new URLSearchParams({ per_page: "18" });
-      if (search) p.set("q", search);
-      if (activeTag) p.set("tag", activeTag);
+      if (debouncedSearch) p.set("q", debouncedSearch);
+      if (debouncedTag) p.set("tag", debouncedTag);
       const r = await fetch(`/api/blog/posts?${p}`);
       if (r.ok) {
         const data = await r.json();
@@ -142,7 +154,7 @@ export function ExploreView() {
       }
     } catch {}
     finally { setPostsLoading(false); }
-  }, [search, activeTag]);
+  }, [debouncedSearch, debouncedTag]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
@@ -370,9 +382,10 @@ export function ExploreView() {
             </div>
           )}
 
-          {postsLoading ? (
+          {postsLoading && posts.length === 0 ? (
             <div className="explore-loading">Loading…</div>
           ) : (
+            <div style={{ opacity: postsLoading ? 0.5 : 1, transition: "opacity 0.15s" }}>
             <>
               {/* Site links come first — they're the genuine result when posts are empty */}
               {isFiltering && mobileLinks.length > 0 && (
@@ -437,6 +450,7 @@ export function ExploreView() {
             </div>
           )}
         </>
+        </div>
         )}
         </main>
 
