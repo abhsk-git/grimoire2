@@ -65,7 +65,8 @@ export function SearchModal({ onClose }: SearchModalProps) {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [query]);
 
-  const navigate = useCallback((result: SearchResult) => {
+  const navigate = useCallback((result: SearchResult | undefined) => {
+    if (!result) return;
     if (result.type === "post") {
       window.location.href = `/blog/${result.slug}`;
     } else {
