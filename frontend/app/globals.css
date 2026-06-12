@@ -4093,6 +4093,7 @@ button.lc-tag:hover { opacity: 0.7; }
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 28px;
+  margin: 0 32px;
   display: flex; flex-direction: column;
   align-items: flex-start;
   box-shadow: var(--shadow);
@@ -4102,11 +4103,11 @@ button.lc-tag:hover { opacity: 0.7; }
   display: flex; flex-direction: column; align-items: flex-start;
 }
 .profile-head .av {
-  width: 108px; height: 108px; border-radius: 20px;
+  width: 86px; height: 86px; border-radius: 16px;
   border: 4px solid var(--bg-elev);
-  margin-top: -64px;
+  margin-top: -52px;
   display: grid; place-items: center;
-  font-weight: 700; font-size: 36px; color: white;
+  font-weight: 700; font-size: 28px; color: white;
   font-family: var(--font-display); letter-spacing: -0.02em;
 }
 .profile-head .meta { min-width: 0; }
@@ -4267,8 +4268,8 @@ button.lc-tag:hover { opacity: 0.7; }
 @media (max-width: 720px) {
   .profile-shell { padding: 0 16px 60px; margin-top: -48px; }
   .profile-cover { height: 160px; }
-  .profile-head { grid-template-columns: 1fr; padding: 20px; gap: 14px; }
-  .profile-head .av { width: 82px; height: 82px; border-radius: 16px; font-size: 28px; margin-top: -56px; }
+  .profile-head { grid-template-columns: 1fr; padding: 20px; gap: 14px; margin: 0 12px; }
+  .profile-head .av { width: 68px; height: 68px; border-radius: 13px; font-size: 22px; margin-top: -44px; }
   .profile-head h1 { font-size: 22px; }
   .profile-tabs { overflow-x: auto; flex-wrap: nowrap; }
   .profile-tabs::-webkit-scrollbar { display: none; }
