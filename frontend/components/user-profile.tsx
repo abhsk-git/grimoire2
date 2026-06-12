@@ -163,16 +163,18 @@ export function UserProfile({ handle }: { handle: string }) {
 
   return (
     <div className="profile-page">
-      <div className="profile-cover">
-        {user.banner && (
-          <img
-            src={user.banner}
-            alt=""
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: 0, transition: "opacity 0.4s ease" }}
-            onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = "1"; }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
-        )}
+      <div className="profile-cover-outer">
+        <div className="profile-cover">
+          {user.banner && (
+            <img
+              src={user.banner}
+              alt=""
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: 0, transition: "opacity 0.4s ease" }}
+              onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = "1"; }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          )}
+        </div>
       </div>
 
       <div className="profile-shell">

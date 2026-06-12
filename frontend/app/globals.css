@@ -4069,18 +4069,22 @@ button.lc-tag:hover { opacity: 0.7; }
 
 /* ---- public profile page ---- */
 .profile-page { background: var(--bg); min-height: 100vh; }
+.profile-cover-outer {
+  max-width: 1240px; margin: 0 auto; padding: 0 28px;
+}
 .profile-cover {
   height: 220px;
   background: linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 30%, var(--accent-3)));
   position: relative;
   overflow: hidden;
+  border-radius: 0 0 18px 18px;
 }
 .profile-cover::after {
   content: ''; position: absolute; inset: 0;
   background: radial-gradient(800px 300px at 80% 20%, rgba(255,255,255,0.18), transparent 60%);
 }
 .profile-shell {
-  max-width: 1080px; margin: -64px auto 0;
+  max-width: 1240px; margin: -64px auto 0;
   padding: 0 28px 80px;
   position: relative;
 }
