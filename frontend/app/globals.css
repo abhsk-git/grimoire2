@@ -132,17 +132,24 @@
 [data-theme="glass"] .dw-ref-row:hover { background: rgba(255,255,255,0.05); }
 
 [data-theme="glass"] .dw-confirm {
-  background: rgba(7,10,28,0.82);
-  backdrop-filter: blur(32px) saturate(1.4);
-  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(40px) saturate(1.5) brightness(0.85);
+  -webkit-backdrop-filter: blur(40px) saturate(1.5) brightness(0.85);
   border-color: rgba(255,255,255,0.16);
 }
 
+[data-theme="glass"] .header {
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(48px) saturate(1.5) brightness(0.85);
+  -webkit-backdrop-filter: blur(48px) saturate(1.5) brightness(0.85);
+  border-bottom-color: rgba(255,255,255,0.10);
+}
+
 [data-theme="glass"] .profile-head {
-  background: rgba(7,10,28,0.65);
-  backdrop-filter: blur(40px) saturate(1.5) brightness(0.88);
-  -webkit-backdrop-filter: blur(40px) saturate(1.5) brightness(0.88);
-  border-color: rgba(255,255,255,0.13);
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(48px) saturate(1.6) brightness(0.85);
+  -webkit-backdrop-filter: blur(48px) saturate(1.6) brightness(0.85);
+  border-color: rgba(255,255,255,0.15);
 }
 [data-theme="glass"] .profile-head .av {
   border-color: rgba(7,10,28,0.85);
@@ -4074,7 +4081,7 @@ button.lc-tag:hover { opacity: 0.7; }
 }
 .profile-cover {
   height: 220px;
-  background: linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 30%, var(--accent-3)));
+  background: var(--bg-inset);
   position: relative;
   overflow: hidden;
   border-radius: 0 0 18px 18px;
@@ -4268,14 +4275,15 @@ button.lc-tag:hover { opacity: 0.7; }
 .about-card .item .text .s { font-size: 11px; color: var(--fg-soft); }
 
 @media (max-width: 720px) {
+  .profile-cover-outer { padding: 0; max-width: none; }
   .profile-shell { padding: 0 16px 60px; margin-top: -48px; }
-  .profile-cover { height: 160px; }
+  .profile-cover { height: 160px; border-radius: 0; }
   .profile-head { grid-template-columns: 1fr; padding: 20px; gap: 14px; margin: 0 12px; }
   .profile-head .av { width: 68px; height: 68px; border-radius: 13px; font-size: 22px; margin-top: -44px; }
   .profile-head h1 { font-size: 22px; }
-  .profile-tabs { overflow-x: auto; flex-wrap: nowrap; margin-left: 12px; margin-right: 12px; }
-  .profile-tabs::-webkit-scrollbar { display: none; }
-  .profile-tabs button { flex-shrink: 0; padding: 12px 12px; }
+  .profile-tabs { overflow-x: visible; flex-wrap: nowrap; margin-left: 12px; margin-right: 12px; }
+  .profile-tabs button { padding: 10px 10px; font-size: 12px; }
+  .profile-tabs button .ct { font-size: 10px; padding: 1px 5px; }
   .profile-shell .dw-card { margin-left: 12px; margin-right: 12px; }
   .about-grid { margin-left: 12px; margin-right: 12px; grid-template-columns: 1fr; }
   .about-col-l { padding: 20px; }
@@ -4827,11 +4835,11 @@ button.lc-tag:hover { opacity: 0.7; }
   overflow: hidden;
 }
 [data-theme="glass"] .search-palette {
-  background: rgba(7,10,28,0.82);
-  backdrop-filter: blur(40px) saturate(1.4);
-  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(48px) saturate(1.6) brightness(0.85);
+  -webkit-backdrop-filter: blur(48px) saturate(1.6) brightness(0.85);
   border-color: rgba(255,255,255,0.15);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45);
 }
 .search-palette-input-row {
   display: flex; align-items: center; gap: 10px;

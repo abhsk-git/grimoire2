@@ -116,7 +116,9 @@ export function UserProfile({ handle }: { handle: string }) {
   if (loading) {
     return (
       <div className="profile-page">
-        <div className="profile-cover" />
+        <div className="profile-cover-outer">
+          <div className="profile-cover" />
+        </div>
         <div className="profile-shell">
           <div className="profile-head" style={{ opacity: 0.5 }}>
             <div className="av" style={{ background: "var(--bg-inset)" }} />
@@ -260,8 +262,7 @@ export function UserProfile({ handle }: { handle: string }) {
                 <span className="dw-row-title">{p.title}</span>
                 <div className="dw-row-end">
                   <span className="dw-row-meta">
-                    {p.reading_time}m · {p.views} views
-                    {p.published_at ? ` · ${new Date(p.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}
+                    {p.published_at ? new Date(p.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
                   </span>
                 </div>
               </Link>
@@ -279,7 +280,6 @@ export function UserProfile({ handle }: { handle: string }) {
             ) : links.map((l) => {
               let host = l.url;
               try { host = new URL(l.url).hostname.replace(/^www\./, ""); } catch {}
-              const tags = l.tags ? l.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
               return (
                 <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="dw-ref-row" style={{ textDecoration: "none" }}>
                   {l.favicon ? (
@@ -289,9 +289,7 @@ export function UserProfile({ handle }: { handle: string }) {
                   )}
                   <span className="dw-row-title">{l.title || l.url}</span>
                   <div className="dw-row-end">
-                    <span className="dw-row-meta">
-                      {tags[0] ? `#${tags[0]} · ` : ""}{host}
-                    </span>
+                    <span className="dw-row-meta">{host}</span>
                   </div>
                 </a>
               );
