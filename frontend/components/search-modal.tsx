@@ -31,10 +31,6 @@ interface SearchModalProps {
   onClose: () => void;
 }
 
-function avatarFallback(name: string) {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6c63ff&color=fff&size=64`;
-}
-
 function getDomain(url: string) {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; }
 }
@@ -43,29 +39,62 @@ export function SearchModal({ onClose }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!query.trim() || query.length < 2) { setResults([]); setLoading(false); return; }
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q || q.length < 2) {
+      setResults([]);
+      setError("");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    timerRef.current = setTimeout(async () => {
+    setError("");
+
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    const timer = setTimeout(async () => {
       try {
-        const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { credentials: "include" });
-        const data = await r.json();
+        const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {
+          signal: ctrl.signal,
+        });
+        if (!resp.ok) {
+          setError(`Search failed (${resp.status})`);
+          setResults([]);
+          return;
+        }
+        const data = await resp.json();
         setResults(Array.isArray(data) ? data : []);
         setSelected(0);
-      } catch { setResults([]); }
-      finally { setLoading(false); }
+        setError("");
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setError("Search unavailable");
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
     }, 250);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
   }, [query]);
 
-  const navigate = useCallback((result: SearchResult) => {
+  const navigate = useCallback((result: SearchResult | undefined) => {
+    if (!result) return;
     if (result.type === "post") {
       window.location.href = `/blog/${result.slug}`;
     } else {
@@ -88,6 +117,7 @@ export function SearchModal({ onClose }: SearchModalProps) {
 
   const posts = results.filter(r => r.type === "post") as PostResult[];
   const bookmarks = results.filter(r => r.type === "bookmark") as BookmarkResult[];
+  const q = query.trim();
 
   return (
     <div className="search-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -101,12 +131,19 @@ export function SearchModal({ onClose }: SearchModalProps) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             autoComplete="off"
+            spellCheck={false}
           />
           {loading && <div className="search-spinner" />}
           <button className="kbd" onClick={onClose} aria-label="Close search">ESC</button>
         </div>
 
-        {results.length > 0 && (
+        {error && (
+          <div className="search-palette-empty" style={{ color: "var(--error)" }}>
+            {error}
+          </div>
+        )}
+
+        {!error && results.length > 0 && (
           <div className="search-palette-results">
             {posts.length > 0 && (
               <>
@@ -174,13 +211,13 @@ export function SearchModal({ onClose }: SearchModalProps) {
           </div>
         )}
 
-        {query.length >= 2 && !loading && results.length === 0 && (
+        {!error && q.length >= 2 && !loading && results.length === 0 && (
           <div className="search-palette-empty">
-            No results for <strong>&ldquo;{query}&rdquo;</strong>
+            No results for <strong>&ldquo;{q}&rdquo;</strong>
           </div>
         )}
 
-        {!query && (
+        {!q && (
           <div className="search-palette-hint">
             Search published posts and your saved bookmarks
           </div>

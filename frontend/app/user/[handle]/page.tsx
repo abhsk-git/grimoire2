@@ -9,9 +9,15 @@ import { PublicFooter } from "@/components/sections";
 
 function ProfileContent({ handle }: { handle: string }) {
   const { user } = useAuth();
+
+  async function handleSignOut() {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    window.location.href = "/explore";
+  }
+
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <PublicHeader loggedIn={!!user} username={user?.username} />
+      <PublicHeader loggedIn={!!user} username={user?.username} onSignOut={user ? handleSignOut : undefined} />
       <UserProfile handle={handle} />
       <PublicFooter
         links={[

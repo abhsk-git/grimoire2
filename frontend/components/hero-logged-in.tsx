@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { SearchModal, useSearchModal } from "./search-modal";
 import { BookmarkModal, useBookmarkModal } from "./bookmark-modal";
@@ -56,6 +56,35 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
 
   const { open: searchOpen, setOpen: setSearchOpen } = useSearchModal();
   const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
+
+  const [mobQuery, setMobQuery] = useState("");
+  const [mobResults, setMobResults] = useState<{ type: string; title: string; slug?: string; url?: string; favicon?: string }[]>([]);
+  const [mobLoading, setMobLoading] = useState(false);
+  const mobAbort = useRef<AbortController | null>(null);
+  const mobInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const q = mobQuery.trim();
+    if (!q || q.length < 2) { setMobResults([]); setMobLoading(false); return; }
+    setMobLoading(true);
+    mobAbort.current?.abort();
+    const ctrl = new AbortController();
+    mobAbort.current = ctrl;
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+        if (r.ok) setMobResults(await r.json());
+      } catch (e) { if ((e as Error).name !== "AbortError") setMobResults([]); }
+      finally { setMobLoading(false); }
+    }, 250);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [mobQuery]);
+
+  function mobNavigate(r: { type: string; slug?: string; url?: string }) {
+    if (r.type === "post") window.location.href = `/blog/${r.slug}`;
+    else if (r.url) window.open(r.url, "_blank", "noopener,noreferrer");
+    setMobQuery(""); setMobResults([]);
+  }
 
   useEffect(() => {
     fetch("/api/blog/my-posts", { credentials: "include" })
@@ -133,7 +162,7 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
           </div>
 
           <div className="dw-actions">
-            <button className="dw-btn" onClick={() => setSearchOpen(true)}>
+            <button className="dw-btn dw-search-btn" onClick={() => setSearchOpen(true)}>
               <Icon name="search" size={13} /> Search
             </button>
             <a href="/write" className="dw-btn dw-btn-primary">
@@ -148,13 +177,50 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
             <a href="/settings" className="dw-icon-btn" title="Settings">
               <Icon name="settings" size={15} />
             </a>
+            <button className="dw-signout-btn" onClick={() => onSignOut?.()} title="Sign out">
+              <Icon name="power" size={14} />
+            </button>
             <a href={profileHref} className={`dw-avatar${avatar ? " has-photo" : ""}`} title="Profile">
               {avatar ? <img src={avatar} alt={username} /> : initials}
             </a>
-            <button className="dw-signout-btn" onClick={() => onSignOut?.()} title="Sign out">
-              <Icon name="arrow-right" size={14} />
-            </button>
           </div>
+        </div>
+
+        {/* Mobile inline search — hidden on desktop via CSS */}
+        <div className="dw-mob-search-wrap">
+          <div className="dw-mob-search-bar">
+            <Icon name="search" size={14} />
+            <input
+              ref={mobInputRef}
+              value={mobQuery}
+              onChange={e => setMobQuery(e.target.value)}
+              placeholder="Search posts and bookmarks…"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            {mobLoading && <div className="search-spinner" />}
+            {mobQuery && !mobLoading && (
+              <button className="dw-mob-search-clear" onClick={() => { setMobQuery(""); setMobResults([]); mobInputRef.current?.focus(); }}>
+                <Icon name="x" size={13} />
+              </button>
+            )}
+          </div>
+          {mobResults.length > 0 && (
+            <div className="dw-mob-search-results">
+              {mobResults.map((r, i) => (
+                <button key={i} className="dw-mob-search-item" onClick={() => mobNavigate(r)}>
+                  {r.type === "post"
+                    ? <Icon name="feather" size={13} style={{ flexShrink: 0, color: "var(--fg-muted)" }} />
+                    : r.favicon
+                      ? <img src={r.favicon} alt="" width={14} height={14} style={{ borderRadius: 3, flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      : <Icon name="link" size={13} style={{ flexShrink: 0, color: "var(--fg-muted)" }} />
+                  }
+                  <span className="dw-mob-search-title">{r.title || (r.url ? getDomain(r.url) : "")}</span>
+                  <Icon name={r.type === "post" ? "arrow-right" : "arrow-up-right"} size={12} style={{ flexShrink: 0, color: "var(--fg-muted)" }} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── 2-column grid ── */}

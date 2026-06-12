@@ -88,7 +88,7 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
           <span>Settings</span>
         </Link>
         <button className="side-foot-btn side-foot-signout" onClick={onSignOut} title="Sign out">
-          <Icon name="arrow-right" size={15} />
+          <Icon name="power" size={15} />
           <span>Sign out</span>
         </button>
       </div>
@@ -167,7 +167,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
               </Link>
               <div className="user-dropdown-sep" />
               <button className="user-dropdown-item user-dropdown-signout" onClick={() => { setUserMenuOpen(false); onSignOut(); }}>
-                <Icon name="arrow-right" size={13} /> Sign out
+                <Icon name="power" size={13} /> Sign out
               </button>
             </div>
           )}
@@ -253,7 +253,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
               </Link>
               <div className="user-dropdown-sep" />
               <button className="user-dropdown-item user-dropdown-signout" onClick={() => { setUserMenuOpen(false); onSignOut(); }}>
-                <Icon name="arrow-right" size={13} /> Sign out
+                <Icon name="power" size={13} /> Sign out
               </button>
             </div>
           )}
