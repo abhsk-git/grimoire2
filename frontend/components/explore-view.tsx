@@ -431,7 +431,7 @@ export function ExploreView() {
                       <b>{String(posts.length).padStart(2, "0")}</b>
                       {isFiltering
                         ? <span>posts <span style={{color:"var(--fg-soft)"}}>· for &quot;{search || "#" + activeTag}&quot;</span></span>
-                        : <span>posts <span style={{color:"var(--fg-soft)"}}>· latest · {totalPosts || posts.length} total</span></span>}
+                        : <span>posts</span>}
                     </span>
                     <span className="feed-head-grow" />
                   </div>

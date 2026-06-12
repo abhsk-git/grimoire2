@@ -1064,6 +1064,7 @@ button.lc-tag:hover { opacity: 0.7; }
   align-items: start;
   padding-bottom: 80px;
   width: 100%;
+  flex: 1;
 }
 
 /* Right sidebar: search + references, sticks while feed scrolls */
