@@ -2233,20 +2233,23 @@ button.lc-tag:hover { opacity: 0.7; }
 .auth-art {
   position: relative;
   background:
-    radial-gradient(700px 400px at 80% 20%, color-mix(in oklab, var(--accent) 30%, transparent), transparent 60%),
-    radial-gradient(600px 400px at 10% 90%, color-mix(in oklab, var(--accent-3) 24%, transparent), transparent 60%),
-    var(--bg-soft);
+    radial-gradient(700px 400px at 75% 15%, rgba(167,139,250,0.28), transparent 60%),
+    radial-gradient(600px 400px at 15% 85%, rgba(56,189,248,0.18), transparent 60%),
+    linear-gradient(rgba(4,8,22,0.70), rgba(4,8,22,0.70)),
+    url('/wallpapers/glass-bg.jpg') center / cover no-repeat;
   padding: 56px 48px;
   display: flex; flex-direction: column;
   overflow: hidden;
+  color: #f4f6ff;
 }
 @media (max-width: 880px) { .auth-art { display: none; } }
 
 .auth-art .brand-row {
   display: flex; align-items: center; gap: 10px;
   font-weight: 700; font-size: 18px; letter-spacing: -0.02em;
+  color: #f4f6ff;
 }
-.auth-art .brand-row .brand-mark { color: var(--accent); }
+.auth-art .brand-row .brand-mark { color: #a78bfa; }
 .auth-quote {
   margin-top: auto;
   font-family: var(--font-serif);
@@ -2254,14 +2257,13 @@ button.lc-tag:hover { opacity: 0.7; }
   font-style: italic; line-height: 1.15;
   letter-spacing: -0.02em;
   font-weight: 500;
-  color: var(--fg);
+  color: #f4f6ff;
   max-width: 460px;
 }
-[data-theme="geek"] .auth-quote { font-family: var(--font-mono); font-style: normal; font-size: 24px; }
-.auth-quote .accent { color: var(--accent); }
+.auth-quote .accent { color: #a78bfa; }
 .auth-credit {
   margin-top: 14px;
-  font-size: 13px; color: var(--fg-muted);
+  font-size: 13px; color: #aab4d8;
   display: flex; align-items: center; gap: 8px;
 }
 
@@ -2270,12 +2272,13 @@ button.lc-tag:hover { opacity: 0.7; }
   pointer-events: none;
 }
 .auth-art .floats .card {
-  position: absolute; background: var(--bg-elev);
-  border: 1px solid var(--border); border-radius: 12px;
-  padding: 10px 12px; box-shadow: var(--shadow);
-  font-size: 12px; max-width: 280px;
+  position: absolute; background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 12px;
+  padding: 10px 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  font-size: 12px; max-width: 280px; color: #f4f6ff;
 }
-.auth-art .floats .card .src { display: flex; align-items: center; gap: 6px; color: var(--fg-soft); font-size: 10px; margin-bottom: 4px; }
+.auth-art .floats .card .src { display: flex; align-items: center; gap: 6px; color: #aab4d8; font-size: 10px; margin-bottom: 4px; }
 .auth-art .floats .card .src .fav { width: 12px; height: 12px; border-radius: 3px; color: white; font-size: 7px; font-weight: 800; display: grid; place-items: center; }
 .auth-art .floats .card .t { font-weight: 600; letter-spacing: -0.01em; }
 .auth-art .floats .c1 { top: 40px; right: 60px; transform: rotate(3deg); }

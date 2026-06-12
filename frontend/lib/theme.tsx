@@ -18,7 +18,7 @@ function readTheme(): Theme {
   if (typeof window === "undefined") return "light";
   const saved = localStorage.getItem("grimoire-theme") as Theme | null;
   if (saved) return saved;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "dark";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
