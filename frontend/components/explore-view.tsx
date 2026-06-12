@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { Icon } from "./icons";
-import { useAuth } from "@/lib/auth";
 
 interface Post {
   id: number;
@@ -55,11 +54,6 @@ function getDomain(url: string): string {
   try { return new URL(url).hostname.replace("www.", ""); } catch { return url; }
 }
 
-function avatarFallback(name: string) {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=44&background=6366f1&color=fff`;
-}
-
-const toHandle = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
 const TYPED_QUERIES = ["claude code", "#linux", "sed and awk", "@abhishek", "wireshark filters", "#cloud", "deliverability"];
 
@@ -91,12 +85,10 @@ function useTypewriter(words: string[], active: boolean) {
 }
 
 export function ExploreView() {
-  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
-  const [linkSortOrder, setLinkSortOrder] = useState<"recent" | "oldest">("recent");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -115,29 +107,6 @@ export function ExploreView() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const [bookmarked, setBookmarked] = useState<Map<number, number>>(new Map());
-  const [bookmarking, setBookmarking] = useState<Set<number>>(new Set());
-
-  async function toggleBookmark(e: React.MouseEvent, post: Post) {
-    e.preventDefault(); e.stopPropagation();
-    if (!user) { window.location.href = "/login"; return; }
-    const linkId = bookmarked.get(post.id);
-    setBookmarking(prev => new Set(prev).add(post.id));
-    try {
-      if (linkId !== undefined) {
-        const r = await fetch(`/api/links/${linkId}`, { method: "DELETE", credentials: "include" });
-        if (r.ok) setBookmarked(prev => { const m = new Map(prev); m.delete(post.id); return m; });
-      } else {
-        const r = await fetch("/api/links", {
-          method: "POST", credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: window.location.origin + "/blog/" + post.slug, title: post.title, description: post.excerpt || "", image: post.cover_image || "", favicon: "", tags: post.tags || "", is_public: false }),
-        });
-        if (r.ok) { const d = await r.json(); setBookmarked(prev => new Map(prev).set(post.id, d.id)); }
-      }
-    } catch {}
-    finally { setBookmarking(prev => { const s = new Set(prev); s.delete(post.id); return s; }); }
-  }
 
   const [posts, setPosts]           = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -186,16 +155,16 @@ export function ExploreView() {
   const typedQuery = useTypewriter(TYPED_QUERIES, !search && !searchFocused);
 
   const sortedSidebarLinks = useMemo(() => {
-    return linkSortOrder === "oldest"
+    return sortOrder === "oldest"
       ? [...sidebarLinks].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
       : [...sidebarLinks].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [sidebarLinks, linkSortOrder]);
+  }, [sidebarLinks, sortOrder]);
 
   const displayPosts = useMemo(() => {
     const sorted = sortOrder === "oldest"
       ? [...posts].sort((a, b) => a.id - b.id)
       : [...posts].sort((a, b) => b.id - a.id);
-    return isFiltering ? sorted : sorted.slice(0, 5);
+    return isFiltering ? sorted : sorted.slice(0, 8);
   }, [posts, sortOrder, isFiltering]);
 
   const EXAMPLES = [
@@ -272,77 +241,55 @@ export function ExploreView() {
                   <span>sites</span>
                 </span>
                 <span className="feed-head-grow" />
-                <button className="feed-sort-btn" onClick={() => setLinkSortOrder(o => o === "recent" ? "oldest" : "recent")}>
-                  {linkSortOrder === "recent" ? "Recent" : "Oldest"}
-                  <Icon name="chevron-right" size={12} style={{ transform: linkSortOrder === "recent" ? "rotate(90deg)" : "rotate(-90deg)" }} />
+                <button className="feed-sort-btn" onClick={() => setSortOrder(o => o === "recent" ? "oldest" : "recent")}>
+                  {sortOrder === "recent" ? "Recent" : "Oldest"}
+                  <Icon name="chevron-right" size={12} style={{ transform: sortOrder === "recent" ? "rotate(90deg)" : "rotate(-90deg)" }} />
                 </button>
               </div>
-              <div className="side-card">
-              <div className="side-links-list">
+              <div className="dw-card">
                 {sortedSidebarLinks.map(l => (
-                  <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="side-link-row">
-                    <span className="side-link-fav">
-                      {l.favicon ? (
-                        <img src={l.favicon} style={{ width: 14, height: 14, borderRadius: 3 }} alt=""
-                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                      ) : (
-                        <Icon name="globe" size={14} />
-                      )}
-                    </span>
-                    <span className="side-link-meta">
-                      <div className="side-link-name">{l.title || getDomain(l.url)}</div>
-                      <div className="side-link-domain">{getDomain(l.url)}</div>
-                    </span>
-                    <span className="side-link-ext"><Icon name="arrow-right" size={14} /></span>
+                  <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="dw-ref-row" style={{ textDecoration: "none" }}>
+                    {l.favicon ? (
+                      <img src={l.favicon} style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0 }} alt=""
+                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    ) : (
+                      <Icon name="globe" size={13} />
+                    )}
+                    <span className="dw-row-title">{l.title || getDomain(l.url)}</span>
+                    <div className="dw-row-end">
+                      <span className="dw-row-meta">{getDomain(l.url)}</span>
+                    </div>
                   </a>
                 ))}
               </div>
             </div>
-            </div>
           )}
 
-          {/* Topics cloud */}
-          {blogTags.length > 0 && (
-            <div className="side-card">
-              <div className="side-card-head">
-                <Icon name="tag" size={13} /> Browse topics
-                <span className="sc-grow" />
-                <span className="sc-n">{blogTags.length}</span>
+          {/* Filtered links when searching */}
+          {isFiltering && mobileLinks.length > 0 && (
+            <div className="sidebar-feed-wrap">
+              <div className="feed-head">
+                <span className="feed-count-label">
+                  <b>{String(mobileLinks.length).padStart(2, "0")}</b>
+                  <span>matching sites</span>
+                </span>
               </div>
-              <div className="side-card-body">
-                <div className="topic-cloud-wrap">
-                  {blogTags.slice(0, 12).map(t => (
-                    <button key={t.name} className="topic-chip" onClick={() => handleTagClick(t.name)}>
-                      #{t.name} <span className="topic-n">{t.count}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="dw-card">
+                {mobileLinks.map(l => (
+                  <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="dw-ref-row" style={{ textDecoration: "none" }}>
+                    {l.favicon ? (
+                      <img src={l.favicon} style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0 }} alt=""
+                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    ) : (
+                      <Icon name="globe" size={13} />
+                    )}
+                    <span className="dw-row-title">{l.title || getDomain(l.url)}</span>
+                    <div className="dw-row-end">
+                      <span className="dw-row-meta">{getDomain(l.url)}</span>
+                    </div>
+                  </a>
+                ))}
               </div>
-            </div>
-          )}
-
-          {/* Fallback: filtered links when searching */}
-          {(isFiltering ? mobileLinks : []).length > 0 && (
-            <div className="sidebar-section">
-              <div className="sidebar-section-head">
-                <Icon name="bookmark" size={11} /> Matching links
-              </div>
-              {(isFiltering ? mobileLinks : []).map(l => (
-                <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="sidebar-ref">
-                  {l.favicon ? (
-                    <img src={l.favicon} style={{ width: 13, height: 13, borderRadius: 3, flexShrink: 0, marginTop: 2 }} alt=""
-                      onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                  ) : (
-                    <span style={{ width: 13, flexShrink: 0, marginTop: 2, color: "var(--fg-soft)" }}>
-                      <Icon name="globe" size={11} />
-                    </span>
-                  )}
-                  <div style={{ minWidth: 0 }}>
-                    <div className="sr-title">{l.title || getDomain(l.url)}</div>
-                    <div className="sr-domain">{getDomain(l.url)}</div>
-                  </div>
-                </a>
-              ))}
             </div>
           )}
         </aside>
@@ -436,22 +383,19 @@ export function ExploreView() {
                       <span>sites</span>
                     </span>
                   </div>
-                  <div className="feed-links-list">
+                  <div className="dw-card">
                     {mobileLinks.map(l => (
-                      <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="feed-link-row">
-                        <span className="feed-link-fav">
-                          {l.favicon ? (
-                            <img src={l.favicon} width={14} height={14} alt=""
-                              onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                          ) : (
-                            <Icon name="globe" size={14} />
-                          )}
-                        </span>
-                        <span className="feed-link-body">
-                          <span className="feed-link-title">{l.title || getDomain(l.url)}</span>
-                          <span className="feed-link-domain">{getDomain(l.url)}</span>
-                        </span>
-                        <Icon name="arrow-up-right" size={13} className="feed-link-ext" />
+                      <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="dw-ref-row" style={{ textDecoration: "none" }}>
+                        {l.favicon ? (
+                          <img src={l.favicon} width={14} height={14} alt="" style={{ borderRadius: 3, flexShrink: 0 }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          <Icon name="globe" size={13} />
+                        )}
+                        <span className="dw-row-title">{l.title || getDomain(l.url)}</span>
+                        <div className="dw-row-end">
+                          <span className="dw-row-meta">{getDomain(l.url)}</span>
+                        </div>
                       </a>
                     ))}
                   </div>
@@ -468,8 +412,8 @@ export function ExploreView() {
                 )
               ) : (
                 <div className={`explore-feed-wrap${isFiltering && mobileLinks.length > 0 ? " has-links-above" : ""}`}>
-                  {/* Feed head: count + sort (desktop) */}
-                  <div className="feed-head">
+                  {/* Feed head: count only, height matched to sidebar via CSS */}
+                  <div className="feed-head explore-feed-head">
                     <span className="feed-count-label">
                       <b>{String(posts.length).padStart(2, "0")}</b>
                       {isFiltering
@@ -477,83 +421,19 @@ export function ExploreView() {
                         : <span>posts <span style={{color:"var(--fg-soft)"}}>· latest · {totalPosts || posts.length} total</span></span>}
                     </span>
                     <span className="feed-head-grow" />
-                    <button className="feed-sort-btn" onClick={() => setSortOrder(o => o === "recent" ? "oldest" : "recent")}>
-                      {sortOrder === "recent" ? "Recent" : "Oldest"}
-                      <Icon name="chevron-right" size={12} style={{ transform: sortOrder === "recent" ? "rotate(90deg)" : "rotate(-90deg)" }} />
-                    </button>
                   </div>
 
-                  <div className="feed-list" key={search + activeTag + sortOrder}>
-                    {displayPosts.map((p, i) => {
-                      const tagsList = (p.tags || "").split(",").map(t => t.trim()).filter(Boolean);
-                      const isSaved = bookmarked.has(p.id);
-                      return (
-                        <Link key={p.id} href={`/blog/${p.slug}`} className="feed-row" style={{ animationDelay: `${i * 35}ms` }}>
-                          {/* Desktop: index number */}
-                          <span className="feed-index">{String(i + 1).padStart(2, "0")}</span>
-
-                          {/* Content wrapper (flex col on both desktop and mobile) */}
-                          <div className="feed-row-content">
-                            <div className="feed-row-head">
-                              <div className="feed-tags">
-                                {tagsList.slice(0, 3).map(t => (
-                                  <span key={t} className="feed-tag"
-                                    onClick={e => { e.preventDefault(); handleTagClick(t); }}
-                                  >#{t}</span>
-                                ))}
-                              </div>
-                              {/* Mobile bookmark (hidden on desktop via CSS) */}
-                              <button
-                                className="feed-bookmark"
-                                aria-label={isSaved ? "Remove bookmark" : "Bookmark"}
-                                onClick={e => toggleBookmark(e, p)}
-                                disabled={bookmarking.has(p.id)}
-                                style={{ color: isSaved ? "var(--accent)" : "var(--fg-muted)" }}
-                              >
-                                <Icon name="bookmark" size={12} fill={isSaved ? "currentColor" : "none"} />
-                              </button>
-                            </div>
-
-                            <div className="feed-title">{p.title}</div>
-
-                            {/* Desktop: excerpt */}
-                        {p.excerpt && (
-                          <p className="feed-excerpt">{p.excerpt}</p>
-                        )}
-
-                        <div className="feed-meta">
-                          <img
-                            src={p.author_avatar || avatarFallback(p.author_name)}
-                            onError={e => { (e.target as HTMLImageElement).src = avatarFallback(p.author_name); }}
-                            className="feed-avatar" alt={p.author_name} loading="lazy"
-                          />
-                          <Link href={`/user/${p.author_handle || toHandle(p.author_name)}`}
-                            onClick={e => e.stopPropagation()} className="feed-author">
-                            {p.author_name}
-                          </Link>
-                          <span className="feed-dot">·</span>
-                          <span>{p.pub_date}</span>
-                          {p.reading_time > 0 && (
-                            <><span className="feed-dot">·</span><span>{p.reading_time} min read</span></>
-                          )}
+                  <div className="dw-card" key={search + activeTag + sortOrder}>
+                    {displayPosts.map(p => (
+                      <Link key={p.id} href={`/blog/${p.slug}`} className="dw-post-row" style={{ textDecoration: "none" }}>
+                        <span className="dw-pill live">post</span>
+                        <span className="dw-row-title">{p.title}</span>
+                        <div className="dw-row-end">
+                          <span className="dw-row-meta">{p.pub_date}</span>
                         </div>
-                      </div>
-
-                      {/* Desktop: right-side bookmark */}
-                      <div className="feed-row-aside">
-                        <button
-                          className={`feed-bookmark-desktop${isSaved ? " saved" : ""}`}
-                          onClick={e => toggleBookmark(e, p)}
-                          disabled={bookmarking.has(p.id)}
-                          aria-label={isSaved ? "Remove bookmark" : "Bookmark"}
-                        >
-                          <Icon name="bookmark" size={17} fill={isSaved ? "currentColor" : "none"} />
-                        </button>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                      </Link>
+                    ))}
+                  </div>
             </div>
           )}
         </>

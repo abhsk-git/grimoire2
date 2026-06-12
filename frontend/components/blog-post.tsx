@@ -819,20 +819,6 @@ export function BlogPost({ slug }: Props) {
 
       {/* Article */}
       <article className={`post-article post-article--${readingMode}`}>
-        {tagsList.length > 0 && (
-          <div className="post-tag-row">
-            {tagsList.map((t) => (
-              <Link
-                key={t}
-                href={`/explore?tag=${encodeURIComponent(t)}`}
-                className="post-article-tag"
-              >
-                #{t}
-              </Link>
-            ))}
-          </div>
-        )}
-
         <h1 className="post-title">{post.title}</h1>
 
         <div className="post-byline">
