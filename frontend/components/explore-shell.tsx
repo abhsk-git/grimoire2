@@ -9,9 +9,10 @@ interface PublicHeaderProps {
   handle?: string;
   avatar?: string;
   showNav?: boolean;
+  onSignOut?: () => void;
 }
 
-export function PublicHeader({ loggedIn, username, handle, avatar, showNav }: PublicHeaderProps) {
+export function PublicHeader({ loggedIn, username, handle, avatar, showNav, onSignOut }: PublicHeaderProps) {
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -49,13 +50,24 @@ export function PublicHeader({ loggedIn, username, handle, avatar, showNav }: Pu
               <Link href="/write" className="btn btn-ghost btn-sm">
                 <Icon name="pen" size={13} /> Write
               </Link>
-              <Link
-                href={`/user/${handle ?? (username ? username.toLowerCase().replace(/\s+/g, '-') : '')}`}
-                className={`avatar${avatar ? " has-photo" : ""}`}
-                style={avatar ? { textDecoration: "none" } : { background: "linear-gradient(135deg,#5b54d6,#8e8df0)", textDecoration: "none" }}
-              >
-                {avatar ? <img src={avatar} alt={username} /> : initials}
-              </Link>
+              {onSignOut ? (
+                <button
+                  className="icon-btn"
+                  title="Sign out"
+                  onClick={onSignOut}
+                  style={{ color: "var(--fg-muted)" }}
+                >
+                  <Icon name="power" size={15} />
+                </button>
+              ) : (
+                <Link
+                  href={`/user/${handle ?? (username ? username.toLowerCase().replace(/\s+/g, '-') : '')}`}
+                  className={`avatar${avatar ? " has-photo" : ""}`}
+                  style={avatar ? { textDecoration: "none" } : { background: "linear-gradient(135deg,#5b54d6,#8e8df0)", textDecoration: "none" }}
+                >
+                  {avatar ? <img src={avatar} alt={username} /> : initials}
+                </Link>
+              )}
             </>
           ) : (
             <>

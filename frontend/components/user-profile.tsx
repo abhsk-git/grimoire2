@@ -66,14 +66,6 @@ function xpProgress(xp: number, rank: typeof RANKS[0]) {
   return Math.min(100, ((xp - rank.min) / (rank.max - rank.min)) * 100);
 }
 
-const COVER_GRADIENTS = [
-  "linear-gradient(135deg,#5b54d6,#8e8df0 60%,#b486f0)",
-  "linear-gradient(135deg,#1b3a6b,#5563d0 60%,#8e8df0)",
-  "linear-gradient(135deg,#14613a,#2f7d4d 60%,#6abf85)",
-  "linear-gradient(135deg,#d04f63,#f08197 60%,#f4b860)",
-  "linear-gradient(135deg,#b46a2a,#f4b860 60%,#d97757)",
-  "linear-gradient(135deg,#2f7d4d,#6abf85 60%,#a8e0bd)",
-];
 
 function initials(name: string) {
   return name
@@ -256,93 +248,54 @@ export function UserProfile({ handle }: { handle: string }) {
         </div>
 
         {tab === "posts" && (
-          <div>
+          <div className="dw-card" style={{ marginTop: 16 }}>
             {posts.length === 0 ? (
               <div style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-muted)" }}>
                 <Icon name="feather" size={32} />
                 <p style={{ marginTop: 12 }}>No published posts yet.</p>
               </div>
-            ) : (
-              <div className="cards">
-                {posts.map((p, i) => (
-                  <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
-                    <article className="post-card">
-                      <div className="post-cover" style={{ background: COVER_GRADIENTS[i % COVER_GRADIENTS.length] }}>
-                        <div className="post-cover-overlay" />
-                        <span className="post-readtime">{p.reading_time} min</span>
-                      </div>
-                      <div className="post-body">
-                        <div className="post-by" style={{ color: "var(--fg-muted)", fontSize: 12, display: "flex", gap: 6, alignItems: "center" }}>
-                          <span>{p.published_at ? new Date(p.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</span>
-                          <span>·</span>
-                          <span>{p.reading_time} min read</span>
-                        </div>
-                        <h3 className="post-title">{p.title}</h3>
-                        {p.excerpt && (
-                          <p className="post-excerpt">{p.excerpt}</p>
-                        )}
-                        <div className="post-meta">
-                          <span className="meta-stat"><Icon name="zap" size={11} /> {p.likes}</span>
-                          <span className="meta-stat"><Icon name="users" size={11} /> {p.views}</span>
-                        </div>
-                      </div>
-                    </article>
-                  </Link>
-                ))}
-              </div>
-            )}
+            ) : posts.map((p) => (
+              <Link key={p.id} href={`/blog/${p.slug}`} className="dw-post-row" style={{ textDecoration: "none" }}>
+                <span className="dw-pill live">post</span>
+                <span className="dw-row-title">{p.title}</span>
+                <div className="dw-row-end">
+                  <span className="dw-row-meta">
+                    {p.reading_time}m · {p.views} views
+                    {p.published_at ? ` · ${new Date(p.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
 
         {tab === "refs" && (
-          <div>
+          <div className="dw-card" style={{ marginTop: 16 }}>
             {links.length === 0 ? (
               <div style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-muted)" }}>
                 <Icon name="bookmark" size={32} />
                 <p style={{ marginTop: 12 }}>No public references yet.</p>
               </div>
-            ) : (
-              <div className="cards">
-                {links.map((l) => {
-                  const tags = l.tags ? l.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
-                  const stripeColor = `hsl(${(l.id * 47) % 360}, 55%, 50%)`;
-                  return (
-                    <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit" }}>
-                      <article className="lc ref-card">
-                        <div className="lc-stripe" style={{ background: stripeColor }} />
-                        <div className="lc-body">
-                          {tags.length > 0 && (
-                            <div className="lc-tags">
-                              {tags.slice(0, 3).map((t) => (
-                                <span key={t} className="lc-tag"><span className="h">#</span>{t}</span>
-                              ))}
-                            </div>
-                          )}
-                          <h3 className="lc-title">{l.title || l.url}</h3>
-                          {l.description && <p className="lc-desc">{l.description}</p>}
-                          <div className="lc-foot">
-                            {l.favicon && (
-                              <img
-                                src={l.favicon}
-                                alt=""
-                                width={12}
-                                height={12}
-                                style={{ borderRadius: 2, objectFit: "cover" }}
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                              />
-                            )}
-                            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {(() => { try { return new URL(l.url).hostname.replace(/^www\./, ""); } catch { return l.url; } })()}
-                            </span>
-                            <span>{l.created_at ? new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</span>
-                          </div>
-                        </div>
-                      </article>
-                    </a>
-                  );
-                })}
-              </div>
-            )}
+            ) : links.map((l) => {
+              let host = l.url;
+              try { host = new URL(l.url).hostname.replace(/^www\./, ""); } catch {}
+              const tags = l.tags ? l.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+              return (
+                <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="dw-ref-row" style={{ textDecoration: "none" }}>
+                  {l.favicon ? (
+                    <img src={l.favicon} alt="" width={14} height={14} style={{ borderRadius: 3, flexShrink: 0 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  ) : (
+                    <Icon name="link" size={13} />
+                  )}
+                  <span className="dw-row-title">{l.title || l.url}</span>
+                  <div className="dw-row-end">
+                    <span className="dw-row-meta">
+                      {tags[0] ? `#${tags[0]} · ` : ""}{host}
+                    </span>
+                  </div>
+                </a>
+              );
+            })}
           </div>
         )}
 
@@ -361,46 +314,6 @@ export function UserProfile({ handle }: { handle: string }) {
                   ? `${user.name} has published ${posts.length} post${posts.length !== 1 ? "s" : ""} and saved ${links.length} public reference${links.length !== 1 ? "s" : ""} on Grimoire.`
                   : `${user.name} has saved ${links.length} public reference${links.length !== 1 ? "s" : ""} on Grimoire.`}
               </p>
-            </div>
-
-            <div className="about-side">
-              {posts.length > 0 && (
-                <div className="about-card">
-                  <h3>Recent posts</h3>
-                  {posts.slice(0, 4).map((p) => (
-                    <div key={p.id} className="item">
-                      <div className="av" style={{ background: COVER_GRADIENTS[p.id % COVER_GRADIENTS.length], fontSize: 9 }}>
-                        {initials(p.title)}
-                      </div>
-                      <div className="text">
-                        <div className="n">{p.title}</div>
-                        <div className="s">{p.reading_time} min read · {p.views} views</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {links.length > 0 && (
-                <div className="about-card">
-                  <h3>Recent references</h3>
-                  {links.slice(0, 4).map((l) => {
-                    let host = l.url;
-                    try { host = new URL(l.url).hostname.replace(/^www\./, ""); } catch {}
-                    return (
-                      <div key={l.id} className="item">
-                        <div className="av" style={{ background: `hsl(${(l.id * 47) % 360}, 55%, 45%)`, fontSize: 9 }}>
-                          {host.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="text">
-                          <div className="n">{l.title || l.url}</div>
-                          <div className="s">{host}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         )}
