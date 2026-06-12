@@ -152,7 +152,7 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
               {avatar ? <img src={avatar} alt={username} /> : initials}
             </a>
             <button className="dw-signout-btn" onClick={() => onSignOut?.()} title="Sign out">
-              <Icon name="arrow-right" size={14} />
+              <Icon name="power" size={14} />
             </button>
           </div>
         </div>

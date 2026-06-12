@@ -49,12 +49,12 @@
 /* ----- GLASS ----- */
 [data-theme="glass"] {
   --bg: #070a1c;
-  --bg-elev: rgba(255,255,255,0.07);
-  --bg-soft: rgba(255,255,255,0.05);
+  --bg-elev: rgba(255,255,255,0.09);
+  --bg-soft: rgba(255,255,255,0.06);
   --bg-inset: rgba(0,0,0,0.30);
-  --fg: #e8ecff;
-  --fg-muted: #8892c0;
-  --fg-soft: #a0aad0;
+  --fg: #f4f6ff;
+  --fg-muted: #aab4d8;
+  --fg-soft: #b8c2e0;
   --border: rgba(255,255,255,0.11);
   --border-strong: rgba(255,255,255,0.22);
   --accent: #a78bfa;
@@ -76,16 +76,11 @@
   color-scheme: dark;
 }
 
-/* Wallpaper — fixed gradient mesh, visible through glass surfaces */
+/* Wallpaper — photo + dark overlay so glass panels stay readable */
 [data-theme="glass"] body {
   background:
-    radial-gradient(ellipse 80% 55% at 15%  8%,  rgba(139, 92,246,0.42) 0%, transparent 65%),
-    radial-gradient(ellipse 55% 45% at 85% 15%,  rgba( 59,130,246,0.30) 0%, transparent 60%),
-    radial-gradient(ellipse 65% 55% at 50% 90%,  rgba( 16,185,129,0.22) 0%, transparent 60%),
-    radial-gradient(ellipse 45% 40% at 92% 72%,  rgba(244,114,182,0.18) 0%, transparent 55%),
-    radial-gradient(ellipse 40% 35% at  8% 85%,  rgba( 99,102,241,0.20) 0%, transparent 55%),
-    #070a1c;
-  background-attachment: fixed;
+    linear-gradient(rgba(4,8,22,0.72), rgba(4,8,22,0.72)),
+    url('/wallpapers/glass-bg.jpg') center / cover no-repeat fixed;
 }
 [data-theme="glass"] .app { background: transparent; }
 
@@ -93,11 +88,11 @@
 [data-theme="glass"] .dw-page { background: transparent; }
 
 [data-theme="glass"] .dw-card {
-  background: rgba(255,255,255,0.07);
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  border: 1px solid rgba(255,255,255,0.13);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(48px) saturate(1.6) brightness(0.85);
+  -webkit-backdrop-filter: blur(48px) saturate(1.6) brightness(0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 [data-theme="glass"] .dw-card-head {
   border-bottom-color: rgba(255,255,255,0.08);
@@ -106,8 +101,8 @@
 [data-theme="glass"] .dw-btn {
   background: rgba(255,255,255,0.09);
   border-color: rgba(255,255,255,0.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(24px) brightness(0.88);
+  -webkit-backdrop-filter: blur(24px) brightness(0.88);
 }
 [data-theme="glass"] .dw-btn:hover {
   background: rgba(255,255,255,0.15);
@@ -117,8 +112,8 @@
 [data-theme="glass"] .dw-icon-btn {
   background: rgba(255,255,255,0.08);
   border-color: rgba(255,255,255,0.13);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(24px) brightness(0.88);
+  -webkit-backdrop-filter: blur(24px) brightness(0.88);
 }
 [data-theme="glass"] .dw-icon-btn:hover {
   background: rgba(255,255,255,0.15);
@@ -141,6 +136,16 @@
   backdrop-filter: blur(32px) saturate(1.4);
   -webkit-backdrop-filter: blur(32px) saturate(1.4);
   border-color: rgba(255,255,255,0.16);
+}
+
+[data-theme="glass"] .profile-head {
+  background: rgba(7,10,28,0.65);
+  backdrop-filter: blur(40px) saturate(1.5) brightness(0.88);
+  -webkit-backdrop-filter: blur(40px) saturate(1.5) brightness(0.88);
+  border-color: rgba(255,255,255,0.13);
+}
+[data-theme="glass"] .profile-head .av {
+  border-color: rgba(7,10,28,0.85);
 }
 
 /* ----- DARK ----- */
