@@ -57,6 +57,18 @@ function getDomain(url: string): string {
 
 const TYPED_QUERIES = ["claude code", "#linux", "sed and awk", "@abhishek", "wireshark filters", "#cloud", "deliverability"];
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
+}
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState<T>(value);
   useEffect(() => {
@@ -94,6 +106,7 @@ function useTypewriter(words: string[], active: boolean) {
 }
 
 export function ExploreView() {
+  const isMobile = useIsMobile();
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -176,8 +189,13 @@ export function ExploreView() {
     const sorted = sortOrder === "oldest"
       ? [...posts].sort((a, b) => a.id - b.id)
       : [...posts].sort((a, b) => b.id - a.id);
-    return isFiltering ? sorted : sorted.slice(0, 8);
-  }, [posts, sortOrder, isFiltering]);
+    return isFiltering ? sorted : sorted.slice(0, isMobile ? 5 : 8);
+  }, [posts, sortOrder, isFiltering, isMobile]);
+
+  const mobileDisplayLinks = useMemo(() => {
+    if (isFiltering) return mobileLinks;
+    return isMobile ? sortedSidebarLinks.slice(0, 3) : [];
+  }, [isFiltering, mobileLinks, isMobile, sortedSidebarLinks]);
 
   const EXAMPLES = [
     { label: "claude code", q: "claude code" },
@@ -351,25 +369,6 @@ export function ExploreView() {
                 </div>
               </div>
 
-              {isFiltering && mobileLinks.length > 0 && (
-                <div className="mob-disc-section">
-                  <div className="mob-disc-label"><Icon name="bookmark" size={10} /> Bookmarks</div>
-                  <div className="mob-refs-list">
-                    {mobileLinks.map(l => (
-                      <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="mob-ref-item">
-                        {l.favicon ? (
-                          <img src={l.favicon} style={{ width: 13, height: 13, borderRadius: 3, flexShrink: 0 }} alt=""
-                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                        ) : (
-                          <Icon name="globe" size={11} style={{ flexShrink: 0, color: "var(--fg-muted)" }} />
-                        )}
-                        <span className="mob-ref-title">{l.title || getDomain(l.url)}</span>
-                        <span className="mob-ref-domain">{getDomain(l.url)}</span>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -387,8 +386,8 @@ export function ExploreView() {
           ) : (
             <div style={{ opacity: postsLoading ? 0.5 : 1, transition: "opacity 0.15s" }}>
             <>
-              {/* Site links come first — they're the genuine result when posts are empty */}
-              {isFiltering && mobileLinks.length > 0 && (
+              {/* Site links — desktop only, when filtering */}
+              {!isMobile && isFiltering && mobileLinks.length > 0 && (
                 <div className="feed-links-section">
                   <div className="feed-head">
                     <span className="feed-count-label">
@@ -434,6 +433,10 @@ export function ExploreView() {
                         : <span>posts</span>}
                     </span>
                     <span className="feed-head-grow" />
+                    <button className="feed-sort-btn explore-mobile-sort" onClick={() => setSortOrder(o => o === "recent" ? "oldest" : "recent")}>
+                      {sortOrder === "recent" ? "Recent" : "Oldest"}
+                      <Icon name="chevron-right" size={12} style={{ transform: sortOrder === "recent" ? "rotate(90deg)" : "rotate(-90deg)" }} />
+                    </button>
                   </div>
 
                   <div className="dw-card" key={search + activeTag + sortOrder}>
@@ -447,6 +450,34 @@ export function ExploreView() {
                       </Link>
                     ))}
                   </div>
+
+                  {/* Mobile: references section below posts */}
+                  {isMobile && mobileDisplayLinks.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div className="feed-head">
+                        <span className="feed-count-label">
+                          <b>{String(mobileDisplayLinks.length).padStart(2, "0")}</b>
+                          <span>sites</span>
+                        </span>
+                      </div>
+                      <div className="dw-card">
+                        {mobileDisplayLinks.map(l => (
+                          <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="dw-ref-row" style={{ textDecoration: "none" }}>
+                            {l.favicon ? (
+                              <img src={l.favicon} width={14} height={14} alt="" style={{ borderRadius: 3, flexShrink: 0 }}
+                                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                            ) : (
+                              <Icon name="globe" size={13} />
+                            )}
+                            <span className="dw-row-title">{l.title || getDomain(l.url)}</span>
+                            <div className="dw-row-end">
+                              <span className="dw-row-meta">{getDomain(l.url)}</span>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
             </div>
           )}
         </>

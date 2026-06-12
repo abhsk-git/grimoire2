@@ -1932,6 +1932,7 @@ button.lc-tag:hover { opacity: 0.7; }
 }
 .feed-sort-btn:hover { color: var(--fg); border-color: var(--border-strong); }
 .explore-feed-head { min-height: 30px; }
+.explore-mobile-sort { display: none; }
 
 /* explore-feed-wrap on desktop needs some top padding */
 @media (min-width: 901px) {
@@ -1954,12 +1955,10 @@ button.lc-tag:hover { opacity: 0.7; }
   /* Single column, sidebar hidden, mobile search shown */
   .explore-layout { grid-template-columns: 1fr; padding: 0 0 60px; gap: 0; }
   .explore-sidebar { display: none; }
-  /* Hero: sticky + full bleed on mobile */
+  .explore-mobile-sort { display: flex; }
+  /* Hero: full bleed on mobile, normal flow */
   .explore-main-hero {
     display: block;
-    position: sticky;
-    top: 68px;
-    z-index: 30;
     padding: 20px 18px 14px;
     margin-left: -18px;
     margin-right: -18px;
@@ -2123,8 +2122,7 @@ button.lc-tag:hover { opacity: 0.7; }
   .public-header .brand span:last-child { display: none; }
   .public-header-right .btn-ghost { display: none; }
   .public-main { padding: 24px 0 60px; }
-  /* Header dropped to 60px — update hero sticky top to match */
-  .explore-main-hero { top: 60px; }
+
 }
 @media (max-width: 480px) {
   .public-header-right .avatar { display: none; }
