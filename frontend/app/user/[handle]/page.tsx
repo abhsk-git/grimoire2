@@ -16,8 +16,8 @@ function ProfileContent({ handle }: { handle: string }) {
   }
 
   return (
-    <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <PublicHeader loggedIn={!!user} username={user?.username} onSignOut={user ? handleSignOut : undefined} />
+    <div className="profile-root" style={{ minHeight: "100vh" }}>
+      <PublicHeader loggedIn={!!user} username={user?.username} onSignOut={user ? handleSignOut : undefined} showSearch={false} />
       <UserProfile handle={handle} />
       <PublicFooter
         links={[

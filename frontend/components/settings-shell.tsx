@@ -9,7 +9,7 @@ import { useTheme } from "@/lib/theme";
 import { ImageCropModal } from "./image-crop-modal";
 import { PasswordInput } from "./auth-forms";
 
-type Tab = "profile" | "social" | "editor" | "appearance" | "publishing" | "privacy" | "notifications" | "account";
+type Tab = "profile" | "social" | "editor" | "appearance" | "publishing" | "privacy" | "notifications" | "security" | "account";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "profile",       label: "Profile",       icon: "user"    },
@@ -19,6 +19,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "publishing",    label: "Publishing",     icon: "rss"     },
   { id: "privacy",       label: "Privacy",        icon: "lock"    },
   { id: "notifications", label: "Notifications",  icon: "inbox"   },
+  { id: "security",      label: "Security",       icon: "shield"  },
   { id: "account",       label: "Account",        icon: "settings"},
 ];
 
@@ -257,6 +258,11 @@ function ProfileTab() {
               <button className="sett-link-btn" onClick={() => setShowAvatarUrl(v => !v)}>
                 {uploading === "avatar" ? "Uploading…" : "Paste image URL"}
               </button>
+              {avatarUrl && (
+                <button className="sett-link-btn sett-link-btn-danger" onClick={() => { setAvatarUrl(""); setAvatarInput(""); setShowAvatarUrl(false); }}>
+                  Remove photo
+                </button>
+              )}
             </div>
           </div>
           {showAvatarUrl && (
@@ -696,27 +702,14 @@ function NotificationsTab() {
   );
 }
 
-// ── Account Tab ───────────────────────────────────────────────────────────────
+// ── Security Tab ──────────────────────────────────────────────────────────────
 
-function AccountTab() {
+function SecurityTab() {
   const { user, refetch } = useAuth();
 
-  // Password
-  const [oldPw,   setOldPw]   = useState("");
-  const [newPw,   setNewPw]   = useState("");
-  const [pwSaving, setPwSaving] = useState(false);
-  const [pwMsg,   setPwMsg]   = useState("");
-
-  // Email
-  const [newEmail,   setNewEmail]   = useState("");
-  const [emailPw,    setEmailPw]    = useState("");
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailMsg,   setEmailMsg]   = useState("");
-
-  // 2FA
-  const [tfaPw,    setTfaPw]    = useState("");
+  const [tfaPw,     setTfaPw]     = useState("");
   const [tfaSaving, setTfaSaving] = useState(false);
-  const [tfaMsg,   setTfaMsg]   = useState("");
+  const [tfaMsg,    setTfaMsg]    = useState("");
   const twoFactorEnabled = !!(user as any)?.two_factor_enabled;
 
   async function toggle2FA() {
@@ -735,6 +728,65 @@ function AccountTab() {
     } catch { setTfaMsg("Failed"); }
     finally { setTfaSaving(false); }
   }
+
+  return (
+    <>
+      <Section title="Two-factor authentication">
+        <div className="sett-tfa-block">
+          <div className="sett-tfa-top">
+            <span className={`sett-tfa-badge${twoFactorEnabled ? " on" : ""}`}>
+              {twoFactorEnabled ? "Enabled" : "Disabled"}
+            </span>
+            <p className="sett-tfa-desc">
+              {twoFactorEnabled
+                ? "A verification code will be emailed to you each time you sign in."
+                : "Add an extra layer of security. A code will be emailed to you on each sign-in."}
+            </p>
+          </div>
+          {user?.has_password ? (
+            <div className="sett-tfa-pw">
+              <label className="sett-label">
+                {twoFactorEnabled ? "Enter password to disable" : "Enter password to enable"}
+              </label>
+              <PasswordInput className="sett-input" value={tfaPw} onChange={e => setTfaPw(e.target.value)} autoComplete="current-password" />
+            </div>
+          ) : (
+            <p className="sett-tfa-oauth-note">
+              No password confirmation needed — your identity is verified by Google.
+            </p>
+          )}
+          <div className="sett-tfa-actions">
+            <SaveMsg msg={tfaMsg} />
+            <button
+              className={`btn btn-sm ${twoFactorEnabled ? "btn-ghost" : "btn-primary"}`}
+              onClick={toggle2FA}
+              disabled={tfaSaving}
+            >
+              {tfaSaving ? "Saving…" : twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
+            </button>
+          </div>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+// ── Account Tab ───────────────────────────────────────────────────────────────
+
+function AccountTab() {
+  const { user, refetch } = useAuth();
+
+  // Password
+  const [oldPw,   setOldPw]   = useState("");
+  const [newPw,   setNewPw]   = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMsg,   setPwMsg]   = useState("");
+
+  // Email
+  const [newEmail,   setNewEmail]   = useState("");
+  const [emailPw,    setEmailPw]    = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMsg,   setEmailMsg]   = useState("");
 
   // Delete
   const [delConfirm, setDelConfirm] = useState("");
@@ -847,46 +899,6 @@ function AccountTab() {
         )}
       </div>
 
-      {/* Two-factor authentication */}
-      <Section title="Two-factor authentication">
-        <div className="sett-tfa-row">
-          <div className="sett-tfa-info">
-            <div className="sett-tfa-status">
-              <span className={`sett-tfa-badge${twoFactorEnabled ? " on" : ""}`}>
-                {twoFactorEnabled ? "Enabled" : "Disabled"}
-              </span>
-            </div>
-            <p className="sett-label-soft" style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.5 }}>
-              {twoFactorEnabled
-                ? "A verification code will be emailed to you each time you sign in."
-                : "Add an extra layer of security. A code will be emailed to you on each sign-in."}
-            </p>
-          </div>
-        </div>
-        {user?.has_password ? (
-          <div className="sett-field">
-            <label className="sett-label">
-              {twoFactorEnabled ? "Enter password to disable" : "Enter password to enable"}
-            </label>
-            <PasswordInput className="sett-input" value={tfaPw} onChange={e => setTfaPw(e.target.value)} autoComplete="current-password" />
-          </div>
-        ) : (
-          <p className="sett-label-soft" style={{ fontSize: 12, margin: "4px 0 0" }}>
-            No password confirmation needed — your identity is verified by Google.
-          </p>
-        )}
-        <div className="sett-save-row">
-          <SaveMsg msg={tfaMsg} />
-          <button
-            className={`btn btn-sm ${twoFactorEnabled ? "btn-ghost" : "btn-primary"}`}
-            onClick={toggle2FA}
-            disabled={tfaSaving}
-          >
-            {tfaSaving ? "Saving…" : twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
-          </button>
-        </div>
-      </Section>
-
       {/* Danger zone */}
       <div className="sett-section">
         <div className="sett-section-title">Danger zone</div>
@@ -959,15 +971,14 @@ export function SettingsShell() {
   return (
     <div className="app">
       <div className="sett-page">
-        <div className="sett-header">
-          <Link href="/" className="sett-back">
-            <Icon name="arrow-left" size={14} /> Dashboard
-          </Link>
-          <h1 className="sett-title">Settings</h1>
-        </div>
-
         <div className="sett-layout">
           <nav className="sett-nav">
+            <div className="sett-nav-head">
+              <Link href="/" className="sett-back">
+                <Icon name="arrow-left" size={13} /> Dashboard
+              </Link>
+              <h1 className="sett-title">Settings</h1>
+            </div>
             {TABS.map(t => (
               <button
                 key={t.id}
@@ -988,6 +999,7 @@ export function SettingsShell() {
             {tab === "publishing"    && <PublishingTab />}
             {tab === "privacy"       && <PrivacyTab />}
             {tab === "notifications" && <NotificationsTab />}
+            {tab === "security"      && <SecurityTab />}
             {tab === "account"       && <AccountTab />}
           </div>
         </div>

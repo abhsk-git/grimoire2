@@ -9,10 +9,11 @@ interface PublicHeaderProps {
   handle?: string;
   avatar?: string;
   showNav?: boolean;
+  showSearch?: boolean;
   onSignOut?: () => void;
 }
 
-export function PublicHeader({ loggedIn, username, handle, avatar, showNav, onSignOut }: PublicHeaderProps) {
+export function PublicHeader({ loggedIn, username, handle, avatar, showNav, showSearch = true, onSignOut }: PublicHeaderProps) {
   const initials = username ? username.slice(0, 2).toUpperCase() : "ME";
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -35,11 +36,13 @@ export function PublicHeader({ loggedIn, username, handle, avatar, showNav, onSi
 
         {showNav && <span style={{ flex: 1 }} />}
 
-        <div className="public-search">
-          <Icon name="search" size={15} />
-          <input ref={searchRef} placeholder="Search posts, writers, tags…" onKeyDown={handleSearch} />
-          <span className="kbd">⌘K</span>
-        </div>
+        {showSearch && (
+          <div className="public-search">
+            <Icon name="search" size={15} />
+            <input ref={searchRef} placeholder="Search posts, writers, tags…" onKeyDown={handleSearch} />
+            <span className="kbd">⌘K</span>
+          </div>
+        )}
 
         <div className="public-header-right">
           {loggedIn ? (

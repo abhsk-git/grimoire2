@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
 import { SettingsProvider } from "@/lib/settings";
+import { ScrollToTop } from "@/components/scroll-to-top";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +52,7 @@ export default function RootLayout({
           <ThemeProvider>
             <SettingsProvider>
               {children}
+              <ScrollToTop />
             </SettingsProvider>
           </ThemeProvider>
         </AuthProvider>

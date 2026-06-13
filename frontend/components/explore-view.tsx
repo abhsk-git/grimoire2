@@ -49,6 +49,7 @@ interface Link_ {
 }
 
 interface Tag { name: string; count: number; }
+interface UserResult { id: number; name: string; handle: string; avatar: string; bio: string; }
 
 function getDomain(url: string): string {
   try { return new URL(url).hostname.replace("www.", ""); } catch { return url; }
@@ -132,6 +133,21 @@ export function ExploreView() {
 
   const debouncedSearch = useDebounce(search, 300);
   const debouncedTag = useDebounce(activeTag, 300);
+
+  const isAuthorSearch = debouncedSearch.startsWith("@") && debouncedSearch.length > 1;
+  const [authorResults, setAuthorResults] = useState<UserResult[]>([]);
+  const [authorsLoading, setAuthorsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthorSearch) { setAuthorResults([]); return; }
+    setAuthorsLoading(true);
+    const q = debouncedSearch.slice(1);
+    fetch(`/api/users/search?q=${encodeURIComponent(q)}`)
+      .then(r => r.ok ? r.json() : { users: [] })
+      .then(d => setAuthorResults(d.users || []))
+      .catch(() => {})
+      .finally(() => setAuthorsLoading(false));
+  }, [isAuthorSearch, debouncedSearch]);
 
   const [posts, setPosts]           = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -224,9 +240,9 @@ export function ExploreView() {
 
           <div className="desktop-hero-search">
             <span className="search-lead"><Icon name="search" size={20} /></span>
-            {!search && (
+            {!search && !searchFocused && (
               <span className="desktop-hero-ph" aria-hidden="true">
-                Search the grimoire — <span className="ph-typed">{typedQuery}</span><span className="ph-caret" />
+                search the grimoire: <span className="ph-typed">{typedQuery}</span><span className="ph-caret" />
               </span>
             )}
             <input
@@ -414,15 +430,55 @@ export function ExploreView() {
                 </div>
               )}
 
-              {/* Posts — or empty state only when links also came up empty */}
-              {posts.length === 0 ? (
+              {/* Author results — shown only for @ searches */}
+              {isAuthorSearch && (
+                <div className="explore-author-results">
+                  <div className="feed-head">
+                    <span className="feed-count-label">
+                      <b>{authorsLoading ? "…" : String(authorResults.length).padStart(2, "0")}</b>
+                      <span>authors</span>
+                    </span>
+                  </div>
+                  {authorResults.length > 0 ? (
+                    <div className="dw-card">
+                      {authorResults.map(u => {
+                        const href = u.handle ? `/user/${u.handle}` : `/user/${u.id}`;
+                        const initials = u.name.slice(0, 2).toUpperCase();
+                        return (
+                          <Link key={u.id} href={href} className="dw-author-row" style={{ textDecoration: "none" }}>
+                            {u.avatar ? (
+                              <img src={u.avatar} className="dw-author-av" alt={u.name} />
+                            ) : (
+                              <span className="dw-author-av dw-author-av-initials">{initials}</span>
+                            )}
+                            <div className="dw-author-info">
+                              <span className="dw-author-name">{u.name}</span>
+                              {u.handle && <span className="dw-author-handle">@{u.handle}</span>}
+                              {u.bio && <span className="dw-author-bio">{u.bio}</span>}
+                            </div>
+                            <Icon name="arrow-right" size={14} style={{ color: "var(--fg-muted)", flexShrink: 0 }} />
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ) : !authorsLoading && (
+                    <div className="explore-empty">
+                      <Icon name="users" size={28} />
+                      <p>No authors found for &quot;{debouncedSearch}&quot;.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Posts — hidden during @ search; or empty state */}
+              {!isAuthorSearch && posts.length === 0 ? (
                 mobileLinks.length === 0 && (
                   <div className="explore-empty">
                     <Icon name="feather" size={32} />
                     <p>No stories found{search ? ` for "${search}"` : activeTag ? ` tagged #${activeTag}` : ""}.</p>
                   </div>
                 )
-              ) : (
+              ) : !isAuthorSearch && (
                 <div className={`explore-feed-wrap${isFiltering && mobileLinks.length > 0 ? " has-links-above" : ""}`}>
                   {/* Feed head: count only, height matched to sidebar via CSS */}
                   <div className="feed-head explore-feed-head">

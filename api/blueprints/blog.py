@@ -523,7 +523,8 @@ def get_post_by_slug(slug):
     try:
         cur.execute('''
             SELECT p.*, u.name as author_name, u.avatar as author_avatar,
-                   u.bio as author_bio, u.handle as author_handle
+                   u.bio as author_bio, u.handle as author_handle,
+                   u.social_links as author_social_links
             FROM blog_posts p JOIN users u ON p.user_id=u.id
             WHERE p.slug=%s AND (p.status='published' OR p.user_id=%s)
         ''', (slug, request.user_id or -1))
@@ -542,6 +543,10 @@ def get_post_by_slug(slug):
             db2.close()
     for f in ('created_at', 'updated_at', 'published_at'):
         if post.get(f): post[f] = post[f].isoformat()
+    import json as _json
+    if post.get('author_social_links') and isinstance(post['author_social_links'], str):
+        try: post['author_social_links'] = _json.loads(post['author_social_links'])
+        except Exception: post['author_social_links'] = {}
     post['is_owner'] = (request.user_id == post['user_id'])
     return jsonify(post)
 

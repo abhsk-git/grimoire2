@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
@@ -30,6 +30,7 @@ interface Post {
   author_avatar: string;
   author_bio: string;
   author_handle?: string;
+  author_social_links?: Record<string, string> | null;
   user_id: number;
   is_owner: boolean;
 }
@@ -841,14 +842,6 @@ export function BlogPost({ slug }: Props) {
               </div>
             </div>
           </Link>
-          {!post.is_owner && (
-            <button
-              className={`byline-follow${following ? " is-following" : ""}`}
-              onClick={toggleFollow}
-            >
-              {following ? "Following" : "Follow"}
-            </button>
-          )}
         </div>
 
         <div
@@ -857,53 +850,85 @@ export function BlogPost({ slug }: Props) {
         />
       </article>
 
-      {/* Engagement bar */}
-      <div className="post-engagement">
-        <button
-          className={`eng-btn eng-like${liked ? " is-liked" : ""}${justLiked ? " just-liked" : ""}`}
-          aria-label={liked ? "Unlike" : "Like"}
-          onClick={toggleLike}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-          <span className="eng-count">{likeCount}</span>
-        </button>
-        <button className="eng-btn" onClick={scrollToDiscuss} title="Jump to discussion">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-          </svg>
-          <span className="eng-lbl">Discuss</span>
-        </button>
-        <div className="eng-sep" />
-        <button className="eng-btn" onClick={copyLink} title="Copy link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-          <span className="eng-lbl">{copied ? "Copied!" : "Share"}</span>
-        </button>
-        <button
-          className={`eng-btn${saved ? " is-active" : ""}`}
-          onClick={toggleSave}
-          title={saved ? "Saved" : "Save"}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-          </svg>
-          <span className="eng-lbl">{saved ? "Saved" : "Save"}</span>
-        </button>
-        <div className="eng-spacer" />
-        {post.is_owner && (
-          <Link href={`/write/${post.id}`} className="eng-btn eng-owner">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            <span className="eng-lbl eng-lbl-keep">Edit</span>
-          </Link>
-        )}
-      </div>
+      {/* Post end — editorial, no cards */}
+      {(() => {
+        const socials = post.author_social_links || {};
+        const socialEntries = Object.entries(socials).filter(([, v]) => v);
+        const socialMeta: Record<string, { label: string; href: (u: string) => string; icon: React.ReactElement }> = {
+          x:         { label: "X / Twitter", href: (u) => `https://x.com/${u}`,          icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.736-8.836L2.25 2.25h6.917l4.254 5.622 4.823-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
+          github:    { label: "GitHub",      href: (u) => `https://github.com/${u}`,      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg> },
+          instagram: { label: "Instagram",   href: (u) => `https://instagram.com/${u}`,   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg> },
+        };
+        return (
+          <div className="post-end">
+
+            {/* Author sign-off — right-aligned like a letter */}
+            <div className="post-sign">
+              <Link href={authorHref} className="post-sign-by">
+                by {post.author_name.toLowerCase()}
+              </Link>
+              {socialEntries.length > 0 && (
+                <div className="post-sign-socials">
+                  <span className="post-sign-follow">follow on</span>
+                  {socialEntries.map(([key, username]) => {
+                    const meta = socialMeta[key];
+                    if (!meta) return null;
+                    return (
+                      <a key={key} href={meta.href(username)} target="_blank" rel="noopener noreferrer"
+                         className="post-sign-icon" title={`${meta.label}: @${username}`}>
+                        {meta.icon}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Engagement strip — flat, no container */}
+            <div className="post-end-engage">
+              <button
+                className={`pee-btn pee-like${liked ? " is-liked" : ""}${justLiked ? " just-liked" : ""}`}
+                onClick={toggleLike}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                {likeCount} {likeCount === 1 ? "like" : "likes"}
+              </button>
+              <button className="pee-btn" onClick={scrollToDiscuss}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                {comments.length} {comments.length === 1 ? "comment" : "comments"}
+              </button>
+              <div style={{ flex: 1 }} />
+              <button className="pee-btn" onClick={copyLink}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                {copied ? "Copied!" : "Share"}
+              </button>
+              <button className={`pee-btn${saved ? " is-saved" : ""}`} onClick={toggleSave}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                {saved ? "Saved" : "Save"}
+              </button>
+              {post.is_owner && (
+                <Link href={`/write/${post.id}`} className="pee-btn pee-edit">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  Edit
+                </Link>
+              )}
+            </div>
+
+          </div>
+        );
+      })()}
 
       {/* Comments */}
       <div className="comments-wrap" ref={discussRef}>

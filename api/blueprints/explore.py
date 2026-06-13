@@ -72,6 +72,29 @@ def explore_links():
     return jsonify(result)
 
 
+@bp.route('/api/users/search', methods=['GET'])
+def search_users():
+    q = request.args.get('q', '').strip().lstrip('@')
+    if not q:
+        return jsonify({'users': []})
+    db  = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        cur.execute('''
+            SELECT id, name, handle, avatar, bio
+            FROM users
+            WHERE handle LIKE %s OR name LIKE %s
+            ORDER BY
+                CASE WHEN handle LIKE %s THEN 0 ELSE 1 END,
+                name ASC
+            LIMIT 10
+        ''', (f'{q}%', f'%{q}%', f'{q}%'))
+        users = cur.fetchall()
+    finally:
+        db.close()
+    return jsonify({'users': users})
+
+
 @bp.route('/api/user/<handle>', methods=['GET'])
 def user_profile(handle):
     import json as _json
