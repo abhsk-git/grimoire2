@@ -31,18 +31,23 @@ Deployment overview
                  MariaDB
                  
 Quick deployment
+
 git clone https://github.com/abhsk-git/grimoire2.git
+
 cd grimoire2
 
 cp api/config/.env.example api/config/.env
+
 cp docker-compose.example.yml docker-compose.yml
 
 docker compose up -d --build
+
 Nginx configuration
-server {
+
+    server {
     listen 80;
     server_name yourdomain.com www.yourdomain.com;
-
+    
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
@@ -50,7 +55,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-
+    
     location /api {
         proxy_pass http://127.0.0.1:5051;
         proxy_set_header Host $host;
@@ -58,4 +63,4 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-}
+    }
