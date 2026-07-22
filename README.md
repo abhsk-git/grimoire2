@@ -12,13 +12,24 @@ Infrastructure: Docker, Nginx, AlmaLinux
 Services: Amazon SES, GitHub
 
 Deployment overview
-Internet
-   ↓
-Nginx + HTTPS
-   ├── /      → Next.js frontend on 127.0.0.1:3000
-   └── /api   → Flask backend on 127.0.0.1:5051
-                     ↓
-                  MariaDB
+
+                 Internet
+                     │
+              HTTPS (443)
+                     │
+                ┌──────────┐
+                │  Nginx   │
+                └────┬─────┘
+          ┌──────────┴──────────┐
+          │                     │
+      Frontend                Backend
+          |                     |
+    Next.js :3000         Flask :5051
+          │                     │
+          └──────────┬──────────┘
+                     │
+                 MariaDB
+                 
 Quick deployment
 git clone https://github.com/abhsk-git/grimoire2.git
 cd grimoire2
