@@ -32,3 +32,10 @@ restore_posts.py
 
 # Design references / handoffs (local-only, not tracked)
 references/
+.env
+.env
+.env.*
+!.env.example
+api/config/.env
+docker-compose.yml.old
+docker-compose.yml
