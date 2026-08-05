@@ -27,6 +27,12 @@ api/static/*
 # DB backups (contain comment data — never commit)
 api/backups/
 
+# Local rolling database/log archives (kept on the host, never committed)
+runtime/
+
+# Private operator documentation containing deployment credentials
+private/
+
 # One-off local scripts
 restore_posts.py
 

@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "./icons";
+import { BrandMark, Icon } from "./icons";
 import { SearchModal, useSearchModal } from "./search-modal";
 import { BookmarkModal, useBookmarkModal } from "./bookmark-modal";
+import { useTheme } from "@/lib/theme";
+import Link from "next/link";
+import { useMobileDrawerGesture } from "@/lib/use-mobile-drawer-gesture";
 
 interface Post {
   id: number;
@@ -43,9 +46,11 @@ function getGreeting() {
 }
 
 export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut }: HeroLoggedInProps) {
+  const { theme, setTheme } = useTheme();
   const name = displayName || username || "there";
   const greeting = getGreeting();
-  const initials = username?.slice(0, 2).toUpperCase() ?? "ME";
+  const nameParts = name.trim().split(/\s+/).filter(Boolean);
+  const initials = (nameParts.length > 1 ? nameParts[0][0] + nameParts[nameParts.length - 1][0] : (nameParts[0] || "ME").slice(0, 2)).toUpperCase();
   const profileHref = `/user/${handle ?? username?.toLowerCase().replace(/\s+/g, "-")}`;
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -53,6 +58,15 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
   const [postsVersion, setPostsVersion] = useState(0);
   const [linksVersion, setLinksVersion] = useState(0);
   const [confirmPending, setConfirmPending] = useState<{ type: "post" | "link"; id: number; label: string } | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
+  useMobileDrawerGesture(navOpen, setNavOpen);
+
+  useEffect(() => {
+    if (!navOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [navOpen]);
 
   const { open: searchOpen, setOpen: setSearchOpen } = useSearchModal();
   const { open: bmOpen, setOpen: setBmOpen } = useBookmarkModal();
@@ -126,6 +140,40 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
 
   return (
     <div className="dw-page">
+      <header className="dw-navbar">
+        <div className="dw-navbar-inner">
+          <Link href="/" className="dw-navbar-brand"><BrandMark size={24} /><span>grimoire</span></Link>
+          <div className="dw-navbar-tools">
+            <button className="dw-nav-search" onClick={() => setSearchOpen(true)}><Icon name="search" size={14} /><span>Search</span><span className="kbd">⌘K</span></button>
+            <button className="theme-cycle" onClick={() => setTheme(theme === "light" ? "dark" : "light")} title={`${theme} theme — switch theme`} aria-label={`${theme} theme active; switch theme`}>
+              <Icon name={theme === "light" ? "sun" : "moon"} size={14} /><span>{theme}</span>
+            </button>
+            <Link href="/settings" className="dw-nav-icon" title="Settings"><Icon name="settings" size={15} /></Link>
+            <button className="dw-nav-signout" onClick={() => onSignOut?.()}>Sign out</button>
+            <Link href={profileHref} className={`dw-nav-avatar${avatar ? " has-photo" : ""}`} title="Profile">{avatar ? <img src={avatar} alt={username} /> : initials}</Link>
+          </div>
+          <div className="dw-navbar-mobile-tools">
+            <button className="theme-cycle" onClick={() => setTheme(theme === "light" ? "dark" : "light")} aria-label={`${theme} theme active; switch theme`}><Icon name={theme === "light" ? "sun" : "moon"} size={14} /></button>
+            <button className={`dw-nav-menu-btn dw-nav-avatar${avatar ? " has-photo" : ""}`} onClick={() => setNavOpen(v => !v)} aria-label="Open account menu" aria-expanded={navOpen}>{avatar ? <img src={avatar} alt={username}/> : initials}</button>
+          </div>
+        </div>
+      </header>
+      {navOpen && <button className="dw-nav-drawer-backdrop" aria-label="Close menu" onClick={() => setNavOpen(false)} />}
+      <aside className={`dw-nav-drawer${navOpen ? " open" : ""}`} aria-hidden={!navOpen}>
+        <div className="dw-nav-drawer-head"><span>Workspace</span><button onClick={() => setNavOpen(false)} aria-label="Close menu"><Icon name="x" size={16}/></button></div>
+        <Link href={profileHref} className="dw-nav-user">
+          <span className={`dw-nav-avatar${avatar ? " has-photo" : ""}`}>{avatar ? <img src={avatar} alt={username}/> : initials}</span>
+          <span><b>{name}</b><small>View profile</small></span>
+        </Link>
+        <nav className="dw-nav-drawer-links">
+          <button onClick={() => { setNavOpen(false); setSearchOpen(true); }}><Icon name="search" size={15}/>Search</button>
+          <Link href="/write"><Icon name="pen" size={15}/>New post</Link>
+          <button onClick={() => { setNavOpen(false); setBmOpen(true); }}><Icon name="bookmark" size={15}/>Save link</button>
+          <Link href="/explore"><Icon name="globe" size={15}/>Explore</Link>
+          <Link href="/settings"><Icon name="settings" size={15}/>Settings</Link>
+        </nav>
+        <button className="dw-nav-drawer-signout" onClick={() => onSignOut?.()}><Icon name="arrow-right" size={15}/>Sign out</button>
+      </aside>
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
       {bmOpen && <BookmarkModal onClose={() => setBmOpen(false)} onSaved={() => setLinksVersion(v => v + 1)} />}
 
@@ -165,24 +213,24 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
             <button className="dw-btn dw-search-btn" onClick={() => setSearchOpen(true)}>
               <Icon name="search" size={13} /> Search
             </button>
-            <a href="/write" className="dw-btn dw-btn-primary">
+            <Link href="/write" className="dw-btn dw-btn-primary">
               <Icon name="pen" size={13} /> New post
-            </a>
+            </Link>
             <button className="dw-btn" onClick={() => setBmOpen(true)}>
               <Icon name="bookmark" size={13} /> Save link
             </button>
-            <a href="/explore" className="dw-btn">
+            <Link href="/explore" className="dw-btn">
               <Icon name="globe" size={13} /> Explore
-            </a>
-            <a href="/settings" className="dw-icon-btn" title="Settings">
+            </Link>
+            <Link href="/settings" className="dw-icon-btn" title="Settings">
               <Icon name="settings" size={15} />
-            </a>
+            </Link>
             <button className="dw-signout-btn" onClick={() => onSignOut?.()} title="Sign out">
-              <Icon name="power" size={14} />
+              Sign out
             </button>
-            <a href={profileHref} className={`dw-avatar${avatar ? " has-photo" : ""}`} title="Profile">
+            <Link href={profileHref} className={`dw-avatar${avatar ? " has-photo" : ""}`} title="Profile">
               {avatar ? <img src={avatar} alt={username} /> : initials}
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -234,9 +282,9 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
                 <span>posts</span>
               </span>
               <span className="feed-head-grow" />
-              <a href="/write" className="dw-head-action">
+              <Link href="/write" className="dw-head-action">
                 <Icon name="plus" size={12} /> New
-              </a>
+              </Link>
             </div>
             <div className="dw-card-body">
               {posts.length === 0 ? (
@@ -258,9 +306,9 @@ export function HeroLoggedIn({ username, displayName, handle, avatar, onSignOut 
                   <div className="dw-row-end">
                     <span className="dw-row-meta">{p.views ?? 0} reads</span>
                     <div className="dw-row-actions">
-                      <a href={`/write/${p.id}`} className="dw-row-btn" aria-label="Edit post">
+                      <Link href={`/write/${p.id}`} className="dw-row-btn" aria-label="Edit post">
                         <Icon name="pen" size={12} />
-                      </a>
+                      </Link>
                       <button className="dw-row-btn dw-row-btn-danger" aria-label="Delete post" onClick={() => deletePost(p.id)}>
                         <Icon name="trash" size={12} />
                       </button>

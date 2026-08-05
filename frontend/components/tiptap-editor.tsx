@@ -422,7 +422,8 @@ function FixedToolbar({ editor, onImageClick, onYoutubeClick, tick: _, onToggle 
   }
 
   return (
-    <div className="tt-toolbar-rows">
+    <>
+    <div className="tt-toolbar-rows tt-toolbar-desktop">
       {/* Row 1 — text formatting */}
       <div className="tt-toolbar">
         <select
@@ -489,6 +490,47 @@ function FixedToolbar({ editor, onImageClick, onYoutubeClick, tick: _, onToggle 
         <TbBtn title="Horizontal rule" onClick={() => editor.chain().focus().setHorizontalRule().run()}><DividerLineIcon /></TbBtn>
       </div>
     </div>
+    <div className="tt-toolbar-rows tt-toolbar-mobile">
+      <div className="tt-toolbar">
+        <select className="tt-tb-select" value={activeH} onChange={e => { const v=e.target.value; if(v==="p")editor.chain().focus().setParagraph().run();else editor.chain().focus().toggleHeading({level:parseInt(v.slice(1)) as 1|2|3}).run(); }}><option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option></select>
+        <div className="tt-tb-sep"/>
+        <TbBtn active={editor.isActive("bold")} title="Bold" onClick={()=>editor.chain().focus().toggleBold().run()} cls="bold">B</TbBtn>
+        <TbBtn active={editor.isActive("italic")} title="Italic" onClick={()=>editor.chain().focus().toggleItalic().run()} cls="italic">I</TbBtn>
+        <TbBtn active={editor.isActive("underline")} title="Underline" onClick={()=>editor.chain().focus().toggleUnderline().run()} cls="underline">U</TbBtn>
+        <TbBtn active={editor.isActive("strike")} title="Strikethrough" onClick={()=>editor.chain().focus().toggleStrike().run()} cls="strike">S</TbBtn>
+        <TbBtn active={editor.isActive("code")} title="Inline code" onClick={()=>editor.chain().focus().toggleCode().run()}>{"</>"}</TbBtn>
+        <TbBtn active={editor.isActive("link")} title="Link" onClick={openLink}><LinkIcon/></TbBtn>
+        <div className="tt-tb-sep"/>
+        <TbBtn title="Undo" onClick={()=>editor.chain().focus().undo().run()}>↺</TbBtn>
+        <TbBtn title="Redo" onClick={()=>editor.chain().focus().redo().run()}>↻</TbBtn>
+      </div>
+      <div className="tt-toolbar tt-toolbar-r2">
+        <button className="tt-tb-btn tt-color-btn" title="Text color" onMouseDown={e=>{e.preventDefault();setColorMode("text")}}><span className="tt-color-letter" style={{borderBottomColor:currentColor||"var(--fg)"}}>A</span></button>
+        <TbBtn active={editor.isActive("highlight")} title="Highlight" onClick={()=>setColorMode("highlight")}><HighlightIcon/></TbBtn>
+        <div className="tt-tb-sep"/>
+        <TbBtn active={editor.isActive({textAlign:"left"})} title="Align left" onClick={()=>editor.chain().focus().setTextAlign("left").run()}><AlignLeftIcon/></TbBtn>
+        <TbBtn active={editor.isActive({textAlign:"center"})} title="Align center" onClick={()=>editor.chain().focus().setTextAlign("center").run()}><AlignCenterIcon/></TbBtn>
+        <TbBtn active={editor.isActive({textAlign:"right"})} title="Align right" onClick={()=>editor.chain().focus().setTextAlign("right").run()}><AlignRightIcon/></TbBtn>
+        <div className="tt-tb-sep"/>
+        <TbBtn active={editor.isActive("bulletList")} title="Bullet list" onClick={()=>editor.chain().focus().toggleBulletList().run()}><BulletListIcon/></TbBtn>
+        <TbBtn active={editor.isActive("orderedList")} title="Numbered list" onClick={()=>editor.chain().focus().toggleOrderedList().run()}><OrderedListIcon/></TbBtn>
+        <TbBtn active={editor.isActive("taskList")} title="Checklist" onClick={()=>editor.chain().focus().toggleTaskList().run()}><ChecklistIcon/></TbBtn>
+        <div className="tt-toolbar-spacer"/>{toggleBtn}
+      </div>
+      <div className="tt-toolbar tt-toolbar-r3">
+        <TbBtn active={editor.isActive("blockquote")} title="Blockquote" onClick={()=>editor.chain().focus().toggleBlockquote().run()}><BlockquoteIcon/></TbBtn>
+        <TbBtn active={editor.isActive("codeBlock")} title="Code block" onClick={()=>editor.chain().focus().toggleCodeBlock().run()}><CodeBlockIcon/></TbBtn>
+        <TbBtn active={editor.isActive("callout")} title="Warning callout" onClick={()=>{editor.isActive("callout")?editor.chain().focus().lift("callout").run():editor.chain().focus().wrapIn("callout",{kind:"warning"}).run()}}>⚠</TbBtn>
+        <TbBtn active={editor.isActive("details")} title="Toggle section" onClick={()=>editor.chain().focus().setDetails().run()}><DetailsIcon/></TbBtn>
+        <div className="tt-tb-sep"/>
+        <TbBtn title="Insert table" onClick={()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run()}><TableIcon/></TbBtn>
+        <TbBtn title="Insert image" onClick={onImageClick}><ImageIcon/></TbBtn>
+        <TbBtn title="Embed YouTube" onClick={onYoutubeClick}><YoutubeIcon/></TbBtn>
+        <TbBtn title="Math block" onClick={()=>editor.chain().focus().insertContent({type:"blockMath",attrs:{value:""}}).run()}>∑</TbBtn>
+        <TbBtn title="Horizontal rule" onClick={()=>editor.chain().focus().setHorizontalRule().run()}><DividerLineIcon/></TbBtn>
+      </div>
+    </div>
+    </>
   );
 }
 

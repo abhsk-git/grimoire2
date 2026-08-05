@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { useTheme } from "./theme";
 import { useRealm } from "./realm";
 
 export interface EditorSettings {
@@ -29,7 +28,6 @@ export interface PublishingSettings {
 export interface PrivacySettings {
   hideFromExplore:     boolean;
   disableComments:     boolean;
-  allowAnonymousVotes: boolean;
 }
 
 export interface NotificationSettings {
@@ -56,7 +54,7 @@ const DEFAULTS: UserSettings = {
     toolbar:          true,
   },
   appearance: {
-    theme:       "dark",
+    theme:       "light",
     readingMode: "spacious",
     realm:       "default",
   },
@@ -69,7 +67,6 @@ const DEFAULTS: UserSettings = {
   privacy: {
     hideFromExplore:     false,
     disableComments:     false,
-    allowAnonymousVotes: true,
   },
   notifications: {
     onComment:    true,
@@ -95,7 +92,6 @@ const SettingsContext = createContext<SettingsContextValue>({
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(DEFAULTS);
   const [loaded,   setLoaded]   = useState(false);
-  const { setTheme } = useTheme();
   const { setRealm } = useRealm();
 
   useEffect(() => {
@@ -108,7 +104,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             (s as any)[key] = { ...(DEFAULTS as any)[key], ...((data.settings as any)[key] ?? {}) };
           }
           setSettings(s);
-          if (s.appearance?.theme) setTheme(s.appearance.theme as any);
           if (s.appearance?.realm) setRealm(s.appearance.realm as any);
         }
       })

@@ -1,6 +1,8 @@
 -- LinkVault Blog Schema
 -- Run: mysql -u root -p linkvault < schema_blog.sql
 
+-- Media bytes live in media_assets (schema.sql), not the container filesystem.
+
 CREATE TABLE IF NOT EXISTS blog_posts (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   user_id       INT NOT NULL,
@@ -26,11 +28,9 @@ CREATE TABLE IF NOT EXISTS blog_posts (
 CREATE TABLE IF NOT EXISTS blog_likes (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   post_id      INT NOT NULL,
-  user_id      INT NULL,
-  session_key  VARCHAR(64) NULL,
+  user_id      INT NOT NULL,
   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_user_like    (post_id, user_id),
-  UNIQUE KEY uq_session_like (post_id, session_key),
   FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id)      ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS blog_comments (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   post_id     INT NOT NULL,
   parent_id   INT NULL,
-  user_id     INT NULL,
-  author_name VARCHAR(100) DEFAULT 'Anonymous',
+  user_id     INT NOT NULL,
+  author_name VARCHAR(100) NOT NULL,
   content     TEXT NOT NULL,
   media_url   VARCHAR(512) NULL,
   media_type  ENUM('gif','sticker') NULL,
@@ -49,14 +49,15 @@ CREATE TABLE IF NOT EXISTS blog_comments (
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (post_id)   REFERENCES blog_posts(id)    ON DELETE CASCADE,
   FOREIGN KEY (parent_id) REFERENCES blog_comments(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id)   REFERENCES users(id)         ON DELETE SET NULL
+  FOREIGN KEY (user_id)   REFERENCES users(id)         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS comment_votes (
   comment_id  INT         NOT NULL,
-  session_key VARCHAR(64) NOT NULL,
+  user_id     INT         NOT NULL,
   vote        TINYINT     NOT NULL,
   created_at  TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (comment_id, session_key),
-  FOREIGN KEY (comment_id) REFERENCES blog_comments(id) ON DELETE CASCADE
+  PRIMARY KEY (comment_id, user_id),
+  FOREIGN KEY (comment_id) REFERENCES blog_comments(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

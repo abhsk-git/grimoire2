@@ -1,7 +1,7 @@
 "use client";
 
-import { Icon, BrandMark } from "./icons";
-import { useTheme } from "@/lib/theme";
+import { Icon } from "./icons";
+import Link from "next/link";
 
 export function HowItWorks() {
   return (
@@ -176,94 +176,24 @@ export function CTAStrip({ onSignIn }: { onSignIn?: () => void }) {
   );
 }
 
-export function Footer() {
-  const { theme, setTheme } = useTheme();
-
-  const themes = [
-    { id: "light" as const, bg: "linear-gradient(135deg,#f6f5fa 50%,#5b54d6 50%)" },
-    { id: "dark"  as const, bg: "linear-gradient(135deg,#0c0f14 50%,#3ee07a 50%)" },
-  ];
-
+function SiteFooter() {
   return (
-    <footer className="footer">
-      <div className="container">
-        <div className="foot-grid">
-          <div>
-            <div className="brand" style={{ marginBottom: 8 }}>
-              <span className="brand-mark">
-                <BrandMark size={26} />
-              </span>
-              <span>Grimoire</span>
-            </div>
-            <p className="foot-tagline">
-              Save links. Write stories. Build the archive your future
-              self will want to inherit.
-            </p>
-          </div>
-          <div className="foot-col">
-            <h4>Explore</h4>
-            <ul>
-              <li><a href="/explore">Public writing</a></li>
-              <li><a href="/#features">How it works</a></li>
-            </ul>
-          </div>
-          <div className="foot-col">
-            <h4>Account</h4>
-            <ul>
-              <li><a href="/login">Sign in</a></li>
-              <li><a href="/login?signup=1">Create account</a></li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="foot-bottom">
-          <span>© 2026 Grimoire</span>
-          <div className="theme-row" aria-label="Theme">
-            {themes.map((p) => (
-              <button
-                key={p.id}
-                className={"theme-pip" + (theme === p.id ? " active" : "")}
-                style={{ background: p.bg }}
-                onClick={() => setTheme(p.id)}
-                aria-label={p.id}
-                title={p.id}
-              />
-            ))}
-          </div>
-        </div>
+    <footer className="site-footer">
+      <div className="site-footer-simple">
+        <Link href="/" className="site-footer-brand">grimoire</Link>
+        <span className="site-footer-year">© 2026</span>
       </div>
     </footer>
   );
 }
 
+export function Footer() {
+  return <SiteFooter />;
+}
+
 // ── Compact footer for inner pages (explore, blog, user) ─────────────────────
-export function PublicFooter({
-  links = [
-    { label: "About", href: "/#features" },
-    { label: "Explore", href: "/explore" },
-  ],
-}: {
+export function PublicFooter(_props: {
   links?: { label: string; href: string }[];
 }) {
-  return (
-    <footer className="pub-foot">
-      <div className="pub-foot-inner">
-        <div className="pub-foot-brand">
-          <span style={{ color: "var(--accent)", display: "flex" }}>
-            <BrandMark size={18} />
-          </span>
-          <span>Grimoire</span>
-        </div>
-
-        <div className="pub-foot-links">
-          {links.map((l) => (
-            <a key={l.label} href={l.href}>
-              {l.label}
-            </a>
-          ))}
-          <span className="pub-foot-copy">© 2026</span>
-        </div>
-      </div>
-    </footer>
-  );
+  return <SiteFooter />;
 }

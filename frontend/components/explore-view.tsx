@@ -56,8 +56,6 @@ function getDomain(url: string): string {
 }
 
 
-const TYPED_QUERIES = ["claude code", "#linux", "sed and awk", "@abhishek", "wireshark filters", "#cloud", "deliverability"];
-
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -79,38 +77,10 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-function useTypewriter(words: string[], active: boolean) {
-  const [text, setText] = useState("");
-  const i = useRef(0);
-  const ch = useRef(0);
-  const del = useRef(false);
-  useEffect(() => {
-    if (!active) return;
-    let timer: ReturnType<typeof setTimeout>;
-    const tick = () => {
-      const word = words[i.current % words.length];
-      if (!del.current) {
-        ch.current++;
-        setText(word.slice(0, ch.current));
-        if (ch.current >= word.length) { del.current = true; timer = setTimeout(tick, 1400); return; }
-      } else {
-        ch.current--;
-        setText(word.slice(0, ch.current));
-        if (ch.current <= 0) { del.current = false; i.current++; }
-      }
-      timer = setTimeout(tick, del.current ? 45 : 80);
-    };
-    timer = setTimeout(tick, 600);
-    return () => clearTimeout(timer);
-  }, [active]);
-  return text;
-}
-
 export function ExploreView() {
   const isMobile = useIsMobile();
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -193,8 +163,6 @@ export function ExploreView() {
   }
 
   const isFiltering = !!(search || activeTag);
-  const typedQuery = useTypewriter(TYPED_QUERIES, !search && !searchFocused);
-
   const sortedSidebarLinks = useMemo(() => {
     return sortOrder === "oldest"
       ? [...sidebarLinks].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
@@ -223,35 +191,23 @@ export function ExploreView() {
 
   return (
     <>
-      {/* ── Desktop-only hero (full-width, hidden on mobile) ── */}
+      {/* Compact search introduction */}
       <section className="desktop-feed-hero" aria-label="Explore hero">
-        <div className="desktop-hero-bg" aria-hidden="true">
-          <div className="desktop-hero-aurora" />
-          <div className="desktop-hero-grid" />
-          <div className="desktop-hero-scan" />
-        </div>
         <div className="desktop-feed-hero-inner">
           <span className="desktop-hero-eyebrow">
-            <span className="desktop-hero-live-dot" />
-            The reading room · {totalPosts || posts.length} stories live
+            {totalPosts || posts.length} published posts
           </span>
-          <h1>Open the <span className="hero-accent">Grimoire</span>.</h1>
-          <p className="hero-sub">Field notes, terminal lore, and essays from people who go deep. Search by keyword, <b style={{color:"var(--accent-ink)"}}>&#35;tag</b>, or <b style={{color:"var(--accent-ink)"}}>&#64;author</b>.</p>
+          <h1>Find something worth reading.</h1>
+          <p className="hero-sub">Search posts by title or topic. Use <b>&#35;tag</b> for a subject or <b>&#64;name</b> to find an author.</p>
 
           <div className="desktop-hero-search">
             <span className="search-lead"><Icon name="search" size={20} /></span>
-            {!search && !searchFocused && (
-              <span className="desktop-hero-ph" aria-hidden="true">
-                search the grimoire: <span className="ph-typed">{typedQuery}</span><span className="ph-caret" />
-              </span>
-            )}
             <input
               ref={inputRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              aria-label="Search stories, tags, and writers"
+              placeholder="Search posts, #tags, or @authors"
+              aria-label="Search posts, tags, and authors"
             />
             {search ? (
               <button className="search-clear" onClick={() => { setSearch(""); inputRef.current?.focus(); }} aria-label="Clear search">
@@ -263,7 +219,7 @@ export function ExploreView() {
           </div>
 
           <div className="desktop-hero-examples">
-            <span className="ex-lbl">try:</span>
+            <span className="ex-lbl">Examples</span>
             {EXAMPLES.map(ex => (
               <button key={ex.label} className="desktop-ex-chip" onClick={() => { setSearch(ex.q); inputRef.current?.focus(); }}>
                 {ex.pfx && <span className="ex-pfx">{ex.pfx}</span>}{ex.label}
@@ -345,11 +301,9 @@ export function ExploreView() {
 
           {/* Mobile hero — sticky, shown on mobile only */}
           <div className="explore-main-hero">
-            <div className="explore-hero-prefix">grimoire://explore</div>
-            <h1 className="explore-main-title">
-              Open the <span className="serif">Grimoire</span>.
-            </h1>
-            <p className="explore-main-sub">Read what the curious are writing<span className="hero-cursor">_</span></p>
+            <div className="explore-hero-prefix">Explore</div>
+            <h1 className="explore-main-title">Find something worth reading.</h1>
+            <p className="explore-main-sub">Search posts, topics, or authors.</p>
 
             <div className="explore-mobile-search">
               <Icon name="search" size={13} />
@@ -357,7 +311,7 @@ export function ExploreView() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => e.key === "Escape" && setSearch("")}
-                placeholder="Search stories, writers, tags…"
+                placeholder="Search posts, #tags, or @authors"
               />
               {search && (
                 <button className="explore-mobile-search-clear" onClick={() => setSearch("")}>

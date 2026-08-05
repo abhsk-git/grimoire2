@@ -52,7 +52,7 @@ export function AuthArt() {
         <span className="brand-mark">
           <BrandMark size={28} />
         </span>
-        <span>Grimoire</span>
+        <span>grimoire</span>
       </div>
 
       <div className="floats">
@@ -242,7 +242,7 @@ export function SignInForm({ switchTo, banner, initialPendingToken }: { switchTo
         <form className="auth-form" onSubmit={handleOtpSubmit}>
           <div className="brand-row">
             <span className="brand-mark" style={{ color: "var(--accent)" }}><BrandMark size={26} /></span>
-            <span>Grimoire</span>
+            <span>grimoire</span>
           </div>
           <h1>Check your email.</h1>
           <p className="sub">
@@ -294,7 +294,7 @@ export function SignInForm({ switchTo, banner, initialPendingToken }: { switchTo
           <span className="brand-mark" style={{ color: "var(--accent)" }}>
             <BrandMark size={26} />
           </span>
-          <span>Grimoire</span>
+          <span>grimoire</span>
         </div>
         {banner && (
           <div className={`auth-banner auth-banner-${banner.type}`}>{banner.msg}</div>
@@ -426,7 +426,7 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
         <div className="auth-form" style={{ textAlign: "center" }}>
           <div className="brand-row" style={{ justifyContent: "center" }}>
             <span className="brand-mark" style={{ color: "var(--accent)" }}><BrandMark size={26} /></span>
-            <span>Grimoire</span>
+            <span>grimoire</span>
           </div>
           <div style={{ fontSize: 40, margin: "24px 0 12px" }}>📬</div>
           <h1 style={{ fontSize: 22 }}>Check your inbox</h1>
@@ -458,7 +458,7 @@ export function SignUpForm({ switchTo }: { switchTo: (v: FormView) => void }) {
           <span className="brand-mark" style={{ color: "var(--accent)" }}>
             <BrandMark size={26} />
           </span>
-          <span>Grimoire</span>
+          <span>grimoire</span>
         </div>
         <h1>Start writing.</h1>
         <p className="sub">Free forever for personal use. No credit card.</p>
@@ -578,7 +578,7 @@ export function ForgotForm({ switchTo }: { switchTo: (v: FormView) => void }) {
           <span className="brand-mark" style={{ color: "var(--accent)" }}>
             <BrandMark size={26} />
           </span>
-          <span>Grimoire</span>
+          <span>grimoire</span>
         </div>
         <h1>Reset your password.</h1>
         <p className="sub">

@@ -51,7 +51,7 @@ function ResetContent() {
             <span className="brand-mark" style={{ color: "var(--accent)" }}>
               <BrandMark size={26} />
             </span>
-            <span>Grimoire</span>
+            <span>grimoire</span>
           </div>
           <h1>Invalid link.</h1>
           <p className="sub">
@@ -73,7 +73,7 @@ function ResetContent() {
             <span className="brand-mark" style={{ color: "var(--accent)" }}>
               <BrandMark size={26} />
             </span>
-            <span>Grimoire</span>
+            <span>grimoire</span>
           </div>
           <h1>Password updated.</h1>
           <p className="sub">You can now sign in with your new password.</p>
@@ -101,7 +101,7 @@ function ResetContent() {
           <span className="brand-mark" style={{ color: "var(--accent)" }}>
             <BrandMark size={26} />
           </span>
-          <span>Grimoire</span>
+          <span>grimoire</span>
         </div>
         <h1>Choose a new password.</h1>
         <p className="sub">Pick something strong. This link expires in 1 hour.</p>

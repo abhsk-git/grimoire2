@@ -457,9 +457,8 @@ function EditorTab() {
 // ── Appearance Tab ────────────────────────────────────────────────────────────
 
 const THEMES = [
-  { id: "light", label: "Light",    preview: "#f6f5fa", accent: "#5b54d6" },
-  { id: "dark",  label: "Dark",     preview: "#0c0f14", accent: "#3ee07a" },
-  { id: "glass", label: "Glass",    preview: "linear-gradient(135deg,#2d1b6e 0%,#0f2057 40%,#0a3d2e 100%)", accent: "#a78bfa" },
+  { id: "light", label: "Light", preview: "#f7f6f2", accent: "#355f85" },
+  { id: "dark",  label: "Dark",  preview: "#161816", accent: "#8ab4d0" },
 ] as const;
 
 const READING_MODES = [
@@ -488,8 +487,8 @@ function AppearanceTab() {
   const { settings, update } = useSettings();
   const rm = settings.appearance.readingMode ?? "spacious";
 
-  function pickTheme(id: string) {
-    setTheme(id as any);
+  function pickTheme(id: "light" | "dark") {
+    setTheme(id);
     update({ appearance: { theme: id } });
   }
 
@@ -664,9 +663,6 @@ function PrivacyTab() {
       <Section title="Comments">
         <SettRow label="Disable comments on all posts" hint="Turns off the discussion section site-wide">
           <Toggle checked={priv.disableComments} onChange={v => update({ privacy: { disableComments: v } })} />
-        </SettRow>
-        <SettRow label="Allow anonymous votes" hint="Let non-logged-in readers upvote or downvote comments">
-          <Toggle checked={priv.allowAnonymousVotes} onChange={v => update({ privacy: { allowAnonymousVotes: v } })} />
         </SettRow>
       </Section>
     </>
@@ -953,6 +949,7 @@ function AccountTab() {
 
 export function SettingsShell() {
   const [tab, setTab] = useState<Tab>("profile");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -974,22 +971,28 @@ export function SettingsShell() {
         <div className="sett-layout">
           <nav className="sett-nav">
             <div className="sett-nav-head">
-              <Link href="/" className="sett-back">
+              <Link href="/dashboard" className="sett-back">
                 <Icon name="arrow-left" size={13} /> Dashboard
               </Link>
               <h1 className="sett-title">Settings</h1>
             </div>
-            {TABS.map(t => (
-              <button
-                key={t.id}
-                className={`sett-nav-item${tab === t.id ? " active" : ""}`}
-                onClick={() => setTab(t.id)}
-              >
-                <Icon name={t.icon} size={15} />
-                <span>{t.label}</span>
-              </button>
-            ))}
+            <button className={`sett-mobile-trigger${mobileNavOpen ? " open" : ""}`} onClick={() => setMobileNavOpen(v => !v)} aria-expanded={mobileNavOpen}>
+              <span><Icon name="settings" size={15}/>Settings</span><Icon name="chevron-right" size={14}/>
+            </button>
+            <div className={`sett-nav-options${mobileNavOpen ? " open" : ""}`}>
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  className={`sett-nav-item${tab === t.id ? " active" : ""}`}
+                  onClick={() => { setTab(t.id); setMobileNavOpen(false); }}
+                >
+                  <Icon name={t.icon} size={15} />
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
           </nav>
+          {mobileNavOpen && <button className="sett-mobile-nav-backdrop" onClick={() => setMobileNavOpen(false)} aria-label="Close Settings navigation"/>}
 
           <div className="sett-content">
             {tab === "profile"       && <ProfileTab />}

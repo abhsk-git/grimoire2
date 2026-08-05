@@ -1,4 +1,5 @@
 import { Icon } from "./icons";
+import Link from "next/link";
 
 interface HeroLoggedOutProps {
   onSignIn?: () => void;
@@ -16,7 +17,7 @@ export function HeroLoggedOut({ onSignIn }: HeroLoggedOutProps) {
           <h1>
             Where ideas <span className="serif">become</span>
             <br />
-            <span className="accent">essays.</span>
+            {" "}<span className="accent">essays.</span>
           </h1>
           <p className="lede">
             Grimoire is a quiet writing tool with a memory.{" "}
@@ -29,10 +30,10 @@ export function HeroLoggedOut({ onSignIn }: HeroLoggedOutProps) {
               Start writing
               <Icon name="arrow-right" size={15} />
             </button>
-            <a href="/explore" className="btn btn-ghost btn-lg">
+            <Link href="/explore" className="btn btn-ghost btn-lg">
               <Icon name="globe" size={14} />
-              Read the public archive
-            </a>
+              Explore posts
+            </Link>
           </div>
 
         </div>

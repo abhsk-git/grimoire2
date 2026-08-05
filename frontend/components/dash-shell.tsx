@@ -48,7 +48,7 @@ export function DashSidebar({ view, setView, open, onClose, username, email, tot
     <aside className={`side ${open ? "open" : ""}`}>
       <Link href="/" className="side-brand" style={{ textDecoration: "none", color: "inherit" }}>
         <span className="brand-mark"><BrandMark size={26} /></span>
-        <span>Grimoire</span>
+        <span>grimoire</span>
       </Link>
 
       <div className="side-nav">
@@ -143,7 +143,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
         </button>
         <Link href="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
           <span className="brand-mark"><BrandMark size={22} /></span>
-          Grimoire
+          grimoire
         </Link>
         <div style={{ flex: 1 }} />
         <button className="icon-btn" aria-label="Search" style={{ width: 36, height: 36 }} onClick={() => setOpen(true)}>
@@ -180,7 +180,7 @@ export function DashHeader({ view, viewMode, setViewMode, onMenu, onBookmarkSave
         <div className={`fab-options${fabOpen ? " open" : ""}`}>
           <a href="/write" className="fab-option" onClick={() => setFabOpen(false)}>
             <Icon name="feather" size={14} />
-            <span>New Post</span>
+            <span>New post</span>
           </a>
           <button className="fab-option" onClick={() => { setFabOpen(false); setBmOpen(true); }}>
             <Icon name="bookmark" size={14} />

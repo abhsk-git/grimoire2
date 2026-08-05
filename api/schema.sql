@@ -4,6 +4,7 @@
 CREATE DATABASE IF NOT EXISTS linkvault CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE linkvault;
 
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -16,6 +17,20 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_email (email),
     INDEX idx_google (google_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Database-backed media. SQL dumps now include profile and post image bytes.
+CREATE TABLE IF NOT EXISTS media_assets (
+    asset_id CHAR(32) PRIMARY KEY,
+    owner_id INT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    byte_size INT UNSIGNED NOT NULL,
+    sha256 CHAR(64) NOT NULL,
+    data LONGBLOB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_media_owner (owner_id),
+    INDEX idx_media_hash (sha256)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Collections (folders)

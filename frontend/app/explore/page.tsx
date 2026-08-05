@@ -1,7 +1,6 @@
 "use client";
 
-import { AuthProvider, useAuth } from "@/lib/auth";
-import { ThemeProvider } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 import { PublicHeader } from "@/components/explore-shell";
 import { ExploreView } from "@/components/explore-view";
 import { PublicFooter } from "@/components/sections";
@@ -16,7 +15,7 @@ function ExploreContent() {
 
   return (
     <div className="explore-page explore-app">
-      <PublicHeader loggedIn={!!user} username={user?.username} handle={user?.handle} avatar={user?.avatar} showNav />
+      <PublicHeader loggedIn={!!user} username={user?.display_name||user?.username} handle={user?.handle} avatar={user?.avatar} showNav />
       <div className="explore-app-body">
         <div className="container-wide explore-app-container">
           <ExploreView />
@@ -28,11 +27,5 @@ function ExploreContent() {
 }
 
 export default function ExplorePage() {
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ExploreContent />
-      </AuthProvider>
-    </ThemeProvider>
-  );
+  return <ExploreContent />;
 }

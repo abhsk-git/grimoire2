@@ -56,9 +56,11 @@ interface Sticker {
 export function GifPanel({
   open,
   onSelect,
+  initialTab = "gif",
 }: {
   open: boolean;
   onSelect: (m: CommentMedia) => void;
+  initialTab?: "gif" | "sticker";
 }) {
   const [tab, setTab] = useState<"gif" | "sticker">("gif");
   const [query, setQuery] = useState("");
@@ -67,6 +69,10 @@ export function GifPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cols, setCols] = useState(3);
+
+  useEffect(() => {
+    if (open) setTab(initialTab);
+  }, [open, initialTab]);
 
   // Responsive masonry column count (2 on narrow/mobile, 3 otherwise).
   useEffect(() => {

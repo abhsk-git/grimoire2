@@ -429,12 +429,9 @@ If you didn't try to sign in, your account is safe — ignore this email.
         return False
 
 
-from werkzeug.utils import secure_filename
-from utils import get_db, create_token, verify_token, login_required
+from utils import get_db, create_token, verify_token, login_required, store_media, delete_media
 from extensions import oauth
 
-_here = os.path.dirname(os.path.abspath(__file__))
-_UPLOAD_BASE = os.path.join(_here, '..', 'static', 'uploads')
 _ALLOWED_IMG = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 _HANDLE_RE   = re.compile(r'^[a-z0-9][a-z0-9\-]{0,28}[a-z0-9]$')
 _RESERVED    = {'api', 'admin', 'static', 'login', 'register', 'explore',
@@ -458,24 +455,15 @@ def _check_img_magic(data: bytes, ext: str) -> bool:
     return False
 
 def _save_upload(f, subfolder):
-    import uuid as _uuid
+    import mimetypes
     ext = f.filename.rsplit('.', 1)[1].lower()
-    fname = f"{_uuid.uuid4().hex}.{ext}"
-    dest = os.path.join(_UPLOAD_BASE, subfolder, fname)
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
-    f.save(dest)
-    return f"/static/uploads/{subfolder}/{fname}"
+    data = f.read()
+    mime = mimetypes.types_map.get(f'.{ext}', f'image/{ext}')
+    return store_media(data, mime, request.user_id)
 
 def _delete_local_upload(url):
-    """Delete a previously uploaded local file if the URL points to our static folder."""
-    if not url or not url.startswith('/static/uploads/'):
-        return
-    path = os.path.join(_here, '..', url.lstrip('/'))
-    try:
-        if os.path.isfile(path):
-            os.remove(path)
-    except OSError:
-        pass
+    """Delete a database-backed upload owned by the current account."""
+    delete_media(url)
 
 bp = Blueprint('auth', __name__)
 

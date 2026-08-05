@@ -678,7 +678,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
             ))}
           </div>
           <a href="/write" className="btn btn-primary btn-sm new-post-btn">
-            <Icon name="pen" size={13} /> New Post
+            <Icon name="pen" size={13} /> New post
           </a>
         </div>
       </div>
@@ -764,7 +764,7 @@ export function MyPostsView({ viewMode }: { viewMode: "grid" | "list" }) {
             publish right away.
           </p>
           <a href="/write" className="btn btn-primary btn-sm">
-            <Icon name="pen" size={13} /> Start writing
+            <Icon name="pen" size={13} /> New post
           </a>
         </div>
       ) : viewMode === "grid" ? (

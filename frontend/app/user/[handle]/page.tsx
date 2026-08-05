@@ -1,8 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { AuthProvider, useAuth } from "@/lib/auth";
-import { ThemeProvider } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 import { PublicHeader } from "@/components/explore-shell";
 import { UserProfile } from "@/components/user-profile";
 import { PublicFooter } from "@/components/sections";
@@ -17,7 +16,7 @@ function ProfileContent({ handle }: { handle: string }) {
 
   return (
     <div className="profile-root" style={{ minHeight: "100vh" }}>
-      <PublicHeader loggedIn={!!user} username={user?.username} onSignOut={user ? handleSignOut : undefined} showSearch={false} />
+      <PublicHeader loggedIn={!!user} username={user?.display_name||user?.username} handle={user?.handle} avatar={user?.avatar} onSignOut={user ? handleSignOut : undefined} showSearch={false} />
       <UserProfile handle={handle} />
       <PublicFooter
         links={[
@@ -34,11 +33,5 @@ function ProfileContent({ handle }: { handle: string }) {
 export default function UserPage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = use(params);
 
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ProfileContent handle={handle} />
-      </AuthProvider>
-    </ThemeProvider>
-  );
+  return <ProfileContent handle={handle} />;
 }

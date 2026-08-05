@@ -8,6 +8,7 @@ services:
       MYSQL_DATABASE: grimoire
       MYSQL_USER: grimoire_user
       MYSQL_PASSWORD: change_me_database_password
+    command: --max_allowed_packet=64M
     volumes:
       - mariadb_data:/var/lib/mysql
 
@@ -22,6 +23,18 @@ services:
       - mariadb
     ports:
       - "127.0.0.1:5051:5051"
+
+  frontend2:
+    profiles: ["frontend2"]
+    build:
+      context: .
+      dockerfile: frontend2/Dockerfile
+    container_name: grimoire-frontend2
+    restart: "no"
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:3000:3000"
 
   frontend:
     build:

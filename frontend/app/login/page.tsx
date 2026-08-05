@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { AuthArt, SignInForm, SignUpForm, ForgotForm } from "@/components/auth-forms";
+import { Icon } from "@/components/icons";
+import { useTheme } from "@/lib/theme";
 
 type FormView = "signin" | "signup" | "forgot";
 
 function LoginContent() {
+  const { theme, setTheme } = useTheme();
   const [view, setView] = useState<FormView>("signin");
   const [banner, setBanner] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [initialPendingToken, setInitialPendingToken] = useState<string | undefined>();
@@ -19,14 +23,10 @@ function LoginContent() {
     if (pt) { setInitialPendingToken(pt); window.history.replaceState({}, "", "/login"); }
   }, []);
 
-  return (
-    <div className="auth-shell">
-      <AuthArt />
-      {view === "signin" && <SignInForm switchTo={setView} banner={banner} initialPendingToken={initialPendingToken} />}
-      {view === "signup" && <SignUpForm switchTo={setView} />}
-      {view === "forgot" && <ForgotForm switchTo={setView} />}
-    </div>
-  );
+  return <div className="auth-page">
+    <header><Link href="/" className="auth-wordmark">grimoire</Link><div><Link href="/explore">Browse</Link><button className="theme-cycle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}><Icon name={theme === "light" ? "sun" : "moon"} size={14}/><span>{theme}</span></button></div></header>
+    <div className="auth-shell"><AuthArt />{view === "signin" && <SignInForm switchTo={setView} banner={banner} initialPendingToken={initialPendingToken} />}{view === "signup" && <SignUpForm switchTo={setView} />}{view === "forgot" && <ForgotForm switchTo={setView} />}</div>
+  </div>;
 }
 
 export default function LoginPage() {

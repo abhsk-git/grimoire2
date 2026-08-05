@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { AuthProvider, useAuth } from "@/lib/auth";
-import { ThemeProvider } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 import { HeroLoggedIn } from "@/components/hero-logged-in";
 
 function DashboardContent() {
@@ -39,11 +38,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <DashboardContent />
-      </AuthProvider>
-    </ThemeProvider>
-  );
+  return <DashboardContent />;
 }

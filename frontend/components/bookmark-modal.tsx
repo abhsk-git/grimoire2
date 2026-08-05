@@ -24,6 +24,7 @@ export function BookmarkModal({ onClose, onSaved }: BookmarkModalProps) {
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [notes, setNotes] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const urlRef = useRef<HTMLInputElement>(null);
@@ -94,6 +95,7 @@ export function BookmarkModal({ onClose, onSaved }: BookmarkModalProps) {
           favicon: meta?.favicon || "",
           tags: tags.trim(),
           notes: notes.trim(),
+          is_public: isPublic,
         }),
       });
       if (!r.ok) throw new Error();
@@ -189,6 +191,11 @@ export function BookmarkModal({ onClose, onSaved }: BookmarkModalProps) {
             rows={2}
           />
         </div>
+
+        <label className="bm-visibility">
+          <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} />
+          <span><b>Public bookmark</b><small>Show this reference on your public profile</small></span>
+        </label>
 
         {error && <div className="bm-error">{error}</div>}
 

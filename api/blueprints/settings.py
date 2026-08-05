@@ -13,7 +13,7 @@ DEFAULTS = {
         "readingTime": True,
     },
     "appearance": {
-        "theme": "dark",
+        "theme": "light",
         "readingMode": "spacious",
     },
     "publishing": {
@@ -25,7 +25,6 @@ DEFAULTS = {
     "privacy": {
         "hideFromExplore": False,
         "disableComments": False,
-        "allowAnonymousVotes": True,
     },
     "notifications": {
         "onComment": True,
@@ -54,7 +53,13 @@ def _load(raw) -> dict:
         # Fill in any missing keys from DEFAULTS
         result = {}
         for section, defaults in DEFAULTS.items():
-            result[section] = {**defaults, **stored.get(section, {})}
+            saved_section = stored.get(section, {}) if isinstance(stored.get(section, {}), dict) else {}
+            result[section] = {
+                key: saved_section.get(key, default)
+                for key, default in defaults.items()
+            }
+        if result['appearance']['theme'] not in ('light', 'dark'):
+            result['appearance']['theme'] = 'light'
         return result
     except Exception:
         return DEFAULTS
@@ -76,7 +81,18 @@ def get_settings():
 @bp.route('/api/settings', methods=['PATCH'])
 @login_required
 def update_settings():
-    patch = request.json or {}
+    patch = request.get_json(silent=True) or {}
+    if not isinstance(patch, dict):
+        return jsonify({'error': 'Invalid settings payload'}), 400
+    allowed_sections = set(DEFAULTS)
+    if any(key not in allowed_sections or not isinstance(value, dict) for key, value in patch.items()):
+        return jsonify({'error': 'Unknown or invalid settings section'}), 400
+    for section, values in patch.items():
+        if any(key not in DEFAULTS[section] for key in values):
+            return jsonify({'error': f'Unknown {section} setting'}), 400
+    theme = patch.get('appearance', {}).get('theme')
+    if theme is not None and theme not in ('light', 'dark'):
+        return jsonify({'error': 'Theme must be light or dark'}), 400
     db    = get_db()
     cur   = db.cursor(dictionary=True)
     try:

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Icon } from "./icons";
+import { useRouter } from "next/navigation";
 
 interface PostResult {
   type: "post";
@@ -36,6 +37,7 @@ function getDomain(url: string) {
 }
 
 export function SearchModal({ onClose }: SearchModalProps) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,12 +98,12 @@ export function SearchModal({ onClose }: SearchModalProps) {
   const navigate = useCallback((result: SearchResult | undefined) => {
     if (!result) return;
     if (result.type === "post") {
-      window.location.href = `/blog/${result.slug}`;
+      router.push(`/blog/${result.slug}`);
     } else {
       window.open(result.url, "_blank", "noopener,noreferrer");
     }
     onClose();
-  }, [onClose]);
+  }, [onClose, router]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

@@ -127,6 +127,14 @@ export function Icon({ name, size = 18, strokeWidth = 2, ...rest }: IconProps) {
           <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
         </svg>
       );
+    case "more-horizontal":
+      return (
+        <svg {...common}>
+          <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
     case "star":
       return (
         <svg {...common}>

@@ -7,6 +7,9 @@ import datetime
 from functools import wraps
 import time
 import threading
+import hashlib
+import uuid
+import re
 
 _pool = pooling.MySQLConnectionPool(
     pool_name='grimoire',
@@ -21,6 +24,43 @@ _pool = pooling.MySQLConnectionPool(
 
 def get_db():
     return _pool.get_connection()
+
+
+def store_media(data: bytes, mime_type: str, owner_id=None) -> str:
+    """Store user media in MariaDB so SQL dumps carry the bytes with the app data."""
+    asset_id = uuid.uuid4().hex
+    digest = hashlib.sha256(data).hexdigest()
+    db = get_db()
+    cur = db.cursor()
+    try:
+        cur.execute(
+            '''INSERT INTO media_assets
+               (asset_id, owner_id, mime_type, byte_size, sha256, data)
+               VALUES (%s,%s,%s,%s,%s,%s)''',
+            (asset_id, owner_id, mime_type[:100], len(data), digest, data),
+        )
+        db.commit()
+    finally:
+        db.close()
+    return f'/api/media/{asset_id}'
+
+
+def delete_media(url: str, owner_id=None):
+    if not isinstance(url, str) or not url.startswith('/api/media/'):
+        return
+    asset_id = url.rsplit('/', 1)[-1]
+    if not re.fullmatch(r'[a-f0-9]{32}', asset_id):
+        return
+    db = get_db()
+    cur = db.cursor()
+    try:
+        if owner_id is None:
+            cur.execute('DELETE FROM media_assets WHERE asset_id=%s', (asset_id,))
+        else:
+            cur.execute('DELETE FROM media_assets WHERE asset_id=%s AND owner_id=%s', (asset_id, owner_id))
+        db.commit()
+    finally:
+        db.close()
 
 
 # Simple in-process TTL cache for public read endpoints.

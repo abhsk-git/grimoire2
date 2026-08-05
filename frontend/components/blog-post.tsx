@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import hljs from "highlight.js/lib/common";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { PublicFooter } from "@/components/sections";
@@ -92,19 +93,6 @@ function avatarFallback(name: string): string {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(
     name
   )}&size=44&background=6366f1&color=fff`;
-}
-
-// Generate or retrieve a stable anonymous session key for likes
-function getSessionKey(): string {
-  const KEY = "grimoire_session_key";
-  let k = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
-  if (!k) {
-    k = Array.from(crypto.getRandomValues(new Uint8Array(24)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-    if (typeof window !== "undefined") localStorage.setItem(KEY, k);
-  }
-  return k;
 }
 
 // ── Comment vote state (localStorage) ────────────────────────────────────────
@@ -220,6 +208,7 @@ function CommentCard({
   const [replyText, setReplyText] = useState("");
   const [replyMedia, setReplyMedia] = useState<CommentMedia | null>(null);
   const [replyGifOpen, setReplyGifOpen] = useState(false);
+  const [replyMediaTab, setReplyMediaTab] = useState<"gif" | "sticker">("gif");
   const [submitting, setSubmitting] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
   // Root-only: the single flat thread of all descendants.
@@ -302,6 +291,7 @@ function CommentCard({
   }
 
   async function castVote(v: 1 | -1) {
+    if (!isLoggedIn) return;
     const wasVote = vote;
     const newVote = wasVote === v ? 0 : v;
     setVote(newVote);
@@ -313,7 +303,7 @@ function CommentCard({
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_key: getSessionKey(), vote: v }),
+        body: JSON.stringify({ vote: v }),
       });
       if (r.ok) {
         const data = await r.json();
@@ -399,6 +389,7 @@ function CommentCard({
             <span className="cmt-reply-to">↳ {parentName}</span>
           )}
           <span className="cmt-date">{relTime(comment.created_at)}</span>
+          {canDelete && <button className="cmt-more" onClick={() => setConfirmDelete((v) => !v)} aria-label="Comment options">•••</button>}
         </div>
 
         {confirmDelete && (
@@ -432,8 +423,8 @@ function CommentCard({
         <div className="cmt-actions">
           <button
             className={`cmt-act${vote === 1 ? " is-liked" : ""}`}
-            onClick={() => castVote(1)}
-            title="Like"
+            onClick={() => isLoggedIn ? castVote(1) : (window.location.href = "/login")}
+            title={isLoggedIn ? "Like" : "Sign in to like comments"}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill={vote === 1 ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -475,12 +466,14 @@ function CommentCard({
               <div className="cmt-media-tools">
                 <button
                   type="button"
-                  className={`cmt-media-btn${replyGifOpen ? " active" : ""}`}
-                  onClick={() => setReplyGifOpen((p) => !p)}
+                  className={`cmt-media-btn cmt-media-desktop${replyGifOpen&&replyMediaTab==="gif" ? " active" : ""}`}
+                  onClick={() => {setReplyMediaTab("gif");setReplyGifOpen(true)}}
                   aria-expanded={replyGifOpen}
                 >
                   GIF
                 </button>
+                <button type="button" className={`cmt-media-btn cmt-media-desktop${replyGifOpen&&replyMediaTab==="sticker" ? " active" : ""}`} onClick={() => {setReplyMediaTab("sticker");setReplyGifOpen(true)}}>Sticker</button>
+                <button type="button" className={`cmt-media-btn cmt-media-mobile${replyGifOpen ? " active" : ""}`} onClick={() => setReplyGifOpen((p) => !p)} aria-label="Add GIF or sticker">＋</button>
               </div>
               <button
                 className="btn btn-primary btn-sm"
@@ -498,6 +491,7 @@ function CommentCard({
             </div>
             <GifPanel
               open={replyGifOpen}
+              initialTab={replyMediaTab}
               onSelect={(m) => {
                 setReplyMedia(m);
                 setReplyGifOpen(false);
@@ -567,14 +561,15 @@ export function BlogPost({ slug }: Props) {
   const [commentText, setCommentText] = useState("");
   const [composeMedia, setComposeMedia] = useState<CommentMedia | null>(null);
   const [gifOpen, setGifOpen] = useState(false);
+  const [mediaTab, setMediaTab] = useState<"gif" | "sticker">("gif");
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [justLiked, setJustLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [following, setFollowing] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
   const progressRef = useRef<HTMLDivElement>(null);
   const discussRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/blog/posts/slug/${slug}`, { credentials: "include" })
@@ -599,14 +594,19 @@ export function BlogPost({ slug }: Props) {
       .then((data) => setComments(Array.isArray(data) ? data : []));
   }, [post]);
 
-  // Save/Follow have no backend yet — persist the toggle locally so it survives reloads.
+  useEffect(() => {
+    if (!post || !contentRef.current) return;
+    contentRef.current.querySelectorAll<HTMLElement>("pre code:not(.hljs)").forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  }, [post]);
+
+  // Saved posts currently remain a reader-local convenience.
   useEffect(() => {
     if (!post) return;
     try {
       const saves = JSON.parse(localStorage.getItem("grimoire_saved_posts") || "[]");
       setSaved(Array.isArray(saves) && saves.includes(post.id));
-      const follows = JSON.parse(localStorage.getItem("grimoire_following") || "[]");
-      setFollowing(Array.isArray(follows) && follows.includes(post.user_id));
     } catch {}
   }, [post]);
 
@@ -618,19 +618,6 @@ export function BlogPost({ slug }: Props) {
         const saves: number[] = JSON.parse(localStorage.getItem("grimoire_saved_posts") || "[]");
         const updated = next ? [...new Set([...saves, post.id])] : saves.filter((x) => x !== post.id);
         localStorage.setItem("grimoire_saved_posts", JSON.stringify(updated));
-      } catch {}
-      return next;
-    });
-  }
-
-  function toggleFollow() {
-    if (!post) return;
-    setFollowing((prev) => {
-      const next = !prev;
-      try {
-        const follows: number[] = JSON.parse(localStorage.getItem("grimoire_following") || "[]");
-        const updated = next ? [...new Set([...follows, post.user_id])] : follows.filter((x) => x !== post.user_id);
-        localStorage.setItem("grimoire_following", JSON.stringify(updated));
       } catch {}
       return next;
     });
@@ -660,16 +647,12 @@ export function BlogPost({ slug }: Props) {
   }, [comments, sortBy]);
 
   async function toggleLike() {
-    if (!post) return;
-    const body: Record<string, string> = {};
-    if (!user) {
-      body.session_key = getSessionKey();
-    }
+    if (!post || !user) return;
     const r = await fetch(`/api/blog/posts/${post.id}/like`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: "{}",
     });
     if (r.ok) {
       const data = await r.json();
@@ -785,18 +768,8 @@ export function BlogPost({ slug }: Props) {
 
       {/* Topbar */}
       <header className="post-topbar">
-        <div className="post-topbar-left">
-          <Link href="/explore" className="post-back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            <span className="back-label">Back</span>
-          </Link>
-          <span className="topbar-sep" style={{ color: "var(--border-hover)" }}>·</span>
-          <Link href="/" className="topbar-brand-desktop">Grimoire</Link>
-        </div>
-        <Link href="/" className="topbar-brand-center">Grimoire</Link>
+        <div className="post-topbar-left" />
+        <Link href="/" className="topbar-brand-center">grimoire</Link>
         <div className="post-topbar-actions">
           {post.is_owner && (
             <>
@@ -845,12 +818,14 @@ export function BlogPost({ slug }: Props) {
         </div>
 
         <div
+          ref={contentRef}
           className="post-content"
           dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
       </article>
 
-      {/* Post end — editorial, no cards */}
+      <section className="post-conclusion" aria-label="Post discussion and author">
+      {/* Post end — author and reader actions */}
       {(() => {
         const socials = post.author_social_links || {};
         const socialEntries = Object.entries(socials).filter(([, v]) => v);
@@ -862,33 +837,31 @@ export function BlogPost({ slug }: Props) {
         return (
           <div className="post-end">
 
-            {/* Author sign-off — right-aligned like a letter */}
+            {/* Compact author signature */}
             <div className="post-sign">
-              <Link href={authorHref} className="post-sign-by">
-                by {post.author_name.toLowerCase()}
-              </Link>
-              {socialEntries.length > 0 && (
+              <Link href={authorHref} className="post-sign-avatar"><img src={post.author_avatar || avatarFallback(post.author_name)} alt="" /></Link>
+              <div className="post-sign-copy"><span>WRITTEN BY</span><Link href={authorHref} className="post-sign-by">{post.author_name}</Link>{post.author_bio&&<p>{post.author_bio}</p>}</div>
+              {socialEntries.length > 0 && <div className="post-sign-links">
                 <div className="post-sign-socials">
-                  <span className="post-sign-follow">follow on</span>
                   {socialEntries.map(([key, username]) => {
                     const meta = socialMeta[key];
                     if (!meta) return null;
                     return (
-                      <a key={key} href={meta.href(username)} target="_blank" rel="noopener noreferrer"
+                      <a key={key} href={/^https?:\/\//i.test(username)?username:meta.href(username.replace(/^@/,""))} target="_blank" rel="noopener noreferrer"
                          className="post-sign-icon" title={`${meta.label}: @${username}`}>
                         {meta.icon}
                       </a>
                     );
                   })}
                 </div>
-              )}
+              </div>}
             </div>
 
             {/* Engagement strip — flat, no container */}
             <div className="post-end-engage">
               <button
                 className={`pee-btn pee-like${liked ? " is-liked" : ""}${justLiked ? " just-liked" : ""}`}
-                onClick={toggleLike}
+                onClick={() => user ? toggleLike() : (window.location.href = "/login")}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -983,12 +956,14 @@ export function BlogPost({ slug }: Props) {
                 <div className="cmt-media-tools">
                   <button
                     type="button"
-                    className={`cmt-media-btn${gifOpen ? " active" : ""}`}
-                    onClick={() => setGifOpen((p) => !p)}
+                    className={`cmt-media-btn cmt-media-desktop${gifOpen&&mediaTab==="gif" ? " active" : ""}`}
+                    onClick={() => {setMediaTab("gif");setGifOpen(true)}}
                     aria-expanded={gifOpen}
                   >
                     GIF
                   </button>
+                  <button type="button" className={`cmt-media-btn cmt-media-desktop${gifOpen&&mediaTab==="sticker" ? " active" : ""}`} onClick={() => {setMediaTab("sticker");setGifOpen(true)}}>Sticker</button>
+                  <button type="button" className={`cmt-media-btn cmt-media-mobile${gifOpen ? " active" : ""}`} onClick={() => setGifOpen((p) => !p)} aria-label="Add GIF or sticker">＋</button>
                 </div>
                 <button
                   className="btn btn-primary btn-sm"
@@ -1000,6 +975,7 @@ export function BlogPost({ slug }: Props) {
               </div>
               <GifPanel
                 open={gifOpen}
+                initialTab={mediaTab}
                 onSelect={(m) => {
                   setComposeMedia(m);
                   setGifOpen(false);
@@ -1045,6 +1021,7 @@ export function BlogPost({ slug }: Props) {
           </div>
         )}
       </div>
+      </section>
 
       <PublicFooter
         links={[

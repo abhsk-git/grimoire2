@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, abort, Response
 import json, re, unicodedata, os, datetime, ipaddress, socket
 from urllib.parse import urlparse
-from utils import get_db, login_required, optional_auth, verify_token, cache_get, cache_set, cache_delete_prefix
+from utils import get_db, login_required, optional_auth, verify_token, cache_get, cache_set, cache_delete_prefix, store_media, delete_media
 from extensions import limiter
 import nh3
 from bs4 import BeautifulSoup
@@ -71,15 +71,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
 def _delete_local_file(url):
-    """Delete a local upload file given its URL. Ignores external URLs."""
-    if not url or not url.startswith('/static/uploads/'):
-        return
-    path = os.path.join(_HERE, '..', url.lstrip('/'))
-    try:
-        if os.path.isfile(path):
-            os.remove(path)
-    except OSError:
-        pass
+    """Delete a database-backed upload referenced by a post."""
+    delete_media(url)
 
 
 def _extract_content_urls(content):
@@ -90,7 +83,7 @@ def _extract_content_urls(content):
         for block in blocks:
             if block.get('type') == 'image':
                 url = (block.get('data') or {}).get('file', {}).get('url', '')
-                if url.startswith('/static/uploads/'):
+                if url.startswith('/api/media/'):
                     urls.append(url)
     except Exception:
         pass
@@ -676,11 +669,9 @@ def toggle_featured(post_id):
 
 
 @bp.route('/api/blog/posts/<int:post_id>/like', methods=['POST'])
-@optional_auth
+@login_required
+@limiter.limit('60 per hour')
 def like_post(post_id):
-    data        = request.json or {}
-    session_key = (data.get('session_key') or '')[:64]
-
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -691,28 +682,15 @@ def like_post(post_id):
         if request.user_id and request.user_id == post_row['user_id']:
             return jsonify({'error': 'Cannot like your own post'}), 403
 
-        if request.user_id:
-            cur.execute('SELECT id FROM blog_likes WHERE post_id=%s AND user_id=%s', (post_id, request.user_id))
-            if cur.fetchone():
-                cur.execute('DELETE FROM blog_likes WHERE post_id=%s AND user_id=%s', (post_id, request.user_id))
-                cur.execute('UPDATE blog_posts SET likes=GREATEST(0,likes-1) WHERE id=%s', (post_id,))
-                action = 'unliked'
-            else:
-                cur.execute('INSERT INTO blog_likes (post_id,user_id) VALUES (%s,%s)', (post_id, request.user_id))
-                cur.execute('UPDATE blog_posts SET likes=likes+1 WHERE id=%s', (post_id,))
-                action = 'liked'
-        elif session_key:
-            cur.execute('SELECT id FROM blog_likes WHERE post_id=%s AND session_key=%s', (post_id, session_key))
-            if cur.fetchone():
-                cur.execute('DELETE FROM blog_likes WHERE post_id=%s AND session_key=%s', (post_id, session_key))
-                cur.execute('UPDATE blog_posts SET likes=GREATEST(0,likes-1) WHERE id=%s', (post_id,))
-                action = 'unliked'
-            else:
-                cur.execute('INSERT INTO blog_likes (post_id,session_key) VALUES (%s,%s)', (post_id, session_key))
-                cur.execute('UPDATE blog_posts SET likes=likes+1 WHERE id=%s', (post_id,))
-                action = 'liked'
+        cur.execute('SELECT id FROM blog_likes WHERE post_id=%s AND user_id=%s', (post_id, request.user_id))
+        if cur.fetchone():
+            cur.execute('DELETE FROM blog_likes WHERE post_id=%s AND user_id=%s', (post_id, request.user_id))
+            cur.execute('UPDATE blog_posts SET likes=GREATEST(0,likes-1) WHERE id=%s', (post_id,))
+            action = 'unliked'
         else:
-            return jsonify({'error': 'No identity provided'}), 400
+            cur.execute('INSERT INTO blog_likes (post_id,user_id) VALUES (%s,%s)', (post_id, request.user_id))
+            cur.execute('UPDATE blog_posts SET likes=likes+1 WHERE id=%s', (post_id,))
+            action = 'liked'
 
         db.commit()
         cur.execute('SELECT likes FROM blog_posts WHERE id=%s', (post_id,))
@@ -759,7 +737,8 @@ def get_comments(post_id):
 
 
 @bp.route('/api/blog/posts/<int:post_id>/comments', methods=['POST'])
-@optional_auth
+@login_required
+@limiter.limit('20 per hour; 5 per minute')
 def add_comment(post_id):
     data       = request.json or {}
     content    = (data.get('content') or '').strip()[:2000]
@@ -769,7 +748,6 @@ def add_comment(post_id):
     media_url, media_type = media
     if not content and not media_url:
         return jsonify({'error': 'Comment cannot be empty'}), 400
-    guest_name = (data.get('author_name') or 'Anonymous').strip()[:100]
     parent_id  = data.get('parent_id') or None
 
     db  = get_db()
@@ -784,12 +762,11 @@ def add_comment(post_id):
             if not cur.fetchone():
                 return jsonify({'error': 'Invalid parent comment'}), 400
 
-        if request.user_id:
-            cur.execute('SELECT name FROM users WHERE id=%s', (request.user_id,))
-            u = cur.fetchone()
-            stored_author = u['name'] if u else 'Unknown'
-        else:
-            stored_author = guest_name
+        cur.execute('SELECT name FROM users WHERE id=%s', (request.user_id,))
+        u = cur.fetchone()
+        if not u:
+            return jsonify({'error': 'Unauthorized'}), 401
+        stored_author = u['name']
 
         cur.execute(
             'INSERT INTO blog_comments (post_id,parent_id,user_id,author_name,content,media_url,media_type) '
@@ -803,19 +780,12 @@ def add_comment(post_id):
         notify_text = content or ('[sticker]' if media_type == 'sticker' else '[GIF]')
         _fire_comment_notifications(cur, post_id, parent_id, request.user_id, stored_author, notify_text)
 
-        if request.user_id:
-            cur.execute('''
-                SELECT c.id, c.content, c.media_url, c.media_type, c.author_name,
-                       c.user_id, c.created_at, c.parent_id, c.likes, c.dislikes,
-                       u.name as user_name, u.avatar as user_avatar, u.handle as user_handle
-                FROM blog_comments c JOIN users u ON c.user_id=u.id WHERE c.id=%s
-            ''', (cid,))
-        else:
-            cur.execute(
-                'SELECT id,content,media_url,media_type,author_name,user_id,created_at,parent_id,likes,dislikes '
-                'FROM blog_comments WHERE id=%s',
-                (cid,)
-            )
+        cur.execute('''
+            SELECT c.id, c.content, c.media_url, c.media_type, c.author_name,
+                   c.user_id, c.created_at, c.parent_id, c.likes, c.dislikes,
+                   u.name as user_name, u.avatar as user_avatar, u.handle as user_handle
+            FROM blog_comments c JOIN users u ON c.user_id=u.id WHERE c.id=%s
+        ''', (cid,))
         c = cur.fetchone()
 
         if c.get('created_at'):
@@ -878,20 +848,21 @@ def delete_comment(comment_id):
 
 
 @bp.route('/api/blog/comments/<int:comment_id>/vote', methods=['POST'])
+@login_required
+@limiter.limit('120 per hour')
 def vote_comment(comment_id):
     data        = request.json or {}
     vote        = data.get('vote')
-    session_key = (data.get('session_key') or '').strip()[:64]
 
-    if vote not in (1, -1) or not session_key:
+    if vote not in (1, -1):
         return jsonify({'error': 'Invalid vote'}), 400
 
     db  = get_db()
     cur = db.cursor(dictionary=True)
     try:
         cur.execute(
-            'SELECT vote FROM comment_votes WHERE comment_id=%s AND session_key=%s',
-            (comment_id, session_key)
+            'SELECT vote FROM comment_votes WHERE comment_id=%s AND user_id=%s',
+            (comment_id, request.user_id)
         )
         existing = cur.fetchone()
 
@@ -899,8 +870,8 @@ def vote_comment(comment_id):
             if existing['vote'] == vote:
                 # Same vote → toggle off
                 cur.execute(
-                    'DELETE FROM comment_votes WHERE comment_id=%s AND session_key=%s',
-                    (comment_id, session_key)
+                    'DELETE FROM comment_votes WHERE comment_id=%s AND user_id=%s',
+                    (comment_id, request.user_id)
                 )
                 if vote == 1:
                     cur.execute('UPDATE blog_comments SET likes=GREATEST(0,likes-1) WHERE id=%s', (comment_id,))
@@ -910,8 +881,8 @@ def vote_comment(comment_id):
             else:
                 # Flip vote
                 cur.execute(
-                    'UPDATE comment_votes SET vote=%s WHERE comment_id=%s AND session_key=%s',
-                    (vote, comment_id, session_key)
+                    'UPDATE comment_votes SET vote=%s WHERE comment_id=%s AND user_id=%s',
+                    (vote, comment_id, request.user_id)
                 )
                 if vote == 1:
                     cur.execute(
@@ -926,8 +897,8 @@ def vote_comment(comment_id):
                 action = 'changed'
         else:
             cur.execute(
-                'INSERT INTO comment_votes (comment_id, session_key, vote) VALUES (%s,%s,%s)',
-                (comment_id, session_key, vote)
+                'INSERT INTO comment_votes (comment_id, user_id, vote) VALUES (%s,%s,%s)',
+                (comment_id, request.user_id, vote)
             )
             if vote == 1:
                 cur.execute('UPDATE blog_comments SET likes=likes+1 WHERE id=%s', (comment_id,))
@@ -1079,9 +1050,6 @@ def upload_image():
     import uuid
     import requests as http_requests
 
-    upload_dir = os.path.join(os.path.dirname(__file__), '..', 'static', 'uploads', 'blog')
-    os.makedirs(upload_dir, exist_ok=True)
-
     # ── URL upload (from editor's "upload by URL" feature) ────────────────────
     if request.is_json:
         data = request.json or {}
@@ -1111,11 +1079,7 @@ def upload_image():
                 if len(content) > MAX_UPLOAD_BYTES:
                     return jsonify({'success': 0, 'message': 'Image exceeds 5 MB limit'}), 400
 
-            fname = f'{uuid.uuid4().hex}{ext}'
-            path  = os.path.join(upload_dir, fname)
-            with open(path, 'wb') as f:
-                f.write(content)
-            return jsonify({'success': 1, 'file': {'url': f'/static/uploads/blog/{fname}'}})
+            return jsonify({'success': 1, 'file': {'url': store_media(content, ct, request.user_id)}})
         except Exception:
             return jsonify({'success': 0, 'message': 'Failed to fetch image from URL'}), 400
 
@@ -1145,12 +1109,9 @@ def upload_image():
     if not is_valid and ext not in ('.webp', '.gif'):
         return jsonify({'success': 0, 'message': 'File content does not match image type'}), 400
 
-    fname = f'{uuid.uuid4().hex}{ext}'
-    path  = os.path.join(upload_dir, fname)
-    with open(path, 'wb') as out:
-        out.write(data)
-
-    return jsonify({'success': 1, 'file': {'url': f'/static/uploads/blog/{fname}'}})
+    mime = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+            'gif': 'image/gif', 'webp': 'image/webp'}.get(ext.lstrip('.'), 'application/octet-stream')
+    return jsonify({'success': 1, 'file': {'url': store_media(data, mime, request.user_id)}})
 
 
 @bp.route('/api/search', methods=['GET'])

@@ -271,6 +271,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const [saveStatus, setSaveStatus] = useState<"" | "saving" | "saved" | "unsaved" | "error">("");
   const [editorReady, setEditorReady] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [tagList, setTagList] = useState<string[]>([]);
@@ -291,6 +292,20 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   const excerptRef = useRef<HTMLTextAreaElement>(null);
   const saveDraftRef = useRef<(silent?: boolean) => Promise<void>>(async () => {});
   const isSavingRef = useRef(false);
+
+  // Keep loaded and edited multi-line fields fully visible. Previously only a
+  // keyboard change resized them, so an existing long title could be clipped.
+  useEffect(() => {
+    const resize = (el: HTMLTextAreaElement | null) => {
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    };
+    requestAnimationFrame(() => {
+      resize(titleRef.current);
+      resize(excerptRef.current);
+    });
+  }, [title, excerpt]);
 
   useEffect(() => {
     if (!authLoading && !user) window.location.href = "/login";
@@ -437,13 +452,13 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
   }
 
   async function handleDelete() {
-    if (!postIdRef.current) { window.location.href = "/"; return; }
+    if (!postIdRef.current) { window.location.href = "/dashboard"; return; }
     try {
       const r = await fetch(`/api/blog/posts/${postIdRef.current}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (r.ok) window.location.href = "/";
+      if (r.ok) window.location.href = "/dashboard";
       else setSaveStatus("error");
     } catch {
       setSaveStatus("error");
@@ -510,7 +525,7 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
 
       {/* ── Topbar ── */}
       <div className="write-topbar">
-        <Link href="/" className="write-back">
+        <Link href="/dashboard" className="write-back">
           <Icon name="arrow-left" size={14} />
           Dashboard
         </Link>
@@ -684,6 +699,21 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
         </div>
         <div className="write-settings-body">
           <div className="field">
+            <label>Post visibility</label>
+            <button
+              className={`write-visibility-choice ${status}`}
+              onClick={handlePublish}
+              disabled={!editorReady}
+              type="button"
+            >
+              <Icon name={status === "published" ? "globe" : "lock"} size={15} />
+              <span>
+                <b>{status === "published" ? "Public" : "Private draft"}</b>
+                <small>{status === "published" ? "Visible to everyone" : "Visible only to you"}</small>
+              </span>
+            </button>
+          </div>
+          <div className="field">
             <label>URL slug</label>
             <input
               value={slug}
@@ -730,19 +760,14 @@ export function WriteEditor({ postId: initialPostId }: WriteEditorProps) {
       </div>
 
       {/* ── Mobile bottom action bar ── */}
-      <div className="write-mobile-bar">
-        <button className="write-mbar-btn" onClick={() => setDetailsOpen((v) => !v)}>
-          <Icon name="settings" size={15} />
-          Details
-        </button>
-        <button className="write-mbar-btn" onClick={() => saveDraft()} disabled={!editorReady}>
-          <Icon name="feather" size={15} />
-          Save
-        </button>
-        <button className="write-mbar-btn primary" onClick={handlePublish} disabled={!editorReady}>
-          <Icon name="globe" size={15} />
-          {status === "published" ? "Unpublish" : "Publish"}
-        </button>
+      <div className={`write-mobile-bar${mobileActionsOpen ? " open" : ""}`}>
+        <div className="write-mobile-menu">
+          <span className="write-mobile-menu-label">WRITING ACTIONS</span>
+          <button className="write-mbar-btn" onClick={() => { setDetailsOpen(true); setMobileActionsOpen(false); }}><i><Icon name="settings" size={16} /></i><span><b>Post details</b><small>Slug and publishing options</small></span></button>
+          <button className="write-mbar-btn" onClick={() => { saveDraft(); setMobileActionsOpen(false); }} disabled={!editorReady}><i><Icon name="feather" size={16} /></i><span><b>Save draft</b><small>Keep this version private</small></span></button>
+          <button className="write-mbar-btn primary" onClick={() => { handlePublish(); setMobileActionsOpen(false); }} disabled={!editorReady}><i><Icon name="globe" size={16} /></i><span><b>{status === "published" ? "Unpublish" : "Publish now"}</b><small>{status === "published" ? "Return this post to drafts" : "Make this post public"}</small></span></button>
+        </div>
+        <button className="write-mobile-fab" onClick={() => setMobileActionsOpen(v => !v)} aria-label="Writing actions" aria-expanded={mobileActionsOpen}><span>{mobileActionsOpen ? "×" : "•••"}</span></button>
       </div>
     </div>
   );

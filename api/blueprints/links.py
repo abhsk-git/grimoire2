@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 import requests as http_requests
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 import ipaddress, socket
 from utils import get_db, login_required
 
@@ -17,10 +17,15 @@ def _is_safe_url(url: str) -> bool:
         host = parsed.hostname
         if not host:
             return False
-        # Resolve to IP and reject private/loopback/link-local ranges
-        ip = ipaddress.ip_address(socket.getaddrinfo(host, None)[0][4][0])
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+        # Reject the host if any advertised address reaches a non-public network.
+        addresses = {row[4][0] for row in socket.getaddrinfo(host, parsed.port or 443)}
+        if not addresses:
             return False
+        for address in addresses:
+            ip = ipaddress.ip_address(address)
+            if (not ip.is_global or ip.is_private or ip.is_loopback or
+                    ip.is_link_local or ip.is_reserved or ip.is_multicast):
+                return False
         return True
     except Exception:
         return False
@@ -41,8 +46,29 @@ def _do_fetch_meta(url):
         }
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (compatible; Grimoire/1.0)'}
-        r       = http_requests.get(url, headers=headers, timeout=8, allow_redirects=True)
-        soup    = BeautifulSoup(r.text, 'html.parser')
+        current = url
+        r = None
+        for _ in range(5):
+            if not _is_safe_url(current):
+                raise ValueError('Unsafe redirect target')
+            r = http_requests.get(current, headers=headers, timeout=8,
+                                  allow_redirects=False, stream=True)
+            if r.status_code not in (301, 302, 303, 307, 308):
+                break
+            target = r.headers.get('Location')
+            if not target:
+                break
+            current = urljoin(current, target)
+            r.close()
+        if r is None or r.status_code in (301, 302, 303, 307, 308):
+            raise ValueError('Too many redirects')
+        r.raise_for_status()
+        raw = r.raw.read(1_500_001, decode_content=True)
+        if len(raw) > 1_500_000:
+            raise ValueError('Metadata response too large')
+        r.encoding = r.encoding or 'utf-8'
+        text = raw.decode(r.encoding, errors='replace')
+        soup    = BeautifulSoup(text, 'html.parser')
 
         title = ''
         for sel in ['meta[property="og:title"]', 'meta[name="twitter:title"]', 'title']:
@@ -177,12 +203,17 @@ def get_links():
 @bp.route('/api/links', methods=['POST'])
 @login_required
 def create_link():
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Invalid payload'}), 400
     url  = data.get('url', '').strip()
     if not url:
         return jsonify({'error': 'URL is required'}), 400
     if not url.startswith('http'):
         url = 'https://' + url
+    if len(url) > 2048 or not _is_safe_url(url):
+        return jsonify({'error': 'A valid public HTTP(S) URL is required'}), 400
+    is_public = 1 if data.get('is_public') is True else 0
 
     db  = get_db()
     cur = db.cursor(dictionary=True)
@@ -190,7 +221,7 @@ def create_link():
         cur.execute('''
             INSERT INTO links (user_id, url, title, description, image, favicon, tags,
                                collection_id, is_public, notes)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,1,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ''', (
             request.user_id, url,
             data.get('title', '')[:255],
@@ -199,6 +230,7 @@ def create_link():
             data.get('favicon', '')[:255],
             data.get('tags', '')[:255],
             data.get('collection_id') or None,
+            is_public,
             data.get('notes', '')[:2000],
         ))
         db.commit()
@@ -216,7 +248,9 @@ def create_link():
 @bp.route('/api/links/<int:link_id>', methods=['PUT'])
 @login_required
 def update_link(link_id):
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Invalid payload'}), 400
     db   = get_db()
     cur  = db.cursor(dictionary=True)
     try:
@@ -225,7 +259,7 @@ def update_link(link_id):
             return jsonify({'error': 'Not found'}), 404
         cur.execute('''
             UPDATE links SET title=%s, description=%s, tags=%s, collection_id=%s,
-            notes=%s, image=%s, updated_at=NOW()
+            notes=%s, image=%s, is_public=%s, updated_at=NOW()
             WHERE id=%s AND user_id=%s
         ''', (
             data.get('title', '')[:255],
@@ -234,6 +268,7 @@ def update_link(link_id):
             data.get('collection_id') or None,
             data.get('notes', '')[:2000],
             data.get('image', '')[:500],
+            1 if data.get('is_public') is True else 0,
             link_id, request.user_id,
         ))
         db.commit()

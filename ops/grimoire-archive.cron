@@ -1,0 +1,2 @@
+# Daily UTC database + Docker log archive. The script retains only three days.
+17 2 * * * root /opt/grimoire2/ops/rotate-grimoire-archives.sh >> /opt/grimoire2/runtime/archive-cron.log 2>&1

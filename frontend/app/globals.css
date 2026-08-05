@@ -18,21 +18,21 @@
 
 /* ----- LIGHT ----- */
 [data-theme="light"] {
-  --bg: #f6f5fa;
-  --bg-elev: #ffffff;
-  --bg-soft: #efedf5;
-  --bg-inset: #ebe9f2;
-  --fg: #1b1a26;
-  --fg-muted: #56556a;
-  --fg-soft: #6b6a7f;
-  --border: #e6e3ee;
-  --border-strong: #d3d0e0;
-  --accent: #5b54d6;
-  --accent-soft: #ece9f8;
+  --bg: #f7f6f2;
+  --bg-elev: #fffefa;
+  --bg-soft: #efeee9;
+  --bg-inset: #e8e7e2;
+  --fg: #242522;
+  --fg-muted: #5e625c;
+  --fg-soft: #70756e;
+  --border: #deded8;
+  --border-strong: #c9cbc4;
+  --accent: #355f85;
+  --accent-soft: #e5edf3;
   --accent-fg: #ffffff;
-  --accent-ink: #36309a;
-  --accent-2: #b46a2a;
-  --accent-3: #2f7d4d;
+  --accent-ink: #294b6a;
+  --accent-2: #94612f;
+  --accent-3: #3f7254;
   --error: #c72c3b;
   --error-soft: rgba(199,44,59,0.1);
   --warning: #b45309;
@@ -47,158 +47,23 @@
   color-scheme: light;
 }
 
-/* ----- GLASS ----- */
-[data-theme="glass"] {
-  --bg: #070a1c;
-  --bg-elev: rgba(255,255,255,0.22);
-  --bg-soft: rgba(255,255,255,0.15);
-  --bg-inset: rgba(0,0,0,0.30);
-  --fg: #ffffff;
-  --fg-muted: #ccd4f0;
-  --fg-soft: #d8defc;
-  --border: rgba(255,255,255,0.18);
-  --border-strong: rgba(255,255,255,0.32);
-  --accent: #a78bfa;
-  --accent-soft: rgba(167,139,250,0.18);
-  --accent-fg: #160a40;
-  --accent-ink: #c4b5fd;
-  --accent-2: #38bdf8;
-  --accent-3: #f472b6;
-  --error: #f87171;
-  --error-soft: rgba(248,113,113,0.12);
-  --warning: #fbbf24;
-  --warning-ink: #f59e0b;
-  --warning-soft: rgba(251,191,36,0.08);
-  --success: #4ade80;
-  --success-soft: rgba(74,222,128,0.10);
-  --grid: rgba(255,255,255,0.04);
-  --shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
-  --shadow-lg: 0 24px 64px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4);
-  --bg-card-rgb: 255, 255, 255;
-  color-scheme: dark;
-}
-
-/* Wallpaper — photo + dark overlay so glass panels stay readable */
-[data-theme="glass"] body {
-  background:
-    linear-gradient(rgba(4,8,22,0.72), rgba(4,8,22,0.72)),
-    url('https://w.wallhaven.cc/full/po/wallhaven-poyele.jpg') center / cover no-repeat fixed;
-}
-[data-theme="glass"] .app { background: transparent; }
-[data-theme="glass"] .explore-page { background: transparent; }
-[data-theme="glass"] .profile-page { background: transparent; }
-[data-theme="glass"] .sett-page { background: transparent; }
-[data-theme="glass"] .profile-root { background: transparent; }
-.profile-root { background: var(--bg); }
-
-/* ── Dashboard glass surfaces ── */
-[data-theme="glass"] .dw-page { background: transparent; }
-
-[data-theme="glass"] .dw-card {
-  background: rgba(255,255,255,0.18);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,0.24);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.20);
-}
-[data-theme="glass"] .dw-card-head {
-  border-bottom-color: rgba(255,255,255,0.14);
-}
-
-[data-theme="glass"] .dw-btn {
-  background: rgba(255,255,255,0.16);
-  border-color: rgba(255,255,255,0.26);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-[data-theme="glass"] .dw-btn:hover {
-  background: rgba(255,255,255,0.28);
-  border-color: rgba(255,255,255,0.38);
-  color: var(--fg);
-}
-[data-theme="glass"] .dw-icon-btn {
-  background: rgba(255,255,255,0.15);
-  border-color: rgba(255,255,255,0.24);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-[data-theme="glass"] .dw-icon-btn:hover {
-  background: rgba(255,255,255,0.26);
-  border-color: rgba(255,255,255,0.36);
-}
-[data-theme="glass"] .dw-signout-btn {
-  background: rgba(255,255,255,0.13);
-  border-color: rgba(255,255,255,0.22);
-  color: var(--fg-soft);
-}
-[data-theme="glass"] .dw-signout-btn:hover { background: rgba(248,113,113,0.25); color: #f87171; }
-
-[data-theme="glass"] .dw-post-row + .dw-post-row,
-[data-theme="glass"] .dw-ref-row  + .dw-ref-row  { border-top-color: rgba(255,255,255,0.10); }
-[data-theme="glass"] .dw-post-row:hover,
-[data-theme="glass"] .dw-ref-row:hover { background: rgba(255,255,255,0.10); }
-
-[data-theme="glass"] .dw-confirm {
-  background: rgba(255,255,255,0.20);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-color: rgba(255,255,255,0.28);
-}
-
-[data-theme="glass"] .header {
-  background: rgba(255,255,255,0.14);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-bottom-color: rgba(255,255,255,0.18);
-}
-
-[data-theme="glass"] .profile-head {
-  background: rgba(10, 13, 30, 0.78);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border-color: rgba(255,255,255,0.18);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.12);
-}
-
-[data-theme="glass"] .profile-tabs {
-  background: rgba(255,255,255,0.10);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 12px 12px 0 0;
-  padding: 0 8px;
-}
-[data-theme="glass"] .profile-head .av {
-  border-color: rgba(7,10,28,0.85);
-}
-
-/* Reading page — glass theme has no effect here, always renders as dark */
-[data-theme="glass"] .post-page {
-  background: #0c0f14;
-  --bg: #0c0f14;
-  --bg-elev: #11151c;
-  --bg-soft: #161b24;
-  --bg-inset: #0a0d12;
-  --border: #1d2330;
-  --border-strong: #2a3242;
-}
-
 /* ----- DARK ----- */
 [data-theme="dark"] {
-  --bg: #0c0f14;
-  --bg-elev: #11151c;
-  --bg-soft: #161b24;
-  --bg-inset: #0a0d12;
-  --fg: #f0f3ef;
-  --fg-muted: #97a0a8;
-  --fg-soft: #7b8591;
-  --border: #1d2330;
-  --border-strong: #2a3242;
-  --accent: #3ee07a;
-  --accent-soft: rgba(62, 224, 122, 0.10);
-  --accent-fg: #06120a;
-  --accent-ink: #8df0a8;
-  --accent-2: #ffb84a;
-  --accent-3: #8e8df0;
+  --bg: #161816;
+  --bg-elev: #1d201d;
+  --bg-soft: #252925;
+  --bg-inset: #121412;
+  --fg: #e6e9e4;
+  --fg-muted: #a6ada4;
+  --fg-soft: #858d83;
+  --border: #303630;
+  --border-strong: #444c44;
+  --accent: #8ab4d0;
+  --accent-soft: rgba(138,180,208,0.13);
+  --accent-fg: #10202b;
+  --accent-ink: #a8cee4;
+  --accent-2: #d6ad72;
+  --accent-3: #94b99d;
   --error: #f87171;
   --error-soft: rgba(248,113,113,0.1);
   --warning: #fbbf24;
@@ -209,7 +74,7 @@
   --grid: rgba(255, 255, 255, 0.04);
   --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 30px 80px -20px rgba(0, 0, 0, 0.7), 0 12px 28px -10px rgba(0, 0, 0, 0.4);
-  --bg-card-rgb: 17, 21, 28;
+  --bg-card-rgb: 29, 32, 29;
   color-scheme: dark;
 }
 
@@ -2252,8 +2117,7 @@ button.lc-tag:hover { opacity: 0.7; }
   background:
     radial-gradient(700px 400px at 75% 15%, rgba(167,139,250,0.28), transparent 60%),
     radial-gradient(600px 400px at 15% 85%, rgba(56,189,248,0.18), transparent 60%),
-    linear-gradient(rgba(4,8,22,0.70), rgba(4,8,22,0.70)),
-    url('/wallpapers/glass-bg.jpg') center / cover no-repeat;
+    linear-gradient(145deg, #17202a, #1d2823);
   padding: 56px 48px;
   display: flex; flex-direction: column;
   overflow: hidden;
@@ -3617,18 +3481,6 @@ button.lc-tag:hover { opacity: 0.7; }
   font-size: 12.5px; color: var(--fg-muted); margin-top: 3px;
   font-family: var(--font-mono);
 }
-.byline-follow {
-  margin-left: auto; flex-shrink: 0;
-  height: 34px; padding: 0 16px; border-radius: 999px;
-  border: 1px solid transparent; cursor: pointer;
-  font-size: 13px; font-weight: 600; font-family: var(--font-sans);
-  background: var(--accent); color: var(--accent-fg);
-  transition: background .15s, opacity .15s;
-}
-.byline-follow:hover { opacity: .9; }
-.byline-follow.is-following {
-  background: transparent; border-color: var(--border-strong); color: var(--fg-muted);
-}
 
 /* Article typography */
 .post-content { line-height: 1.8; font-size: 17px; color: var(--fg); overflow-wrap: break-word; word-break: break-word; }
@@ -3746,9 +3598,6 @@ button.lc-tag:hover { opacity: 0.7; }
 .post-sign-by:hover { color: var(--fg); }
 .post-sign-socials {
   display: flex; align-items: center; gap: 4px;
-}
-.post-sign-follow {
-  font-size: 11px; color: var(--fg-muted); margin-right: 4px;
 }
 .post-sign-icon {
   display: inline-flex; align-items: center; justify-content: center;
@@ -4125,7 +3974,6 @@ button.lc-tag:hover { opacity: 0.7; }
   .article-hero { padding-left: 16px; padding-right: 16px; }
   .article-hero img { aspect-ratio: 16 / 9; border-radius: 12px; }
   .post-title { font-size: 30px; }
-  .byline-follow { display: none; }
 
   .post-end { padding: 0 16px; }
   .post-end-author-name { font-size: 18px; }
@@ -4987,13 +4835,6 @@ button.lc-tag:hover { opacity: 0.7; }
   border-radius: var(--radius-lg);
   box-shadow: 0 24px 64px rgba(0,0,0,0.28);
   overflow: hidden;
-}
-[data-theme="glass"] .search-palette {
-  background: rgba(255,255,255,0.16);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-color: rgba(255,255,255,0.22);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.35);
 }
 .search-palette-input-row {
   display: flex; align-items: center; gap: 10px;
@@ -6050,7 +5891,7 @@ button.lc-tag:hover { opacity: 0.7; }
   gap: 20px;
 }
 
-/* Cards — glass-ready */
+/* Dashboard cards */
 .dw-card {
   background: var(--bg-elev); border: 1px solid var(--border);
   border-radius: var(--radius-lg); overflow: hidden;
